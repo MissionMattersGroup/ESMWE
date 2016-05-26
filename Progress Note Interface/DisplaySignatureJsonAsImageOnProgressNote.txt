@@ -1,0 +1,50 @@
+<!-- @Descripton: Active Template to show signature as image for progress Note-->
+<!-- Note: Show the active template on right side of the layout beacuse it goes from left to right-->
+<div class="active-template">
+<header>
+<script>
+<aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignaturemin.js")%>'/>
+<aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignature.js")%>'/>
+<aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/excanvas.js")%>'/>
+<aspx:IncludeStyleSheet runat="server" url='<%# Url.ToAbsoluteUrl(Url.Asset("Css/signature.css"))%>'/>
+</script>
+
+<style>
+    .kbw-signature { width: 350px; height: 200px; margin-top: -8%;}
+</style>
+
+<script>
+    
+    // Signature to be shown for Staff signature
+    $('#StaffSignDisplayID').signature();
+    
+    var StaffSignatureVal = $('#StaffSignDataDivID').html();
+    
+    if (StaffSignatureVal != '') {
+        $('#StaffSignDisplayID').signature('draw', StaffSignatureVal);
+    }
+    $('#StaffSignDataDivID').hide();
+    
+    //Signature to be shown for Family signature
+    $('#FamilySignDisplayID').signature();
+    
+    var FamilySignatureVal = $('#FamilySignDataDivID').html();
+    
+    if (FamilySignatureVal != '') {
+        $('#FamilySignDisplayID').signature('draw', FamilySignatureVal);
+    }
+    $('#FamilySignDataDivID').hide();
+    
+    //Signature to be shown for Supervisor signature
+    $('#SupervisorSignDisplayID').signature();
+    
+    var SupervisorSignatureVal = $('#SupervisorSignDataDivID').html();
+    
+    if (SupervisorSignatureVal != '') {
+        $('#SupervisorSignDisplayID').signature('draw', SupervisorSignatureVal);
+    }
+    $('#SupervisorSignDataDivID').hide();
+
+</script>
+</header>
+</div>

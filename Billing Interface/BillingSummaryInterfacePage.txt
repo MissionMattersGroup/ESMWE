@@ -1,0 +1,601 @@
+<!-------------------------------------------------------------------------------------------------------- 
+    Page: Billing Summary  Page 
+    Description: This page is used to show progress note records related to search criteria and billing summary
+----------------------------------------------------------------------------------------------------------> 
+<aspx:AspxPage runat="server" Id="BillingSummaryInterfaceId" title="BillingSummaryInterface">
+<header>
+    <!------ Used template to stores the Custom Labels value in the JS------------------->
+    <aspx:ActiveTemplate runat="server" Name="Billing_TemplateForLabelConstant"/>
+    
+    <aspx:IncludeStyleSheet runat="server" url='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css'/> 
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.Asset("Css/StyleForBillingSummaryInterface.css")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/BillingSummaryInterface.js")%>'/>
+</header>
+<body>
+
+    <!------ Start Validation Error Popup ------>
+    <div id="errorModal" class="modal fade" role="dialog" data-backdrop="static">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Error</h4>
+                </div>
+                <div class="modal-body">
+                    
+                    <aspx:ViewMessages runat='server' inline='false'/>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+    
+        </div>
+    </div>
+    <!------ End Validation Error Popup -------->
+    
+    <!--------Start Validation Custom Error Popup ---->
+    <div id="errorCustomModal" class="modal fade" role="dialog" data-backdrop="static">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Error</h4>
+                </div>
+                <div class="modal-body">
+                    
+                    <!-- Display the DML Exception Errors Ex: Lookup Filters Error -->
+                    <%if(DataBag.Exception!="") { %>
+                        <div class="tabMessages container-fluid ServerExceptionCustomClass">
+                            <div class="messageContainer row Error">
+                                 <table class="messageTable">
+                                      <tbody>
+                                           <tr style="vertical-align:top;">
+                                                <td align="center" valign="top">
+                                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Error" title="Error">
+                                                 </td>
+                                                 <td class="messageCell">
+                                                        <div class="messageText"><h4>Error: </h4>
+                                                             <span><%=DataBag.Exception%></span>
+                                                        </div>
+                                                 </td>
+                                            </tr>
+                                        </tbody>
+                                 </table>
+                            </div>
+                        </div>
+                    <%}%>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+    
+        </div>
+    </div>
+    <!---- End Validation Custom Error Popup ------->
+    
+    <!--Display the error messages if any issue on the Page-->
+    <%if(DataBag.DisplayBSI==false){%>
+        <div class="tabMessages container-fluid">
+            <div class="messageContainer row Message">
+                 <table class="messageTable">
+                      <tbody>
+                           <tr style="vertical-align:top;">
+                                <td align="center" valign="top">
+                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Message" title="Message">
+                                 </td>
+                                 <td class="singleMsg messageCell">
+                                        <div class="messageText"><h4>Information</h4>
+                                             <span><%=DataBag.errorMessage%></span>
+                                        </div>
+                                 </td>
+                            </tr>
+                        </tbody>
+                 </table>
+            </div>
+        </div>
+    <%}%>
+    
+    <!-- This section is set true when all the param passed in the URL are valid and verified-->
+    <%if(DataBag.DisplayBSI==true){%>
+        
+        <div class="container" 
+             style=<% if (DataBag.IsPreviewBillingSummary == true) {%>
+                        "transform: scale(0.9);z-index: 9999;position: relative;"
+                   <%}%>
+        >
+        <% if (DataBag.IsPreviewBillingSummary == false){%>
+            <h3>Billing Summary</h3><br/>
+            <!-----------------------------------------------Start Of Submit To Billing Button------------------------------->
+            <%if(DataBag.IsStatusPendingBilling == false ) { %>
+    			<center>
+                    <button type="button" id="submitToBillingId" class="btn backgroundForButton" onclick="setTheStatusOnSubmitBilling();"><span class="glyphicon glyphicon-save"></span>&nbsp;Submit To Billing</button>
+                </center><br/>
+			<%}%>
+			 <!-----------------------------------------------End Of Submit To Billing Button------------------------------->
+        <%}%>
+        
+        <div class="panel borderofPanel">
+            <div class="panel-heading"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Billing Summary
+            <% if (DataBag.IsPreviewBillingSummary == true){%>
+                <span class="glyphicon glyphicon-remove-circle CloseForPreview" onclick="__doPostBack('redirectToMainPage');"></span>
+            <%}%>     
+            </div>
+            <!--Start of panel body--->
+            <div class="panel-body">
+                
+                  <div class="row">
+                    <!--- Display the section in Edit and Detail Mode Only --->
+                    <% if (DataBag.strBillingSummaryTypeView == "edit" || DataBag.strBillingSummaryTypeView == "detail") {%>
+                    
+                         <% Html.Repeat(DataBag.lstBillingSummaryObj as IList, billingSummaryObj => { %>
+                         
+                            <!-----Button for Edit/Save/Cancel For Billing Summarry------->
+                            <% if (DataBag.IsPreviewBillingSummary == false  && DataBag.IsStatusPendingBilling == false){%>
+                                <center>
+                                  <% if (DataBag.strBillingSummaryTypeView == "detail"){%>
+                                        <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirectEditMode();">
+                                            <span class="glyphicon glyphicon-pencil">&nbsp;Edit
+                                        </button>
+                                  <%}
+                                  else{%>
+                                    <div class="col-md-6" style="text-align: right;">
+                                        <button type="button" class="btn backgroundForButton"  data-dismiss="modal" onclick="SaveBillingSummary();showCustomValidationErrorPopup();showValidationErrorPopup();">
+                                            <span class="glyphicon glyphicon-save">&nbsp;Save
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="col-md-6" style="text-align: left;">
+        								<button type="button" class="btn backgroundForButton"  data-dismiss="modal" onclick="doRedirect();">
+                                            <span class="glyphicon glyphicon-remove">&nbsp;Cancel
+                                        </button>
+                                    </div>
+                                <%}%>
+                                </center>
+                            <%}%>
+                            <!--- End Of Button----->
+                            
+                            <!-- Section to display the Billing Summary---->
+                            <div  class="form-horizontal" style="margin-left:20%" id="BillingSummaryObjectSectionID">
+                                <!---Counter for Fields------->
+                                <% int fieldIndex=0; %>
+                                <%foreach(var field in DataBag.lstBillingSummaryFields) { %>
+                                    <%if(fieldIndex%2==0){%>
+                                        <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <%}%>
+                                    <div class="form-group-0 col-xs-6 col-md-6">
+                                        <br/>
+                                            <label for="name" class="control-label">
+                                                <%=billingSummaryObj.LabelFor(field)%>
+                                            </label>
+                                            <br/> 
+                                        
+                                            <!-- Edit View Field Display -->                
+                                            <%if (DataBag.strBillingSummaryTypeView == "edit" && DataBag.IsPreviewBillingSummary == false) {%>
+                                                 <%=billingSummaryObj.DisplayEditorFor(field)%>
+                                            <%}
+                                            else%>
+                                                <!-- Detail View Field Display -->
+                                            <%if (DataBag.strBillingSummaryTypeView == "detail" || DataBag.IsPreviewBillingSummary == true) {%>
+                                                <%if(billingSummaryObj.DisplayTextFor(field)!=""){%>
+                                                    <%=billingSummaryObj.DisplayTextFor(field)%>
+                                                <%}
+                                                else{%>
+                                                    <br/>
+                                                <%}%>
+                                            <%}%>
+                                    </div>
+                                    <%if(fieldIndex%2==1){%>    
+                                        </div> <!-- End of Col-Md-12 div -->
+                                    <%}%>
+                                    <% fieldIndex=fieldIndex+1; %>   
+                                <%}%> <!-- End of ForEach --> 
+                           </div> <!-- End of horizontal div -->
+                           <!-----End of the Section --->
+                        <% }); %> <!-- End of Repeat -->
+                       
+                    <%}%> <!-- End of root if -->
+                    
+                </div><br/><br/> <!-- End of class row div -->
+                
+                <% if (DataBag.IsStatusInProgress == true){%>
+                    <hr class="hrCustomClass"></hr>
+                <%}%>
+                
+                <% if (DataBag.IsPreviewBillingSummary == false){%>
+                    
+                    <div style="padding: 1%;">
+                        
+                        <% if (DataBag.IsStatusInProgress == true){%>
+                        
+                            <b>Progress Notes (Unbilled)</b><br/><br/>
+                        
+                                <!-- Start of the table to display those progress note that billing Status are Unbilled and status are completed-->
+                            	<% if (DataBag.strBillingSummaryTypeView == "edit" || DataBag.strBillingSummaryTypeView == "detail") {%>
+                                    <!----------- Start This table is to show Progress Note record row ----------->
+                                    
+                                    <!--------- Check the Records of Progress Note is present with matching creiteria--------------->
+        							<% if( DataBag.lstProgressNoteWithBillingStatusUnbilled.Count == 0){%>
+        								<span><%:CustomLabels.CustomInterface_RecordNotFound%></span><br/><br/>
+        							<%}%>
+        						    
+        							<%else{%>
+        								<div class="scrollBarCssForProgressNote">
+        								    <table id="UnbilledProgressNoteTableId" class="table table-bordered" style="font-size: 9pt;">
+        										<tbody class="text-center">  
+        				                        <!---------- Set one variable to display header of Progress Note only once ------------->
+        					                    <% int showHeaderProgressNote = 0; %>
+        					                    <% int RowIndexForProgressNote = 0; %>
+        					                    <%foreach(var WrapperExistingProgressNote in  DataBag.lstProgressNoteWithBillingStatusUnbilled) { %>
+        						                  
+        						                    <% Html.Repeat(WrapperExistingProgressNote.lstProgressNoteInWrapper as IList, htmlProgressNote => { %>
+        
+        												<!----------------- Start of Progress Note Table Header --------------->
+        							                    <%if(showHeaderProgressNote == 0){%>
+        							                        <thead class="text-center backgroundForRelatedProgressNote">
+        								                        <tr>
+        								                        <% if (DataBag.IsStatusPendingBilling == false){%>
+        								                            <th nowrap> 
+                                                                        <input type="checkbox" name="ProgressNoteCheckbox" 
+                                                                                onchange="ListSelectUnSelectAction(this);"/>
+                                                                    </th>
+        								                        <%}%>    
+        									                        <!-- Print all fields(header) of Progress Note for available fields-->
+        									                        <%foreach(var fieldProgressNote in  DataBag.lstProgressNoteFields) { %>  
+        										                        <th nowrap>          
+        											                        <%=htmlProgressNote.LabelFor(fieldProgressNote)%>
+        										                        </th>                        
+        									                        <%}%>
+        								                        </tr>
+        							                        </thead>
+        							                        <!------------------- End of Progress Note Table Header --------------->
+        							                        <%  
+        								                        showHeaderProgressNote = 1;
+        							                    }%> 
+        							    
+        							                    <!---------------- Start of Progress Note  records ----------------------->   
+        								                 <tr>
+        								                 <% if (DataBag.IsStatusPendingBilling == false){%>
+        						                            <td nowrap>
+                                                                <input class="ProgressNoteCheckClass" type="checkbox" name="ProgressNoteCheckbox<%=RowIndexForProgressNote%>" 
+                                                                                <%if(WrapperExistingProgressNote.isSelected){%>
+                                                                                    checked
+                                                                                <%}else{%>
+                                                                                    unchecked
+                                                                                <%}%>
+                                                                />
+                                                            </td>
+                                                        <%}%>
+                                                            <%foreach(var field in DataBag.lstProgressNoteFields) { %>
+        								                        <td> 
+        								                            <%if(WrapperExistingProgressNote.isSelected && DataBag.IsMassEditUnbilledProgressNotes == true && field == "Billing_Code__c"){%>
+    								                                     <%=htmlProgressNote.DisplayEditorFor(field)%>
+        											                <%}else{%>
+                                                                         <%=htmlProgressNote.DisplayTextFor(field)%>
+                                                                    <%}%>
+        										                </td> 
+        										            <%}%>
+        								                </tr>
+        								                <% RowIndexForProgressNote = RowIndexForProgressNote+1; %>
+        						                    <% }); %> 
+        					                    <%} %>    
+        					                   
+        										</tbody> 
+        									</table>
+        									<!--------------------- End This table is to show Progress Note record row ------------------>
+        								</div><br/>
+        								<%if(DataBag.IsStatusPendingBilling == false){%>
+        								    <%if(DataBag.IsMassEditUnbilledProgressNotes == false){%>
+                                                <button id="AddToBillingbtn" type="button" class="btn backgroundForRelatedProgressNote"  onclick="CheckSelectedCheckboxesForProgressNoteRecordsToAddToBilling();showCustomValidationErrorPopup();showValidationErrorPopup();">
+                            					    <span class="glyphicon glyphicon-plus-sign"></span>Add To Billing
+                            				    </button>
+                            				    <button id="Editbtn" type="button" class="btn backgroundForRelatedProgressNote"  onclick="CheckSelectedCheckboxesForMassEditUnbilledProgressNoteRecords(); showCustomValidationErrorPopup();showValidationErrorPopup();">
+                            					    <span class="glyphicon glyphicon-pencil"></span>Edit
+                            				    </button>
+                            				<%}%>
+                    				    <%}%>
+                    				    <%if(DataBag.IsMassEditUnbilledProgressNotes == true){%>
+                        				    <button id="Savebtn" type="button" class="btn backgroundForRelatedProgressNote" onclick="SaveUnbilledProgressNoteRecords();showCustomValidationErrorPopup();showValidationErrorPopup();">
+                        					    <span class="glyphicon glyphicon-save"></span>Save
+                        				    </button>
+                        				     <button id="Savebtn" type="button" class="btn backgroundForRelatedProgressNote" onclick="doRedirect();showCustomValidationErrorPopup();showValidationErrorPopup();">
+                        					    <span class="glyphicon glyphicon-remove"></span>Cancel
+                        				    </button>
+                        				<%}%>
+                        				<br/><br/>
+        							<%}%> <!----------------- End of Else ------------------>
+               
+        						<%}%> <!----------------- End of If ------------------>
+    						
+    						<%}%><!----------------- End of main If ------------------>
+                            <!-- End of the table to display those progress note that billing Status are Unbilled and status are completed-->
+                           
+        				    <hr class="hrCustomClass" Style="width: 100%;"></hr><br/>
+        				    
+        				    <!----------  Start Of Sub Section of Progress Note With Status "Pending Billing" ------------>
+                            <b>Progress Notes (Pending)</b><br/><br/>
+                            
+            			    <% if (DataBag.strBillingSummaryTypeView == "edit" || DataBag.strBillingSummaryTypeView == "detail") {%>
+                                
+                                <!--------- Check the Records of Progress Note is present With Status "Pending Billing" --------------->
+                				<% if(DataBag.lstProgressNoteWithBillingStatusPending.Count == 0){%>
+                					<span style="margin-left: 1.5%;"><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                				<%}%>
+                 
+                				<%else{%>
+                					<div id="ProgressNotePendingId" class="scrollBarCssForProgressNote">
+                					
+                					    <!-- Start of the table to display those progress note that status are pending-->
+                						<table class="table table-bordered" style="font-size: 9pt;">
+                						
+                							<tbody class="text-center">
+                								<% int showHeaderProgressNoteForPending = 0; %>
+                								<% int RowIndexForPendingProgressNote = 0; %>
+                								
+    					                            <%foreach(var WrapperExistingProgressNote in  DataBag.lstProgressNoteWithBillingStatusPending) { %>
+    						                  
+    						                            <% Html.Repeat(WrapperExistingProgressNote.lstProgressNoteInWrapper as IList, htmlProgressNote => { %>
+                			
+                        									<!--------- Start of Progress Note Table Header with Status Pending ------------->
+                        									<!---------- Set one variable to display header of  Progress Note only once ------->
+                        									<%if(showHeaderProgressNoteForPending==0){%>
+                        										<thead class="text-center backgroundForRelatedPendingProgressNote">
+                        											<tr>
+                        											    <%if(DataBag.IsStatusPendingBilling == false){%>  
+                            											    <th nowrap> 
+                                                                                <input type="checkbox" name="PendingProgressNoteCheckbox" 
+                                                                                        onchange="ListSelectUnSelectActionForPendingProgressNote(this);"/>
+                                                                            </th>
+                                                                        <%}%>
+                        												<!-- Print all fields(header) of Progress Note for available fields-->
+                        												<%foreach(var fieldProgressNote in  DataBag.lstProgressNoteFields) { %>  
+                        													<th nowrap>          
+                        													    <%=htmlProgressNote.LabelFor(fieldProgressNote)%>
+                        													</th> 
+                        												<%}%>
+                        											</tr>
+                        										</thead>
+                        										<!---------- End of Progress Note  Table Header ------------>
+                        			
+                        										<%  
+                        											showHeaderProgressNoteForPending=1;
+                        									}%> 
+                        			
+                        									<!------------Start of Progress Note records ------------->   
+                        									<tr>
+                        									    <%if(DataBag.IsStatusPendingBilling == false){%>   
+                        									    <td nowrap>
+                                                                    <input class="PendingProgressNoteCheckClass" type="checkbox" name="PendingProgressNoteCheckbox<%=RowIndexForPendingProgressNote%>" 
+                                                                                    <%if(WrapperExistingProgressNote.isSelected){%>
+                                                                                        checked
+                                                                                    <%}else{%>
+                                                                                        unchecked
+                                                                                    <%}%>
+                                                                    />
+                                                                </td>
+                                                                <%}%>
+                                                                <%foreach(var field in DataBag.lstProgressNoteFields) { %>
+                        											<td>
+                    								                    <%=htmlProgressNote.DisplayTextFor(field)%>
+                        							                </td>
+                        										<%}%>
+                        									</tr>
+                        									<% RowIndexForPendingProgressNote = RowIndexForPendingProgressNote+1; %>
+        						                    <% }); %> 
+    					                        <%} %>    
+                		 
+                							</tbody> 
+                						</table>
+                						 <!-- End of the table to display those progress note that status are pending-->
+                					</div><br/>
+                					<%if(DataBag.IsStatusPendingBilling == false){%>   
+                					<button id="Removebtn" type="button" class="btn backgroundForButton"  onclick="CheckSelectedCheckboxesForProgressNoteRecordsToRemove();showCustomValidationErrorPopup();showValidationErrorPopup();">
+                					    <span class="glyphicon glyphicon-remove-sign"></span>Remove
+                				    </button><br/>
+                				    <%}%>
+                				    
+                				<%}%> <!------------End of Else ---------------->
+                            <%}%> <!-------------- End of main If ---------------->
+                            <!----------  End Of Sub Section of Progress Note With Status "Pending Billing" ------------>
+                            <br/>
+                            
+                            <% if (DataBag.IsPreviewBillingSummary == false){%>
+                                <center>
+            				        <button id="PreviewBtn" type="button" class="btn backgroundForMainButton" onclick="ShowPreviewBillingSummary();">
+                					    <span class="glyphicon glyphicon-eye-open"></span>Preview Billing Summary
+                				    </button>
+            				    </center>
+            				<%}%>
+                        </div>
+                    <%}%>
+                    
+                    <!-- To show the section of progress notes on preview-->
+                    <% if (DataBag.IsPreviewBillingSummary == true){%>
+                        <div style="padding: 1%;">
+                            <b>Progress Notes</b><br/><br/>
+                            
+                            <div class="scrollForPreview">
+                        					
+        					    <!-- Start of the table to display those progress note For Preview-->
+        						<table class="table table-bordered" style="font-size: 9pt;">
+        						
+        							<tbody class="text-center">
+        								<% int showHeaderProgressNotePreview = 0; %>
+        								
+        								<% Html.Repeat(DataBag.lstPreviewProgressNotes as IList, htmlProgressNote => { %>
+        			
+        									<!--------- Start of Progress Note Table Header with Status Pending ------------->
+        									<!---------- Set one variable to display header of  Progress Note only once ------->
+        									<%if(showHeaderProgressNotePreview==0){%>
+        										<thead class="text-center backgroundForRelatedProgressNote">
+        											<tr>
+        												<!-- Print all fields(header) of Progress Note for available fields-->
+        												<%foreach(var fieldProgressNote in  DataBag.lstProgressNoteFields) { %>  
+        													<th nowrap>          
+        													    <%=htmlProgressNote.LabelFor(fieldProgressNote)%>
+        													</th> 
+        												<%}%>
+        											</tr>
+        										</thead>
+        										<!---------- End of Progress Note  Table Header ------------>
+        			
+        										<%  
+        											showHeaderProgressNotePreview=1;
+        									}%> 
+        			
+        									<!------------Start of Progress Note records ------------->   
+        									<tr>
+                                                <%foreach(var field in DataBag.lstProgressNoteFields) { %>
+        											<td>
+    								                    <%=htmlProgressNote.DisplayTextFor(field)%>
+        							                </td>
+        										<%}%>
+        									</tr>
+        									<!------------End  of Progress Note records ---------------->     
+        								<% }); %> 
+        		 
+        							</tbody> 
+        						</table>
+        						 <!-- End of the table to display those progress note For Preview-->
+        					</div>
+    				    </div>
+    				    
+                    <%}%>
+                    
+                </div>
+                <!--End of panel body--->
+            </div>
+            <!--End of panel--->
+        </div>
+        <!--End of Container--->
+        
+        <!-- Start of Error message for checkbox on popup-->
+        <div id="ErrorMessgeForCheckbox" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span id="SelectItemFromListErrorId"></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" data-dismiss="modal"><span class="glyphicon glyphicon-remove">&nbsp;Close</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        <!-- End of Error message for checkbox on popup-->
+        
+        <!-- Start of message for pending progress note checkbox on popup-->
+        <div id="MessgeForRemoveProgressNoteCheckbox" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span><%=CustomLabels.ShowMessageToRemoveProgressNoteConfirmation%></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" onclick="__doPostBack('RemovePendingProgressNoteRecordSelected');"><span class="glyphicon glyphicon-ok">&nbsp;Yes</button>
+                         <button type="button" class="btn backgroundForButton" data-dismiss="modal"><span class="glyphicon glyphicon-remove">&nbsp;No</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        <!-- End of message for pending progress note checkbox on popup-->
+        
+        <!-- Start of Confirmation message to save billing code of progress note on popup-->
+        <div id="MessgeForEditProgressNote" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span><%=CustomLabels.ShowConfirmationMessageToSaveBillingCodeOfProgressNote%></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" onclick="__doPostBack('SaveBillingCodeOfUnbilledProgressNotes');"><span class="glyphicon glyphicon-ok">&nbsp;Yes</button>
+                         <button type="button" class="btn backgroundForButton" data-dismiss="modal"><span class="glyphicon glyphicon-remove">&nbsp;No</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        <!-- End of Confirmation message to save billing code of progress note on popup-->
+        
+        <!-- Start of Confirmation  popup for Submit To Billing-->
+        <div id="ConfirmationPopupForSubmitBilling" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span id="ConfirmationMsgId"><%=CustomLabels.ShowMessageToSubmitToBillingForBillingSummary%></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" onclick="__doPostBack('UpdateStatusToCompleteForBillingSummary');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-ok">&nbsp;Yes</button>
+                         <button type="button" class="btn backgroundForButton" data-dismiss="modal"><span class="glyphicon glyphicon-remove">&nbsp;No</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        <!-- End of Error message for checkbox on popup-->
+        
+        <!-- Div to display in preview mode--->
+        <% if (DataBag.IsPreviewBillingSummary == true){%>
+            <div class="overlay PreviewClass"></div>
+        <%}%>
+        
+        <!-- Below hidden field contains if the list contains Approved progress Note or not-->
+        <input type='hidden' id="PendingProgressNoteId" value="<%=DataBag.IsPendingProgressNotePresent%>">
+        
+        <!-- Below hidden field contains boolean if the record is locked or not--->
+        <input type='hidden' id="BooleanStatusPendingBilling" value="<%=DataBag.IsStatusPendingBilling%>">
+        
+        <!-- Below hidden field contains the value of funder of Billing Summary--->
+        <input type='hidden' id="FunderOfBillingSummaryId" value="<%=DataBag.strFunderBillingSummary%>">
+        
+        <!-- Below hidden field contains the value of Progress Note object id--->
+        <input type='hidden' id="progressNoteObjectId" value="<%=DataBag.strProgressNoteObjectId%>">
+        
+        <!-- Below hidden field contains the value of Biling code field id on Progress note object--->
+        <input type='hidden' id="billingCodeFieldId" value="<%=DataBag.strBillingCodeFieldId%>">
+        
+    <%}%>
+    
+    <script>
+        
+        changeBillingCodeLookupIDAndName();
+        
+        // Method to remove popup when saving if there is no error
+        //NOTE: This should be added after element created on the page [It does not work if in js]
+        $('#errorModal').on('hidden.bs.modal', function () {
+           if($("#errorModal .validation-summary-errors ul li").size()>0 ){
+                $("#errorModal .validation-summary-errors ul li").remove();
+            }
+        });
+         
+        // Method to remove custom popup when saving if there is no error while performing DML operation
+        $('#errorCustomModal').on('hidden.bs.modal', function () {
+           if($("#errorCustomModal .ServerExceptionCustomClass").size()>0 ){
+                        
+                $("#errorCustomModal .ServerExceptionCustomClass").remove();
+            }
+        });
+        
+        //Change width and apply class to the picklist field of expense report
+        $('#BillingSummaryObjectSectionID select').css('width','44%');
+        $('#BillingSummaryObjectSectionID select').addClass('form-control');
+    </script>
+</body>
+</aspx:AspxPage>

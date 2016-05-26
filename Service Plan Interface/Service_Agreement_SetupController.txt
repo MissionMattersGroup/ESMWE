@@ -1,0 +1,181 @@
+[SerializeViewData]
+public class Service_Agreement_SetupController : AspxController
+{
+    
+     /*
+     * Description : This controller is used to add and save Service Plan Agreement Section Records
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Twinkle P           14/4/2016                    Initial Draft
+     */
+     
+     
+	public override ActionResponse Index()
+	{
+	    
+	    //Store the list of Service Plan to display on the Page
+	    DataBag.lstServicePlanAgreement                        = new List<Force__Service_Plan_Section__c>();
+	    
+	    //string for fields comma seperated values for Service Agreement Section
+	    string strServiceAgreementFields                       = "Title_Of_Section__c,Section_Content__c,Collapse_Section__c";
+	    
+	    // Getting all fields of 'Service Agreement Fields' dynamically form 'Service Plan Section' Object
+	    DataBag.ServiceAgreementFields                         = getTheCommaSeperatedValues(strServiceAgreementFields);
+	    
+	    //Fetch the Object Configuration record  
+		Force__Object_Configuration__c objConfig               = Database.Query<Force__Object_Configuration__c>()
+	                                                                    .OrderByDescending(f=>f.CreatedOn)  
+	                                                                    .First();
+	    //Store the picklist value of the Service Plan Agreement
+	    string strServicePlanAgreementPicklist                = CustomLabels.ServiceAgreementPlanPicklistForServiceAgreementPlanSetupPage;
+	    
+	    //Fetch the Force__Service_Plan_Section__c  record that is related to the Object Configuration
+	    DataBag.lstServicePlanAgreement                        = Database.Query<Force__Service_Plan_Section__c>()
+	                                                                    .Where(f=>f.Object_Configuration__c==objConfig.Id && f.SectionType__c == strServicePlanAgreementPicklist)
+	                                                                    .OrderBy(f=>f.CreatedOn)  
+	                                                                    .ToList();  
+	  
+	    //If there is no record present in the Databag then display one section atleast by adding a blank instance
+	    if(DataBag.lstServicePlanAgreement.Count==0){
+	        
+	         Force__Service_Plan_Section__c  objNewServiceAgreement = new Force__Service_Plan_Section__c();
+	         
+	         //Add a blank instance to the Service Plan Agreement
+	         DataBag.lstServicePlanAgreement.Add(objNewServiceAgreement); 
+	    }    
+		return View();
+	}
+	
+	/*
+    * Description: Method to return to Previous Page ie Rich Text Area Setup Page
+    * Input      : 
+    * Output     : Returns to Rich Text Area Setup Page
+    */
+	[HttpPost]
+	public ActionResponse PreviousServicePlanAgreementSection()
+	{   
+	    return Redirect(ActivePages.ServicePlanSetupRichTextAreaPage);
+	} 
+	
+	
+	/*
+    * Description: Method to Cancel all the changes and go to the home page
+    * Input      : 
+    * Output     : Returns to Rich Text Area Setup Page
+    */
+	[HttpPost]
+	public ActionResponse CancelServicePlanAgreementSection()
+	{   
+	    return Redirect("~/Home/Index");
+	} 
+	/*
+    * Description: Method to Add Row for Service Plan Agreement
+    * Input      :
+    * Output     : Add more rows for Service Plan Agreement
+    */
+	[HttpPost]
+	public ActionResponse AddRowServicePlanAgreementSection()
+	{   
+	    Force__Service_Plan_Section__c  objNewServicePlanAgreement = new Force__Service_Plan_Section__c();
+	    //Add new instance to the Service Plan Agreement list
+		DataBag.lstServicePlanAgreement.Add(objNewServicePlanAgreement);
+	    return View();
+	} 
+
+	/*
+    * Description: Method to Remove Row for Service Plan Agreement
+    * Input      : 
+    * Output     : Remove the rows for Service Plan Agreement
+    */
+	[HttpPost]
+	public ActionResponse RemoveRowServicePlanAgreementSection()
+	{   
+	    
+	    if(DataBag.lstServicePlanAgreement.Count>1){
+	        
+	        // Store the Id of the Row Record for Service Plan Agreement Section     
+	        string strRowIds = DataBag.lstServicePlanAgreement[DataBag.lstServicePlanAgreement.Count-1].Id;
+	        
+	        //If  the Id of the Record Exist then the record will be deleted from the backend
+	        if(!string.IsNullOrEmpty(strRowIds)){
+                Force__Service_Plan_Section__c objServiceAgreementPlan         = Database.Query<Force__Service_Plan_Section__c>()
+                                                                                      .Where(f=>f.Id == strRowIds)
+                                                                                      .First(); 
+                Delete(objServiceAgreementPlan);
+            
+	  
+	        }
+	        //Decrement the count of the Records from the DataBag
+	        DataBag.lstServicePlanAgreement.RemoveAt(DataBag.lstServicePlanAgreement.Count-1);
+	    }
+	    else{
+	        //Display error message when the user tries to remove the First Section.
+	        AspxPage.AddError("First Section cannot be removed!!");
+	        return View();
+	    }
+	    return View();
+	     
+	}
+	/*
+    * Description: Method to save Service Plan Agreement Section
+    * Input      : 
+    * Output     : save Service Plan Agreement Section records
+    */
+	[HttpPost]
+	public ActionResponse SaveRowServicePlanAgreementSection()
+	{   
+	    int count = 0;
+	    
+	    List<Force__Service_Plan_Section__c> lstServicePlanAgreement = new List<Force__Service_Plan_Section__c>();
+	    
+	    Force__Object_Configuration__c objConfig                     = Database.Query<Force__Object_Configuration__c>()
+	                                                                    .OrderByDescending(f=>f.CreatedOn)  
+	                                                                    .First();
+	    foreach (var newServicePlanAgreementObj in DataBag.lstServicePlanAgreement)
+        {
+            foreach (var field in DataBag.ServiceAgreementFields)
+            {
+                if(field !="Id"){
+                    string val = Request["m$" + count.ToString() + "$." +  field];
+                    
+            
+                    newServicePlanAgreementObj.Set(field, val);
+                    
+                    if(objConfig != null){
+                        newServicePlanAgreementObj.Object_Configuration__c = objConfig.Id;
+                        newServicePlanAgreementObj.SectionType__c          = CustomLabels.ServiceAgreementPlanPicklistForServiceAgreementPlanSetupPage;
+                    }  
+                   
+                }
+            }
+            lstServicePlanAgreement.Add(newServicePlanAgreementObj);    
+            count++;
+        }
+        
+        try {
+                Upsert(lstServicePlanAgreement);
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+	    return Redirect(ActivePages.Service_Agreement_Setup);
+	}
+	
+    /*
+	* Description: Method to get the list of fields in comma seperated double quote to be accessed by the DataBag
+	* Input      : strOfFields : The fields in comma seperated format
+    * Output     : lstOfFieldForTheObj: returns a list of fields which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public List<string> getTheCommaSeperatedValues(string strOfFields){
+	    
+	    List<string> lstOfFieldForTheObj = new List<string>();
+	    if(strOfFields != null){
+	        var tempConfig = (string)strOfFields;
+            string[] separators = {","};
+            lstOfFieldForTheObj = tempConfig.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();
+	    }
+	    return lstOfFieldForTheObj;      
+	}
+	
+}

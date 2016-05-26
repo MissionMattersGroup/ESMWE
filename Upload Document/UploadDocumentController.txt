@@ -1,0 +1,396 @@
+[SerializeViewData]
+public class UploadDocumentController : AspxController
+{
+    /*
+     * Description : This controller is used to upload the file related to the SSN number entered by the user 
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Twinkle P           3/3/2016                     Initial Draft [ESMWE-278]
+     * 1.2                  Twinkle P           3/3/2016                     Save the File in the Format of Name-Exp Date-Version
+     *                                                                       and Added a Wrapper Class to store the Checkbox Value
+     * 1.3                  Twinkle P           3/8/2016                     Save the document tracking and attachment to the related Contact
+     *                                                                       selected by the user.
+     * 1.4                  Twinkle P           3/17/2016                    Updated the functionality to fetch the contact id and remove SSN search.
+     * 1.5                  Twinkle P           3/18/2016                    Added the functionality to update the URL and on click of the 'View Document'
+     *                                                                       and handle the issue of reload after 'Save'.
+     * 1.6                  Anuradha N          31/3/2016                    Added the functionality to show the document type and accordingly file name on the page
+     * 1.7                  Anuradha N          18/05/2016                   Add description text box to Document upload screen and related list on contact [ESMWE-638]
+     */
+	//Intialise the Contact List which stores the dynamic list
+    public    List<Force__Contact> lstContact;
+    string strContactId;
+    
+	//Constructor
+	
+	public override ActionResponse Index()
+	{
+	    //Intialize the model for Document Tracking
+	    var model = new CustomDocumentModel();
+	    
+	    // This Databag list is used to store the value of Contact object and Checkbox Value in Wrapper
+	    DataBag.lstContactObj =  new List<Force__Contact>();
+	    
+	    //Intialize the list for List of Contact
+	    lstContact = new List<Force__Contact>();
+	    
+	    //Query the contact on which the upload view is accessed through the detail view
+	    searchContact();
+	    
+	    DataBag.strViewAsRelatedList = AspxPage.GetParameter("viewAsRelatedList");
+	    
+	    //set the Databag value to true if the upload process is successful
+	    DataBag.IsUploadSuccessful = "false";
+	    
+	    //Set the Databag value if the process is successful
+	    DataBag.IsSuccessful =  "false";
+	    
+		return View(model);
+	}
+	
+	/*
+    * Description: Method to search the contact related to the SSN number and list of the Page
+    * Input      : model: Force__Document_Tracking__c model which contains the value entered through the page.
+    * Output     : Fetch the list of Contact matched by the SSN number inserted.
+    */
+	[HttpPost]
+	public  ActionResponse searchContact(){
+        
+        //Fetch the contact id for which the file needs to be uploaded
+	    strContactId = AspxPage.GetParameter("id");
+	    //Query for Contact to filter the contact 
+        string queryStr="SELECT ";
+        queryStr+= "Name ";
+        queryStr+= "FROM Force__Contact ";
+        queryStr+= "WHERE Id =\""+strContactId+"\"";
+        queryStr+= "  LIMIT 1";
+        
+        //List to store the contact matched related to SSN number entered
+        lstContact = (List<Force__Contact>)Database.Query(queryStr);
+        DataBag.lstContactObj = lstContact;
+	    return View();
+	    
+	}
+	/*
+    * Description: Method to insert 'Document Tracking' and related to 'Contact' fetched through the SSN number entered by the Portal User
+    * Input      : model: Force__Document_Tracking__c model which contains the value entered through the page.
+    *              attchId: The content of the File Uploaded.
+    * Output     : Insert the Document Tracking Records and Attached the File related To  Document Tracking
+    */
+	[HttpPost]
+	public  ActionResponse uploadDocument(CustomDocumentModel model, HttpPostedFile attchId){
+	    
+	    //Fetch the contact id for which the file needs to be uploaded
+	    strContactId = AspxPage.GetParameter("id");
+	    
+        //Intialize the Document Tracking List                                  
+	    List<Force__Document_Tracking__c> lstDocumentTrack = new List<Force__Document_Tracking__c>();
+	    
+	    //Stored the content of the file
+        string strContent = Convert.ToBase64String(attchId.FileBytes());
+        
+        //Check the content and the Document Tracking model is not null
+	    if(model != null && !string.IsNullOrEmpty(strContent)){
+	        
+	        //Assign the value from the page to Document Tracking instance
+               
+            Force__Document_Tracking__c objDocumentTrack = new Force__Document_Tracking__c();
+            objDocumentTrack.File_Name__c       = model.File_Name__c;
+            objDocumentTrack.Document_Type__c   = model.Document_Type__c;
+            objDocumentTrack.Version_Number__c  = 1.01M;
+            objDocumentTrack.Expiration_Date__c = model.Expiration_Date__c;
+            objDocumentTrack.Contact__c         = DataBag.lstContactObj[0].Id;
+            //Update the email field if the document is uploaded by the portal user.
+            objDocumentTrack.Staff_Member_Email__c    = SystemInfo.UserInfo.Email;   
+            objDocumentTrack.Document_Description__c = model.Document_Description__c;
+            
+            try{
+                 Insert(objDocumentTrack);
+            }
+            catch(DatabaseException ex){
+                //show the error messages to the user incase the document not inserted.
+                ModelState.AddModelError(ex);
+                return View();
+            }
+            saveAttachment(objDocumentTrack,attchId,strContent);
+            
+            DataBag.IsUploadSuccessful = "true";
+            
+            if (DataBag.strViewAsRelatedList == "true") {
+                DataBag.IsSuccessful = "true";
+            }
+	  	}
+	  	
+	    return View();
+	}
+
+	/*
+    * Description: Method to insert attachment related to 'Document Tracking' and related to 'Contact' fetched
+    *              through the SSN number entered by the Portal User
+    * Input      : model: Force__Document_Tracking__c model which contains the value entered through the page.
+    *              attchId: The content of the File Uploaded.
+    * Output     : Insert the Document Tracking Records and Attached the File related To  Document Tracking
+    */
+	[HttpPost]
+	public ActionResponse saveAttachment(Force__Document_Tracking__c objDocumentTrack, HttpPostedFile attchId, string strContent){
+               
+        //Store the File Name of the uploaded document
+        string fileName= attchId.FileName;
+        
+        //Intialise the string to empty in which the extension
+        string ext = string.Empty;
+        
+        int fileExtPos = fileName.LastIndexOf(".", StringComparison.Ordinal);
+        if (fileExtPos >= 0)
+            ext = fileName.Substring(fileExtPos, fileName.Length - fileExtPos);
+        
+        //Assign the value Attachment that needs to be inserted.
+        Force__Attachment objAttachment = new Force__Attachment {
+            
+                Name =   objDocumentTrack.File_Name__c+"-"+ 
+                         String.Format("{0:M/d/yyyy}", objDocumentTrack.Expiration_Date__c) +"-"+
+                         objDocumentTrack.Version_Number__c+                              
+                         ext,
+                Body=strContent,
+                ParentId=objDocumentTrack.Id,
+                ContentType = attchId.ContentType
+        };
+       
+        try{
+               //Insert the document uploaded by the User.    
+                Insert(objAttachment);
+        }
+        catch(DatabaseException ex){
+                //show the error messages to the user incase the document not inserted.
+                ModelState.AddModelError(ex);
+                return View();
+                
+        }
+        updateTheURLOnDocumentUpload(objDocumentTrack,objAttachment);
+        
+        return View();
+	}
+	
+	/*
+    * Description: Method to update the Url to view the document in the related list of Document Tracking for the Attachment in Contact Detail View
+    * Input : lstDocumentTrack: The document tracking record inserted, lstAttachment: the attachment inserted related to the Document Tracking.
+    * Output: Update the url value on the Document Tracking Record    
+    */
+	[HttpPost]
+	public ActionResponse updateTheURLOnDocumentUpload(Force__Document_Tracking__c objDocumentTrack, Force__Attachment objAttachment)
+    {
+        //String used to store the document tracking record inserted.
+        string strDocuId = objDocumentTrack.Id;
+        
+        //Query all the records related to Document Tracking which match the lstDocumentTrackId list
+        Force__Document_Tracking__c ObjOfDocumentTracking = Database.Query<Force__Document_Tracking__c>()
+                    	                                                         .Where(f=>f.Id==strDocuId)
+                    	                                                         .First();
+        //Assigned the attachment id with url formed to download the file on click of View File on Detail Page or Related list of Contact            	                                                         
+        ObjOfDocumentTracking.View_Document__c           = CustomLabels.UploadDocument_URL_For_Salesforce+objAttachment.Id;
+        ObjOfDocumentTracking.View_Document_Magentrix__c = CustomLabels.UploadDocument_URL_For_Magentrix+objAttachment.Id;
+        
+        try{    
+            //Update the Document Tracking Record with the URL to view file.
+            Edit(ObjOfDocumentTracking);
+        }
+        catch(DatabaseException ex){
+            //show the error messages to the user incase the document not inserted.
+            ModelState.AddModelError(ex);
+            return View();
+        }
+        return View();
+    }
+    
+	/*
+    * Description: Method to redirect to the Criteria Page
+    */
+	[HttpPost]
+	public ActionResponse CancelChanges()
+    {
+        return Redirect("~/aspx/UploadDocument");
+    }
+    
+    /*
+    * Description: Method to update the existing document
+    * Input      : model: Force__Document_Tracking__c model which contains the value entered through the page.
+    */
+	[HttpPost]
+	public ActionResponse updateExistingFile(CustomDocumentModel model,HttpPostedFile attchId)
+    {
+        string strFileName = model.File_Name__c;
+        
+        //Fetch the contact id for which the file needs to be uploaded
+	    strContactId = AspxPage.GetParameter("id");
+        
+        Force__Document_Tracking__c objDocumentTracking = Database.Query<Force__Document_Tracking__c>()
+                                                                  .Where(f=>f.File_Name__c==strFileName && f.Contact__c == strContactId)
+                                                                  .OrderByDescending(f=>f.Version_Number__c)
+	                                                              .First();
+	                                                              
+	    if (objDocumentTracking != null) {
+	        
+	        string versionNumber = ""+objDocumentTracking.Version_Number__c;
+	    
+	        string subStrVersionNumber = versionNumber.Substring(0,4);
+	    
+    	    objDocumentTracking.File_Name__c       = model.File_Name__c;
+            objDocumentTracking.Document_Type__c   = model.Document_Type__c;
+            objDocumentTracking.Expiration_Date__c = model.Expiration_Date__c;
+            objDocumentTracking.Document_Description__c = model.Document_Description__c;
+            try{
+                 Edit(objDocumentTracking);
+            }
+            catch(DatabaseException ex){
+                //show the error messages to the user incase the document not inserted.
+                ModelState.AddModelError(ex);
+                return View();
+            }
+            
+    	    //Stored the content of the file
+            string strContent = Convert.ToBase64String(attchId.FileBytes());
+            
+            //Store the File Name of the uploaded document
+            string fileName= attchId.FileName;
+            
+            //Intialise the string to empty in which the extension
+            string ext = string.Empty;
+            
+            int fileExtPos = fileName.LastIndexOf(".", StringComparison.Ordinal);
+            if (fileExtPos >= 0)
+                ext = fileName.Substring(fileExtPos, fileName.Length - fileExtPos);
+                
+    	    Force__Attachment objAttachment = Database.Query<Force__Attachment>()
+                                                      .Where(f=>f.Name.Contains(objDocumentTracking.Name) && f.ParentId==objDocumentTracking.Id)
+                                                      .First();
+            objAttachment.Name =  objDocumentTracking.File_Name__c+"-"+ 
+                    String.Format("{0:M/d/yyyy}", objDocumentTracking.Expiration_Date__c) +"-"+
+                    subStrVersionNumber+ ext;
+            
+            objAttachment.Body=strContent;
+            objAttachment.ParentId=objDocumentTracking.Id;
+            objAttachment.ContentType = attchId.ContentType;
+            
+            try{
+                 Edit(objAttachment);
+            }
+            catch(DatabaseException ex){
+                //show the error messages to the user incase the document not inserted.
+                ModelState.AddModelError(ex);
+                return View();
+            }
+            
+            updateTheURLOnDocumentUpload(objDocumentTracking,objAttachment);
+	    }
+        
+        DataBag.IsUploadSuccessful = "true";
+        
+        if (DataBag.strViewAsRelatedList == "true") {
+            DataBag.IsSuccessful = "true";
+        }
+        
+	    return View();
+    }
+    
+    /*
+    * Description: Method to upload new version of the existing file
+    * Input      : model: Force__Document_Tracking__c model which contains the value entered through the page.
+    */
+	[HttpPost]
+	public ActionResponse uploadNewVersionOfFile(CustomDocumentModel model,HttpPostedFile attchId)
+    {
+        string strFileName = model.File_Name__c;
+        
+        //Fetch the contact id for which the file needs to be uploaded
+	    strContactId = AspxPage.GetParameter("id");
+        
+        Force__Document_Tracking__c objExistingDocumentTracking = Database.Query<Force__Document_Tracking__c>()
+                                                                  .Where(f=>f.File_Name__c==strFileName && f.Contact__c == strContactId)
+                                                                  .OrderByDescending(f=>f.Version_Number__c)
+	                                                              .First();
+        
+        if (objExistingDocumentTracking != null) {
+            
+            Force__Document_Tracking__c objNewDocumentTracking = new Force__Document_Tracking__c();
+            
+            objNewDocumentTracking.File_Name__c             = model.File_Name__c;
+            objNewDocumentTracking.Document_Type__c         = model.Document_Type__c;
+            objNewDocumentTracking.Expiration_Date__c       = model.Expiration_Date__c;
+            objNewDocumentTracking.Version_Number__c        = objExistingDocumentTracking.Version_Number__c + 0.01M;
+            objNewDocumentTracking.Contact__c               = strContactId;
+            //Update the email field if the document is uploaded by the portal user.
+            objNewDocumentTracking.Staff_Member_Email__c    = SystemInfo.UserInfo.Email; 
+            objNewDocumentTracking.Document_Description__c    = model.Document_Description__c; 
+            
+            try{
+                 Insert(objNewDocumentTracking);
+            }
+            catch(DatabaseException ex){
+                //show the error messages to the user incase the document not inserted.
+                ModelState.AddModelError(ex);
+                return View();
+            }
+            
+            //Stored the content of the file
+            string strContent = Convert.ToBase64String(attchId.FileBytes());
+            
+            //Store the File Name of the uploaded document
+            string fileName= attchId.FileName;
+            
+            //Intialise the string to empty in which the extension
+            string ext = string.Empty;
+            
+            int fileExtPos = fileName.LastIndexOf(".", StringComparison.Ordinal);
+            if (fileExtPos >= 0)
+                ext = fileName.Substring(fileExtPos, fileName.Length - fileExtPos);
+                
+            string versionNumber = ""+objNewDocumentTracking.Version_Number__c;
+	    
+    	    string subStrVersionNumber = versionNumber.Substring(0,4);
+                
+            Force__Attachment objNewAttachment = new Force__Attachment();
+            
+            objNewAttachment.Name =  objNewDocumentTracking.File_Name__c+"-"+ 
+                    String.Format("{0:M/d/yyyy}", objNewDocumentTracking.Expiration_Date__c) +"-"+
+                    subStrVersionNumber + ext;
+            objNewAttachment.Body=strContent;
+            objNewAttachment.ParentId=objNewDocumentTracking.Id;
+            objNewAttachment.ContentType = attchId.ContentType;
+            
+            try{
+                 Insert(objNewAttachment);
+            }
+            catch(DatabaseException ex){
+                //show the error messages to the user incase the document not inserted.
+                ModelState.AddModelError(ex);
+                return View();
+            }
+            
+            updateTheURLOnDocumentUpload(objNewDocumentTracking,objNewAttachment);
+        }
+        
+        DataBag.IsUploadSuccessful = "true";
+        
+        if (DataBag.strViewAsRelatedList == "true") {
+            DataBag.IsSuccessful = "true";
+        }
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to upload new file
+    * Input      : strFileName contains the name of the file and strContactId contains the contact id passed in the url
+    */
+	public ActionResponse uploadNewFile(string strFileName,string strContactId)
+    {
+        //Fetch the contact id for which the file needs to be uploaded
+        Force__Document_Tracking__c objDocumentTracking = Database.Query<Force__Document_Tracking__c>()
+                                                                  .Where(f=>f.File_Name__c==strFileName && f.Contact__c == strContactId)
+                                                                  .OrderByDescending(f=>f.Version_Number__c)
+	                                                              .First();
+	    return Json(objDocumentTracking,true);
+    }
+    
+    //Model Interface for the Document Tracking Object Value from the Page
+	public class CustomDocumentModel : Force__Document_Tracking__c{}
+	
+}

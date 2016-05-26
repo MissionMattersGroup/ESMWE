@@ -1,0 +1,765 @@
+[SerializeViewData]
+public class BillingSummaryInterfaceController : AspxController
+{
+    /*
+    * Description : This controller is used to display Billing Summary Interface
+    * Version               Author            Date (DD-MM-YYYY)             Change Log
+    *  1.1                  Twinkle P            25/04/2016                 Initial Draft
+    *  1.2                  Anuradha N           26/04/2016                 Implement functionality to search and display progress notes for Billing Summary Interface on load
+    *  1.3                  Twinkle P            26/04/2016                 Implement the functionality to display the Progress Notes(Pending) records and added a filter criteria 
+    *                                                                       that the Funder Id of the Progress match the Billing Summary.
+    *  1.4                  Anuradha N           27/04/2016                 Implement 'Preview Billing Summary' functionality on Billing Summary Interface
+    *  1.5                  Twinkle P            27/04/2016                 Implemented the functionality to Add the Progress Note Record to  "Progress Notes(Pending)" Section on 
+    *                                                                       click of "Add To Billing" [ESMWE-538]
+    *  1.6                  Anuradha N           2/05/2016                  Implement the functionality to remove progress notes from pending progress notes [ESMWE-574] 
+    *  1.7                  Anuradha N           2/05/2016                  Implement the functionality to make "Edit Billing Information" Button on Billing summary interface [ESMWE-575]
+    *  1.8                  Twinkle P            2/05/2016                  Implemented the functionality to Submit the Billing record and update the status to "Pemding Billing" [ESMWE-576] 
+    *  1.9                  Twinkle P            4/05/2016                  Implemented the functionality to Filter Unbilled Progress Note Interface [ESMWE-577]
+    *  1.10                 Anuradha N           19/05/2016                 Implemented functionality to hide progress note(Unbilled) section when status is other than "In Progress"[ESMWE-648]
+    */
+     
+    // This variable is used to store the value of Billing Summary id passed in URL
+    string strBillingSummaryId;
+    
+    // This variable is used to store the value of Type View passed in URL
+    string strBillingSummaryTypeView;
+    
+	public override ActionResponse Index()
+	{
+	    //Declaration and Intialization of the DataBag and String 
+	    init();
+	    
+	    //check the page url contains typeView if not contains return error message to page
+	    // otherwise go forward to inside the code for fetch id 
+	    string strCurrentURL = Request.Url.AbsoluteUri;
+        bool bType=strCurrentURL.Contains("?typeView=");
+        
+        if(bType==false){
+        	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+        	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryType;
+            return View(); 
+	    }
+	    else {
+	        // Stores the type of the page which is passed as a param in the URL
+            strBillingSummaryTypeView = AspxPage.GetParameter("typeView");
+            
+            //if the TypeView is blank or empty then show the error message on page
+            if(string.IsNullOrEmpty(strBillingSummaryTypeView)){
+               	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+               	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryType;
+               	return View();
+            }
+            else{ 
+                // if TypeView contains value
+                strBillingSummaryTypeView =  strBillingSummaryTypeView.ToLower();
+                
+                // Check if TypeView values are not equal to edit and detail show error message on page
+                if (!strBillingSummaryTypeView.Equals("edit") &&
+                    !strBillingSummaryTypeView.Equals("detail")) {
+                    AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);  
+                    DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryType;
+           	        return View();
+                }
+                else { 
+                    // if TypeView Contains correct values
+                    // if TypeView is equal to edit or detail then check for the Billing Summary id
+                    if (strBillingSummaryTypeView.Equals("edit") || strBillingSummaryTypeView.Equals("detail")) {
+                        DataBag.strBillingSummaryTypeView = strBillingSummaryTypeView;
+                        
+                        bool bId = strCurrentURL.Contains("id=");
+                        //Check if URL contains Id parameter if not then show the error message
+                        if(bId==false){
+                        	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+                        	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryId;
+                            return View(); 
+                	    }
+                	    else { // Url contains Id paramter
+                	        // Stores the type of the id which is passed as a param in the URL
+                            strBillingSummaryId = AspxPage.GetParameter("id");
+                            
+                            //Check the Id is blank
+                            if(string.IsNullOrEmpty(strBillingSummaryId)){
+                               	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+                               	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryId;
+                               	return View();
+                            }
+                            else {
+        	                    
+        	                    //Assign the dynamic query to the Billing Summary
+        		                List<Force__Billing_Summary__c> lstBillingSummaryObj = new List<Force__Billing_Summary__c>();
+        		                lstBillingSummaryObj = getBillingSummary(strBillingSummaryId);
+        		                
+        		                if(lstBillingSummaryObj != null && lstBillingSummaryObj.Count() > 0) {
+        		                    
+        		                    DataBag.DisplayBSI = true;
+        		                    
+        		                    DataBag.lstBillingSummaryObj = lstBillingSummaryObj;
+        		                    
+        		                    DataBag.strFunderBillingSummary = lstBillingSummaryObj[0].Billing_Summary_Funder__c;
+        		                    
+        		                    DataBag.strBillingSummaryId = strBillingSummaryId;
+        		                    
+        		                    //Check if the Billing Summary Status is "Pending Billing" or Not
+        		                    CheckStatusPendingBilling();
+        		                    
+        		                    // Call this method to access records of progress Note
+                                    getProgressNoteRecordsWithBillingStatusUnbilled();
+                                   
+                                    // Call this method to access records of Progress Note with Status "Pending Billing" 
+        		                    getProgressNoteWithBillingStatusPendingBilling();
+        		                    
+        		                    //To get the progress note object id and billing code field id
+        		                    getObjectAndFieldId();
+        		                    
+        		                    showInDetailViewWhenRecordLocked();
+        		                    
+        		                    // Check if Expense Report's status is 'In Progress'
+        		                    CheckStatusInPogress();
+        		                }
+        		                else {
+        		                    AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+        		                    DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryId;
+        		                    return View();
+        		                }
+                            }
+                	    }
+                    }
+                }
+            }
+	    }
+		return View();
+	}
+	
+	/*
+	* Description: Method to intialize the DataBag and the string with appropriate value
+	*/
+	public void init(){
+	    //This databag variable is used to show the Billing Summary interface or hide it
+	    DataBag.DisplayBSI = false;
+	    
+	    //string for fields commaseprated values for Billing Summary 
+	    string strBillingSummaryFields = "Name,Billing_Summary_Funder__c,Billing_Service_Type__c,Billing_Summary_Billing_Code__c,Billing_Summary_Billing_Date__c,Billing_Summary_Status__c";
+	    
+	    //This data bag is used to store the fields commaseprated values for Billing Summary
+	    DataBag.strBillingSummaryFields = strBillingSummaryFields;
+	    
+	    //This databag contains the  Billing Summary comma separated fields to access on the page and get/set the values from the page
+	    DataBag.lstBillingSummaryFields = getTheCommaSeperatedValues(strBillingSummaryFields);
+	    
+	    // This Databag is used to store the value of TypeView
+	    DataBag.strBillingSummaryTypeView="";
+	    
+        // This Databag list is used to store the value of Billing_Summary object
+	    DataBag.lstBillingSummaryObj = new List<Force__Billing_Summary__c>();
+	    
+        // This Databag is used to store the value of Billing Summary Id
+	    DataBag.strBillingSummaryId="";
+	    
+        //This Databag is used to store the error message
+	    DataBag.errorMessage = "";
+	    
+	    // This Databag is used to store the exception occured on page
+	    DataBag.Exception = ""; 
+	    
+	    //This databag is used to store the data of existing Progress Note
+        DataBag.lstProgressNoteWithBillingStatusUnbilled = new List<WrapperForProgressNote>();
+        
+        //DataBag for fields comma seperated values for Progress note
+	    DataBag.strProgressNoteFields = "Client__c,Service__c,Time_In__c,Time_Out__c,Units_of_service__c,Billing_Code__c,Staff_Name__c";
+	    
+	    //This databag contains the progress note comma separated fields
+	    DataBag.lstProgressNoteFields = getTheCommaSeperatedValues(DataBag.strProgressNoteFields);
+	    
+	    //This databag is used to store the unbilled billing status of progress note 
+        DataBag.strBillingStatusUnbilled = "Unbilled";
+    
+        //This databag is used to store the Completed status of progress note 
+        DataBag.strStatusCompleted = "Completed";
+        
+	    /*************************************List of Progress Note With Pending Billing******************************/
+	    //This databag is used to store the data of Progress Note with Status "Pending Billing"
+	    DataBag.lstProgressNoteWithBillingStatusPending = new List<Force__Progress_Note__c>();
+	    
+	    //This databag is used to store the Billing Status "Pending Billing"
+        DataBag.strBillingStatusPending = "Pending Billing";
+        
+	    /*************************************List of Progress Note With Pending Billing******************************/
+	    //This databag is used to show the preview of the Billing Summary interface
+        DataBag.IsPreviewBillingSummary = false; 
+        
+        //This databag is used to store the list of progress note to preview
+        DataBag.lstPreviewProgressNotes = new List<Force__Progress_Note__c>();
+        
+        //This databag is used to check Pending Progress note records present or not
+        DataBag.IsPendingProgressNotePresent = "false";
+        
+        //This databag is used for mass edit
+        DataBag.IsMassEditUnbilledProgressNotes = false;
+        
+        /***************************************Start Of Submit Billing******************************************************/
+        // This Databag is used to set the boolean as true when status is 'Pending Billing'
+	    DataBag.IsStatusPendingBilling = false;
+	    
+	    // This Databag is used to store the value of Funder of Billing Summary
+	    DataBag.strFunderBillingSummary = "";
+	    
+	    // This Databag is used to store the Progress Note Object Id
+	    DataBag.strProgressNoteObjectId = "";
+	    
+	    // This Databag is used to store the Billing code field Id on progress note object
+	    DataBag.strBillingCodeFieldId = "";
+	    /***************************************End of Submit Billing******************************************************/
+	    // This Databag is used to set the boolean as true when status is In Progress
+	    DataBag.IsStatusInProgress = false;
+	}
+	
+
+	/*
+    * Description: Method to to get Billing Summary Details
+    * Input      : Id(string) of Billing Summary
+    * Output     : List of Billing Summary
+    */
+	public List<Force__Billing_Summary__c> getBillingSummary(string strBillingSummaryId) 
+	{
+    	//Start --Billing Summary Query Record Fetch and Create List of Fields to display 
+        string queryStr = "SELECT";
+        string fixFieldsBillingSummary = " Id,Billing_Summary_Funder__c";
+        queryStr+= createQueryStringFields(fixFieldsBillingSummary,DataBag.strBillingSummaryFields,"Force__Billing_Summary__c");
+        queryStr+=" WHERE Id=\""+strBillingSummaryId+"\"";
+        queryStr+=" LIMIT 1";
+        
+        //Assign the dynamic query to the Billing Summary
+        return  (List<Force__Billing_Summary__c>)Database.Query(queryStr);
+	}
+	
+	/*
+    * Description: Method to save the  Billing Summary with the updated values
+    * Input      : 
+    * Output     : Redirects to the Page with updated values  Billing Summary Interface
+    */
+	[HttpPost]
+	public ActionResponse SaveBillingSummary() {
+	    
+	    int count = 0;
+	    
+	    foreach (var billingSummaryObj in DataBag.lstBillingSummaryObj) 
+	    {
+	        foreach (var fields in DataBag.lstBillingSummaryFields) 
+	        {
+	            string val = Request["m$" + count.ToString() + "$." +  fields];
+                billingSummaryObj.Set(fields, val);
+	        }
+	        count++;
+	    }
+	    // On save check if Expense Report id is present then update the record otherwise create the new record of Billing Summary
+	     if(DataBag.lstBillingSummaryObj.Count > 0 && DataBag.strBillingSummaryTypeView == "edit") {
+	   
+	        
+	        if(string.IsNullOrEmpty(DataBag.lstBillingSummaryObj[0].Id)) {
+	            try{
+	                Insert(DataBag.lstBillingSummaryObj);
+	                 //If the DML is successful then clear the value so that no expection is displayed
+	                DataBag.Exception = ""; 
+	            }
+	            catch(Exception e){
+	                DataBag.Exception = e.Message;
+                    return View();
+	            }
+	            DataBag.strBillingSummaryId = DataBag.lstBillingSummaryObj[0].Id;
+	        }
+	        else {
+	            try{
+	                Edit(DataBag.lstBillingSummaryObj);
+	                 //If the DML is successful then clear the value so that no expection is displayed
+	                DataBag.Exception = ""; 
+	            }
+	            catch(Exception e){
+	                 DataBag.Exception = e.Message;
+                     return View();
+	            }
+	        }
+	    }
+	    //Check if the Billing Summary Status is "Pending Billing" or Not
+        CheckStatusPendingBilling();
+        
+	   return Redirect(ActivePages.BillingSummaryInterface, new { typeView = "detail",id=DataBag.strBillingSummaryId });
+	}
+	
+    /*
+    * Description: Method to get existing progress note based on the criteria where the Billing Status is "UnBillied", 
+    *              Funder Id of Billing Summary and Progress Note Match and Progress Note Status is "Completed"
+    * Input      :
+    */
+	public void getProgressNoteRecordsWithBillingStatusUnbilled() {
+	    
+		// Start --Progress Note Query Record Fetch and Create List of Fields to display 
+		
+	    //Intialize the DataBag to display the rerender values
+	    DataBag.lstProgressNoteWithBillingStatusUnbilled = new List<WrapperForProgressNote>();
+	    
+	    // Create Query String to fetch progress note records 
+		string queryStrProgressNote ="SELECT";
+		string fixFieldsProgressNote =" Id,Billing_Status__c,Status__c,Progress_Funder__c";
+		queryStrProgressNote+= createQueryStringFields(fixFieldsProgressNote,DataBag.strProgressNoteFields,"Force__Progress_Note__c");
+		queryStrProgressNote+=" WHERE Billing_Status__c=\""+DataBag.strBillingStatusUnbilled+"\" AND Status__c=\""+DataBag.strStatusCompleted +"\"";
+		queryStrProgressNote+=" AND Progress_Funder__c=\""+DataBag.lstBillingSummaryObj[0].Billing_Summary_Funder__c+"\"";
+       
+        //Add the filter criteria Billing Code is not blank
+        if(!string.IsNullOrEmpty(DataBag.lstBillingSummaryObj[0].Billing_Summary_Billing_Code__c)){
+            
+                //Match the Service Billing Code from the Progress Note with Billing Summary Billing Code
+            	queryStrProgressNote+=" AND Billing_Code__c =\""+DataBag.lstBillingSummaryObj[0].Billing_Summary_Billing_Code__c+"\"";
+        }
+        
+        //Add the filter criteria Service Type is not blank
+        if(!string.IsNullOrEmpty(DataBag.lstBillingSummaryObj[0].Billing_Service_Type__c)){
+                //Match the Service Billing Code from the Progress Note with Billing Summary Billing Code
+            	queryStrProgressNote+=" AND Service__r.Service_Area__c =\""+DataBag.lstBillingSummaryObj[0].Billing_Service_Type__c+"\"";
+            
+        }
+        
+		//Assign the dynamic query to progress Note
+		List<Force__Progress_Note__c> lstProgressNoteWithBillingStatusUnbilled = new List<Force__Progress_Note__c>();
+		lstProgressNoteWithBillingStatusUnbilled = (List<Force__Progress_Note__c>)Database.Query(queryStrProgressNote);
+		
+			
+		if(lstProgressNoteWithBillingStatusUnbilled != null && lstProgressNoteWithBillingStatusUnbilled.Count() > 0) {
+			
+			List<WrapperForProgressNote> lstProgressNoteInWrapper = new List<WrapperForProgressNote>();
+			
+			foreach(var objIteratorProgressNote in lstProgressNoteWithBillingStatusUnbilled) {
+			    
+			    List<Force__Progress_Note__c> lstProgressNoteInWrappersTemp = new List<Force__Progress_Note__c>();
+			    
+			    // Add  Progress Note to Wrapper list
+			    lstProgressNoteInWrappersTemp.Add(objIteratorProgressNote);
+			    
+			    WrapperForProgressNote wrapperInstance = new WrapperForProgressNote();
+			    wrapperInstance.isSelected = false;
+			    wrapperInstance.lstProgressNoteInWrapper = lstProgressNoteInWrappersTemp;
+			    
+			    lstProgressNoteInWrapper.Add(wrapperInstance);
+			}
+			
+			// Assign wrapper list to Existing Progress Note List
+			DataBag.lstProgressNoteWithBillingStatusUnbilled = lstProgressNoteInWrapper;
+		}
+	}
+	
+	/*
+    * Description: Method to to get all Progress Note with Status "Pending Billing", Funder Id Of the Progress Note and Billing Summary Match
+    *              and  Id of the Billing Summary in the URL Match the Progress Note Billing Summary Id
+    * Input      : 
+    * Output     : DataBag List of Progress Note with Status "Pending Billing"
+    */
+	public void getProgressNoteWithBillingStatusPendingBilling () 
+	{    
+	    //Intialize the DataBag to display the rerender values
+	    DataBag.lstProgressNoteWithBillingStatusPending = new List<Force__Progress_Note__c>();
+    	
+    	DataBag.IsPendingProgressNotePresent = "false";
+    	
+    	//Start --Progress Note  Query Record Fetch and Create List of Fields to display 
+        string queryStr="SELECT";
+        string fixProgressNoteFields=" Id,Billing_Status__c,Billing_Summary__c,Progress_Funder__c";
+        queryStr+= createQueryStringFields(fixProgressNoteFields,DataBag.strProgressNoteFields,"Force__Progress_Note__c");
+        queryStr+=" WHERE Billing_Status__c=\""+DataBag.strBillingStatusPending+"\"";
+        queryStr+=" AND Progress_Funder__c=\""+DataBag.lstBillingSummaryObj[0].Billing_Summary_Funder__c+"\"";
+        queryStr+=" AND Billing_Summary__c=\""+DataBag.lstBillingSummaryObj[0].Id+"\"";
+        
+        //Assign the dynamic query to the Progress Note List
+        List<Force__Progress_Note__c> lstProgressNoteWithBillingStatusPending = new List<Force__Progress_Note__c>();
+        lstProgressNoteWithBillingStatusPending = (List<Force__Progress_Note__c>)Database.Query(queryStr);
+        
+        if(lstProgressNoteWithBillingStatusPending != null && lstProgressNoteWithBillingStatusPending.Count() > 0) {
+            
+            DataBag.IsPendingProgressNotePresent = "true";
+			
+			List<WrapperForProgressNote> lstProgressNoteInWrapper = new List<WrapperForProgressNote>();
+			
+			foreach(var objPendingProgressNote in lstProgressNoteWithBillingStatusPending) {
+			    
+			    List<Force__Progress_Note__c> lstProgressNoteInWrappersTemp = new List<Force__Progress_Note__c>();
+			    
+			    // Add  Progress Note to Wrapper list
+			    lstProgressNoteInWrappersTemp.Add(objPendingProgressNote);
+			    
+			    WrapperForProgressNote wrapperInstance = new WrapperForProgressNote();
+			    wrapperInstance.isSelected = false;
+			    wrapperInstance.lstProgressNoteInWrapper = lstProgressNoteInWrappersTemp;
+			    
+			    lstProgressNoteInWrapper.Add(wrapperInstance);
+			}
+			
+			// Assign  list to  DataBdag Progress Note List With Billing Status Pending Billing
+		    DataBag.lstProgressNoteWithBillingStatusPending = lstProgressNoteInWrapper;
+			
+		}
+	}
+	
+	/*
+    * Description: Method to Remove the  Progress Note Records  which are selected by the user to Billing and Change the Status to "Unbilled"
+    * Type       : doPost Method 
+    * Input      : 
+    * Output     :  Change the Status to "Unbilled" for Progress Note Records which are selected by the user and not related it to the Billing Summary
+    */
+    [HttpPost]
+    public ActionResponse RemovePendingProgressNoteRecordSelected(){
+        
+        int RowCount = 0;
+        
+        List<Force__Progress_Note__c> lstPendingProgressNoteToRemove = new List<Force__Progress_Note__c>();
+        
+        foreach(var objPendingProgressNoteForRemove in DataBag.lstProgressNoteWithBillingStatusPending) {
+            
+            //Request the Name value of the CheckBox Field accessed on the Page
+            string valForPendingProgressNoteCheckbox = Request["PendingProgressNoteCheckbox"+RowCount];
+            
+            if(string.Equals(valForPendingProgressNoteCheckbox,"on")) {
+               objPendingProgressNoteForRemove.lstProgressNoteInWrapper[0].Set("Billing_Status__c", DataBag.strBillingStatusUnbilled);
+               objPendingProgressNoteForRemove.lstProgressNoteInWrapper[0].Set("Billing_Summary__c","");
+               lstPendingProgressNoteToRemove.Add(objPendingProgressNoteForRemove.lstProgressNoteInWrapper[0]);
+            }
+            
+            RowCount=RowCount+1;
+        }
+        
+        try{
+           Edit(lstPendingProgressNoteToRemove);
+           //If the DML is successful then clear the value so that no expection is displayed
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        
+        //Called the Method to display updated list in the Section for "Progress Notes(UnBilled)"
+        getProgressNoteRecordsWithBillingStatusUnbilled();
+        //Called the Method to display updated list in the Section for "Progress Notes(Pending)"
+        getProgressNoteWithBillingStatusPendingBilling();
+        
+        return View();
+    }
+    
+	/*
+    * Description: Method to add the  Progress Note Records  which are selected by the user to Billing and Change the Status to "Pending Billing"
+    * Type       : doPost Method [Call from the Javascript]
+    * Input      : 
+    * Output     :  Change the Status to "Pending Billing" for Progress Note Records which are selected by the user and related it to the Billing Summary
+    */
+    [HttpPost]
+    public ActionResponse AddToBillingProgressNoteRecordSelected(){
+        
+        int RowCount = 0;
+        
+        List<Force__Progress_Note__c> lstProgressNoteToAddToBilling = new List<Force__Progress_Note__c>();
+        
+        foreach(var objProgressNoteForAddToBilling in DataBag.lstProgressNoteWithBillingStatusUnbilled) {
+            
+            //Request the Name value of the CheckBox Field accessed on the Page
+            string valForProgressNoteCheckbox = Request["ProgressNoteCheckbox"+RowCount];
+            
+            if(string.Equals(valForProgressNoteCheckbox,"on")) {
+               objProgressNoteForAddToBilling.lstProgressNoteInWrapper[0].Set("Billing_Status__c", DataBag.strBillingStatusPending);
+               objProgressNoteForAddToBilling.lstProgressNoteInWrapper[0].Set("Billing_Summary__c",  DataBag.strBillingSummaryId );
+               lstProgressNoteToAddToBilling.Add(objProgressNoteForAddToBilling.lstProgressNoteInWrapper[0]);
+            }
+            
+            RowCount=RowCount+1;
+        }
+        
+        try{
+           Edit(lstProgressNoteToAddToBilling);
+           //If the DML is successful then clear the value so that no expection is displayed
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        //Called the Method to display updated list in the Section for "Progress Notes(UnBilled)"
+        getProgressNoteRecordsWithBillingStatusUnbilled();
+        //Called the Method to display updated list in the Section for "Progress Notes(Pending)"
+        getProgressNoteWithBillingStatusPendingBilling();
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to edit the billing code of Progress Note Records which are selected by the user 
+    * Input      : 
+    * Output     : Edit the billing code of Progress Note Records which are selected by the user 
+    */
+    [HttpPost]
+    public ActionResponse EditUnbilledProgressNotes(){
+        
+        int RowCount = 0;
+        
+        DataBag.IsMassEditUnbilledProgressNotes = true;
+        
+        foreach(var objEditProgressNote in DataBag.lstProgressNoteWithBillingStatusUnbilled) {
+            
+            //Request the Name value of the CheckBox Field accessed on the Page
+            string valForCheckboxToEditProgressNote = Request["ProgressNoteCheckbox"+RowCount];
+            
+            if(string.Equals(valForCheckboxToEditProgressNote,"on")) {
+               objEditProgressNote.isSelected = true;
+	        }
+	        else {
+	            objEditProgressNote.isSelected = false;
+            }
+            
+            RowCount=RowCount+1;
+        }
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to save the billing code of Progress Note Records which are selected by the user 
+    * Input      : 
+    * Output     : save the billing code of Progress Note Records which are selected by the user 
+    */
+    [HttpPost]
+    public ActionResponse SaveBillingCodeOfUnbilledProgressNotes(){
+        
+        int RowCount = 0;
+        int editCount=0;
+        
+        List<Force__Progress_Note__c> lstProgressNoteToUpdateBillingCode = new List<Force__Progress_Note__c>();
+        
+        foreach(var objSaveProgressNote in DataBag.lstProgressNoteWithBillingStatusUnbilled) {
+            //Request the Name value of the CheckBox Field accessed on the Page
+            string valForCheckboxToSaveProgressNote = Request["ProgressNoteCheckbox"+RowCount];
+            
+            if (objSaveProgressNote.isSelected == true) {
+                
+                if(string.Equals(valForCheckboxToSaveProgressNote,"on")) {
+                   
+                   string valForBillingCodeOfProgressNote = Request["m$"+editCount.ToString()+"$.Billing_Code__c"];
+                   
+                   objSaveProgressNote.lstProgressNoteInWrapper[0].Set("Billing_Code__c",valForBillingCodeOfProgressNote);
+                   
+                   lstProgressNoteToUpdateBillingCode.Add(objSaveProgressNote.lstProgressNoteInWrapper[0]);
+                   
+                }
+                editCount = editCount+1;
+            }
+            
+            RowCount=RowCount+1;
+        }
+        
+        try{
+            if(lstProgressNoteToUpdateBillingCode.Count>0){
+                Edit(lstProgressNoteToUpdateBillingCode);
+            }
+        }
+        catch(Exception e){
+            
+             //If the transaction is unsucessful display the rows selected in read only mode
+             DataBag.IsMassEditUnbilledProgressNotes = true;
+             
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        
+        //If the DML is successful then clear the value so that no expection is displayed
+        DataBag.Exception = "";
+        
+        //If the transaction is sucessful display the rows selected in read only mode
+        DataBag.IsMassEditUnbilledProgressNotes = false;
+        
+        //Called the Method to display updated list in the Section for "Progress Notes(UnBilled)"
+        getProgressNoteRecordsWithBillingStatusUnbilled();
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to to get all the checked unbilled Progress Note and pending progress notes To preview
+    * Type       : doPost Method [Call from the Javascript]
+    * Input      : 
+    * Output     : DataBag List of Progress Note To preview all the checked unbilled Progress Note and pending progress notes
+    */
+    [HttpPost]
+	public ActionResponse getProgressNoteRecordsToPreviewBillingSummary() {
+	    
+	    //Intialize the DataBag to display the rerender values
+	    DataBag.lstPreviewProgressNotes = new List<Force__Progress_Note__c>();
+	    
+	    int RowCountForUnbilledProgressNote = 0;
+	    
+	    List<Force__Progress_Note__c> lstProgressNoteObj = new List<Force__Progress_Note__c>();
+	   
+	    foreach(var objProgressNote in DataBag.lstProgressNoteWithBillingStatusUnbilled) {
+	        string valForProgressNoteUnblilledCheckbox = Request["ProgressNoteCheckbox"+RowCountForUnbilledProgressNote];
+	        
+	        if(string.Equals(valForProgressNoteUnblilledCheckbox,"on")) {
+	            
+	            //Add the Unbilled progress notes to the new list
+	            lstProgressNoteObj.Add(objProgressNote.lstProgressNoteInWrapper[0]);
+	            // To set the checkbox value as checked
+	            objProgressNote.isSelected = true;
+	        }
+	        else {
+	            objProgressNote.isSelected = false;
+	        }
+	        RowCountForUnbilledProgressNote = RowCountForUnbilledProgressNote + 1;
+	    }
+	    
+	    foreach(var objProgressNotePending in DataBag.lstProgressNoteWithBillingStatusPending) {
+	        lstProgressNoteObj.Add(objProgressNotePending.lstProgressNoteInWrapper[0]);
+	    }
+	    
+	    DataBag.lstPreviewProgressNotes = lstProgressNoteObj;
+	    
+	    if(DataBag.lstPreviewProgressNotes.Count > 0) {
+	        DataBag.IsPreviewBillingSummary = true;
+	    }
+	    else {
+	        DataBag.IsPreviewBillingSummary = false;
+	    }
+	    
+	    return View();
+	}
+	/*****************************Start of Submit To Billing Functionality***************************************************/
+	    
+	/*
+     * Description: Method to check if the status is not 'Pending Billing'
+     * Input      : 
+     * Output     : Rerenders the page and displays Edit and other buttons when status is other than 'Pending Billing'
+     */
+	public void CheckStatusPendingBilling(){
+	    if (DataBag.lstBillingSummaryObj.Count > 0 ) {
+	        if(string.Equals(DataBag.lstBillingSummaryObj[0].Billing_Summary_Status__c, DataBag.strBillingStatusPending,  StringComparison.OrdinalIgnoreCase)){
+	            DataBag.IsStatusPendingBilling = true;
+	        }
+        }
+	}
+	/*
+    * Description: Method to update status as 'Pending Billing' for Billing Summary 
+    * Input      : 
+    * Output     : Redirects to same page
+    */
+	[HttpPost]
+	public ActionResponse UpdateStatusToCompleteForBillingSummary() {
+	    
+        if(DataBag.lstBillingSummaryObj.Count > 0){
+            
+            DataBag.lstBillingSummaryObj[0].Billing_Summary_Status__c = DataBag.strBillingStatusPending;
+            
+            try {
+                Edit(DataBag.lstBillingSummaryObj);
+                DataBag.Exception = "";
+            }
+            catch (Exception e) {
+                DataBag.Exception = e.Message;
+                return View();
+            }
+        }
+        return Redirect(ActivePages.BillingSummaryInterface, new { typeView = "detail",id=DataBag.strBillingSummaryId });
+	}
+	/*****************************End of Submit To Billing Functionality***************************************************/
+    /*
+	* Description: Method to form the Query
+	* Input      : strOfQueryFields : The fields in comma seperated format
+	* Input      : fixFields : Fixed fields such as Id
+    * Output     : strQuery: returns a query of string which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public string createQueryStringFields(string fixFields, string strOfQueryFields, string ObjectName){
+	    
+	    string strQuery = "";
+	    
+	    if(string.IsNullOrEmpty(fixFields) ){
+	        
+	        strQuery = strOfQueryFields;
+	    }
+	    else{
+	      strQuery = fixFields+", "+strOfQueryFields; 
+	    }
+	    strQuery = strQuery + " FROM "+ ObjectName;
+	    
+	    return strQuery;      
+	}
+	
+	/*
+	* Description: Method to get the list of fields in comma seperated double quote to be accessed by the DataBag
+	* Input      : strOfFields : The fields in comma seperated format
+    * Output     : lstOfFieldForTheObj: returns a list of fields which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public List<string> getTheCommaSeperatedValues(string strOfFields){
+	    
+	    List<string> lstOfFieldForTheObj = new List<string>();
+	    if(strOfFields != null){
+	        var tempConfig = (string)strOfFields;
+            string[] separators = {","};
+            lstOfFieldForTheObj = tempConfig.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();
+	    }
+	    return lstOfFieldForTheObj;      
+	}
+	
+	/*
+	* Description: Method to get the progress note Object Id and field Id of the billing code
+    * Output     : get the progress note Object Id and field Id of the billing code
+	*/
+	public ActionResponse getObjectAndFieldId() {
+	    string strObjectName = "Force__Progress_Note__c";
+        
+        string strFieldName = "Billing_Code__c";
+        
+        DataBag.lstEntity = Database.Query<Opirus.Area.Setup.Entity>(a => a.Name == strObjectName).Select(f => new { f.Id, f.Name })
+                                                            .ToListAsAdmin();
+        string strEntity = DataBag.lstEntity[0].Id;
+        
+        DataBag.strProgressNoteObjectId = DataBag.lstEntity[0].Id;
+        
+        DataBag.lstProgressNotesObjectFields = Database.Query<Opirus.Area.Setup.EntityField>(f=>f.EntityId == strEntity && f.Name == strFieldName)
+                                              .Select(f => new { f.Id })
+                                              .ToListAsAdmin();
+                                              
+        DataBag.strBillingCodeFieldId = DataBag.lstProgressNotesObjectFields[0].Id;
+       
+        return View();
+	}
+	
+	/*
+     * Description: Method to check if the status is Inprogress or not
+     * Output     : Rerenders the page and hide the section of progress note (Unbilled)
+     */
+	public void CheckStatusInPogress(){
+	    foreach (var billingSummaryObj in DataBag.lstBillingSummaryObj) {
+	        if (billingSummaryObj.Billing_Summary_Status__c == "In Progress") {
+	            DataBag.IsStatusInProgress = true;
+	        }
+        }
+	}
+	
+    /*
+     * Description: Method to check if the status is  'Pending Billing' then set as detail view
+     * Input      : 
+     * Output     : Rerenders the page and displays detail view  if Billin Status 'Pending Billing'
+    */
+	public void showInDetailViewWhenRecordLocked(){
+	    if(DataBag.IsStatusPendingBilling == true){
+	        DataBag.strBillingSummaryTypeView = "detail";
+	    }
+	}
+	
+    //Wrapper Class for Progress Note
+    public class WrapperForProgressNote{
+        public bool isSelected {get;set;}
+        public List<Force__Progress_Note__c> lstProgressNoteInWrapper{get; set;}
+    }
+    
+    /*
+    * Description: Method to redirect to the main page
+    * Input      : 
+    * Output     : redirect to the main page
+    */
+    [HttpPost]
+	public ActionResponse redirectToMainPage() {
+	    DataBag.IsPreviewBillingSummary = false;
+	    return View();
+	}
+}

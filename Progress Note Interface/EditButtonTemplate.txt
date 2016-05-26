@@ -1,0 +1,46 @@
+<div class="active-template">
+<header>
+<script>  
+
+var edit='edit';
+var check = 'check';
+//Get the complete url for Event 
+var complete_url = window.location.href;
+
+var pathname_url = window.location.pathname;
+
+// Get the base url to be used while redirecting to other pages
+var baseURL = document.location.origin;
+
+//extract current user role
+var current_user_role='<%:UserInfo.Role.Name%>';
+
+//used custom label for store Role name for which override event layouts if the end date is less than today and displaye a error message.
+var event_for_role_for_admin='<%:CustomLabels.ISP_RoleForAdminSignatures%>';
+
+var event_for_role_for_supervisor='<%:CustomLabels.ISP_RoleForSupervisorSignatures%>';
+
+//Excute the loop once only (used checked function) and if the Role is not Admin or Supervisor.
+if(event_for_role_for_admin !== current_user_role  && event_for_role_for_supervisor !==current_user_role && complete_url.toLowerCase().indexOf(check)< 0 ) {
+    
+    if(pathname_url.toLowerCase().indexOf(edit)>=0) {
+              // this if section for edit view override      
+              // path name contains 'Edit' for creating a records. compare with case insesitive used lowercase for both   
+                
+               //extract index of 'Edit/' , and increase by length of 'Edit' and  +1 for /, for  id extration from Complete URL    
+               var start_index_eventId = pathname_url.toLowerCase().indexOf(edit)+edit.length+1;
+               
+               //last index would be end at event id in path name for edit mode 
+               var last_index_eventId = pathname_url.length;
+               
+               //extract event id (record id) for edit mode
+               var eventID = pathname_url.substring(start_index_eventId , last_index_eventId);
+               
+              //Redirect to the page to check the end date
+               window.location.href = baseURL+"/aspx/EditButtonForEventPage?id="+eventID;
+               
+    }
+}
+</script>
+</header>
+</div>

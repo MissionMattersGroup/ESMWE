@@ -1,0 +1,70 @@
+    .kbw-signature { width: 400px; height: 200px; }
+    .noteClass {
+        color: #656565 !important;
+        font-size: 11px;
+        display: block;
+        float: none;
+    }
+    .backgroundForButton {
+        color: #fff;
+        background-color: #ff7900;
+    }
+    .scrollBarCssForGoal {
+        overflow:auto; 
+        width:100%;
+    }
+    .scrollBarCssForObjective {
+        overflow:auto; 
+        width:100%; 
+        margin-left:0%;
+    }
+    .scrollBarCssForGoalData {
+        overflow:auto;
+        width:92%; 
+        margin-left:8%;
+    }
+    .scrollBarCssForTimeEntries {
+        overflow:auto; 
+        width:100%;
+    }
+    .cssForGoalData {
+        background-color: #e9e7e6 !important;
+    }
+    .top-links{
+            margin-bottom: -10%;
+    }
+    .borderofPanel {
+        border-color: #0086c5 !important;
+    }
+    .panel-heading {
+        color: #fff;
+        background-color: #0086c5 !important;
+        border-color: #0086c5 !important;
+    }
+    .backgroundForMainButton {
+        color: #fff;
+        background-color: #0086c5;
+    }
+    .backgroundForGoal {
+        background-color: #77b800 !important;
+        color: white !important
+    }
+    .backgroundForGoalData {
+        background-color: #ff7900 !important;
+    }
+    .panel-headingInline {
+        color: #fff;
+        background-color: #77b800 !important;
+        border-color: #77b800 !important;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px; 
+        border-top-right-radius: 3px;
+    }
+    .cssForSignatureTitle{
+        font-size: medium;
+    }
+    .CssForWordwrap {
+        word-wrap: break-word !important;
+        word-break: break-all !important;
+        white-space: normal;
+    }

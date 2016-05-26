@@ -1,0 +1,69 @@
+<div class="active-template">
+<header>
+<script>  
+Redirect();
+
+// the below method used for override and call on load from std layouts(edit,detail,new)
+function Redirect() {
+    
+/* template is used to find correct path to redirect , 
+So that it override default layout by custom interface , 
+It use for Billing Summary and Account Billing Summary Interface */  
+
+    var complete_url = window.location.href;
+    var pathname_url = window.location.pathname;
+    
+    // extract current user role
+    var current_user_role='<%:UserInfo.Role.Name%>';
+    
+    // used custom label for store Role name for which override Billing Summary interface standard layouts with Billing Summary interface
+    var Billing_Summary_for_role='<%:CustomLabels.BillingSummaryInterface%>';
+    
+    // used custom label for store Role name for which override Billing Summary interface standard layouts with Account Billing Summary interface
+    var Account_Billing_Summary_for_role='<%:CustomLabels.AccountBillingSummaryInterface%>';
+        
+    var create='create';
+    var edit='edit';
+    
+    // path name contains 'Create' for creating a records. compare with case insesitive used lowercase for both
+    if(pathname_url.toLowerCase().indexOf(create)>=0) {
+         
+    }
+    else
+    if(pathname_url.toLowerCase().indexOf(edit)>=0) {
+        // this if section for edit view override      
+        // path name contains 'Edit' for creating a records. compare with case insesitive used lowercase for both   
+        //extract index of 'Edit/' , and increase by length of 'Edit' and  +1 for /, for  id extration from Complete URL    
+        var start_index_BillingSummaryID = pathname_url.toLowerCase().indexOf(edit)+edit.length+1;
+       
+        //last index would be end at Billing Summary id in path name for edit mode like: '../Edit/BillingSummaryID'
+        var last_index_BillingSummaryID = pathname_url.length;
+       
+        //extract  Billing Summary id (record id) for edit mode
+        var BillingSummaryID = pathname_url.substring(start_index_BillingSummaryID , last_index_BillingSummaryID);
+        
+        if(Billing_Summary_for_role.indexOf(current_user_role)>-1) {
+            window.location.href = "/aspx/BillingSummaryInterface?typeView=edit&id="+BillingSummaryID;
+        }
+        else if(Account_Billing_Summary_for_role.indexOf(current_user_role)>-1) {
+            window.location.href = "/aspx/AccountBillingSummaryInterface?typeView=edit&id="+BillingSummaryID;
+        }
+       
+    }
+    else
+    {
+        //this section for detail view override
+        //extract  progress note id (record id) for detail mode
+        var BillingSummaryID = pathname_url.substring(pathname_url.lastIndexOf('/') + 1);
+        
+        if(Billing_Summary_for_role.indexOf(current_user_role)>-1) {
+            window.location.href = "/aspx/BillingSummaryInterface?typeView=detail&id="+BillingSummaryID; 
+        }
+        else if(Account_Billing_Summary_for_role.indexOf(current_user_role)>-1) {
+            window.location.href = "/aspx/AccountBillingSummaryInterface?typeView=detail&id="+BillingSummaryID; 
+        }
+    }
+}
+</script>
+</header>
+</div>

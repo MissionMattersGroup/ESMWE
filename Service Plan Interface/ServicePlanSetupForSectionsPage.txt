@@ -1,0 +1,41 @@
+<aspx:AspxPage runat="server" Id="ServicePlanId" title="Service Plan Setup For Sections">
+    <header>
+        <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/UtilityFunctions.js")%>'/>
+        <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/ServicePlanSetupForSections.js")%>'/>   
+        <aspx:IncludeStandardScript runat='server' ScriptType='REST' version='2.0' />
+        <style>
+            .panelClass{
+            background-color: rgb(211, 74, 70) !important;
+            color: white !important;
+            }
+             .blankSpaceClass{
+             background-color: goldenrod;
+            }
+        </style>
+    </header>
+    <body>
+    
+    <!-- Button to Save or Redirect according to the functionality at the Top -->
+    <center>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Add' onClick='addRows();'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Remove' onClick='removeRows();'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Quick Save' onClick='Save("QuickSave");'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Save & Next' onClick='Save("Save");'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Next' onClick='Next();'/>
+    </center>
+    
+    <!-- Added a blank div to add the Service Plan section on click of 'Add Section'-->
+    <div>
+        <div id="sectionsId"></div>
+    </div>
+    
+    <!-- Button to Save or Redirect according to the functionality at the Bottom -->
+    <center>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Add' onClick='addRows();'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Remove' onClick='removeRows();'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Quick Save' onClick='Save("QuickSave");'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Save & Next' onClick='Save("Save");'/>
+        <aspx:CommandButton runat='server' CssClass='btn btn-danger' text='Next' onClick='Next();'/>
+    </center>
+    </body>
+</aspx:AspxPage>

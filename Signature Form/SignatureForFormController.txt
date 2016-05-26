@@ -1,0 +1,187 @@
+[SerializeViewData]
+public class SignaturesForFormController : AspxController
+{
+     /*
+     * Description : This controller is used to display and save the signatures related to form record on the standard page layout 
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Twinkle P           18/05/2016                    Initial Draft [ESMWE-635]
+     */
+    // This variable is used to store the value of progress Note id passed in URL
+    string strFormId;
+    
+	public override ActionResponse Index()
+	{
+	    
+	    // This Databag list is used to store the value of Form Object
+	    DataBag.lstFormObj = new List<Force__Form__c>();
+	    //check the page url contains typeView if not contains return error message to page
+	    // otherwise go forward to inside the code for fetch id 
+	    string CurrentURL = Request.Url.AbsoluteUri;
+	    bool bId = CurrentURL.Contains("id=");
+	    
+	    //This databag variable is used to show the signature inetrface or hide it
+	    DataBag.DisplaySI = false;
+	    
+        //Check if URL contains Id parameter if not then show the error message
+        if(bId==false){
+        	AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteId);
+        	DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteId;
+            return View(); 
+	    }
+	    else { 
+	           // Url contains Id paramter
+	           // Stores the type of the id which is passed as a param in the URL
+               strFormId = AspxPage.GetParameter("id");
+               if(string.IsNullOrEmpty(strFormId)){
+                   	AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteId);
+                   	DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteId;
+                   	return View();
+                }
+                else {
+                    //Assign the dynamic query to the Progress Note
+	                 List<Force__Form__c> lstFormObj = new List<Force__Form__c>();
+	                 
+	                 lstFormObj = getFormRecord(strFormId);
+	                 
+            		 if(lstFormObj != null && lstFormObj.Count() > 0) {      
+            		    DataBag.DisplaySI = true;
+            	        
+            	        //Store the parameterized value in the DataBag
+            	        DataBag.IdOfTheForm = strFormId;
+        	            
+        	            DataBag.lstFormObj  = lstFormObj;
+            		 }
+                }
+	    }
+	    
+		return View();
+	}
+	
+	/*
+    * Description: Method to search the form related to the id passes in the parameter
+    * Input      : 
+    * Output     : Fetch the list of Form matched with the Id
+    */
+	public List<Force__Form__c> getFormRecord(string strFormId){
+        
+	    //Query for Form record for which the signature has to be saved
+        string queryStr="SELECT ";
+        queryStr+= "Id,Name,Signature_Of_Individual__c,Date_Of_Individual__c,Signature_Of_Parent_Legal_Guardian__c,Date_Of_Parent_Legal_Guardian__c,Date_Of_Witness__c,Signature_Of_Witness__c ";
+        queryStr+= "FROM Force__Form__c ";
+        queryStr+= "WHERE Id =\""+strFormId+"\"";
+        queryStr+= "  LIMIT 1";
+        //Assign the dynamic query to the Form
+        return  (List<Force__Form__c>)Database.Query(queryStr);
+	    
+	}
+	/*
+    * Description: Method to save the signature related to the Form Object
+    * Input      : 
+    * Output     : save the signatures displayed on Form Object
+    */
+    [HttpPost]
+    public ActionResponse SaveSignature(){
+            
+            foreach (var formObj in DataBag.lstFormObj)
+            {
+                //Stored the value of Individual signature
+                string strIndividualSignval = Request["SaveIndividualSignToUpdate"]; 
+                //Check whether the Individual Signature is Blank or Not
+                bool checkIndividualSignatureVal = checkTheSignatureValue(strIndividualSignval);
+                
+                if(checkIndividualSignatureVal == false){
+                    formObj.Set("Signature_Of_Individual__c", "");
+                    formObj.Set("Date_Of_Individual__c", ""); 
+                }
+                else {
+                    // To check if the existing and new signatures are not same then change the date
+                    if(formObj.Signature_Of_Individual__c != strIndividualSignval) {
+                        formObj.Set("Signature_Of_Individual__c", strIndividualSignval);
+                        formObj.Set("Date_Of_Individual__c", DateTime.Today); 
+                        // stored the value of user logged in and save the Individual Sign
+                        formObj.Title_For_Supervisor__c = UserInfo.Role.Name;
+                    }
+                    // stored the value of individual signee name
+                    string strIndividualSigneeName = Request["m$0$.Signee_For_Individual__c"];
+                    formObj.Signee_For_Individual__c = strIndividualSigneeName;
+                    
+                    
+                
+                }
+                
+                //Stored the value of Parent/Guardian signature
+                string strParentGuardianSignval = Request["SaveParentGuardianSignToUpdate"]; 
+                
+                //Check whether the Parent/Guardian Signature is Blank or Not
+                bool checkParentGuardianSignatureVal = checkTheSignatureValue(strParentGuardianSignval);
+                if(checkParentGuardianSignatureVal == false){
+                    formObj.Set("Signature_Of_Parent_Legal_Guardian__c", "");
+                    formObj.Set("Date_Of_Parent_Legal_Guardian__c", ""); 
+                    
+                }
+                else{
+                    // To check if the existing and new signatures are not same then change the date
+                    if(formObj.Signature_Of_Parent_Legal_Guardian__c != strParentGuardianSignval) {
+                        formObj.Set("Signature_Of_Parent_Legal_Guardian__c", strParentGuardianSignval);
+                        formObj.Set("Date_Of_Parent_Legal_Guardian__c", DateTime.Today); 
+                    }
+                    // stored the value of Parent/Guardian signee name
+                    string strParentSigneeName = Request["m$0$.Signee_For_Parent_Legal_Guardian__c"];
+                    formObj.Signee_For_Parent_Legal_Guardian__c = strParentSigneeName;
+                    
+                    // stored the value of Relationship type for Individual name
+                    string strRelationshipTypeName = Request["m$0$.Relationship_Type__c"];
+                    formObj.Relationship_Type__c = strRelationshipTypeName;
+                
+                }
+                
+                 //Stored the value of Witness signature
+                string strWitnessSignval = Request["SaveWitnessSignToUpdate"]; 
+                
+                //Check whether the Witness Signature is Blank or Not
+                bool checkWitnessSignatureVal = checkTheSignatureValue(strWitnessSignval);
+                
+                if(checkWitnessSignatureVal == false){
+                    formObj.Set("Signature_Of_Witness__c", "");
+                    formObj.Set("Date_Of_Witness__c", ""); 
+                }
+                else{
+                    // To check if the existing and new signatures are not same then change the date
+                    if(formObj.Signature_Of_Witness__c != strWitnessSignval) {
+                        formObj.Set("Signature_Of_Witness__c", strWitnessSignval);
+                        formObj.Set("Date_Of_Witness__c", DateTime.Today);  
+                        // stored the value of user logged in and save the Witness Sign
+                        formObj.Title_For_Staff__c = UserInfo.Role.Name;
+                    }
+                    // stored the value of Witness signee name
+                    string strWitnessSigneeName = Request["m$0$.Signee_For_Witness__c"];
+                    formObj.Signee_For_Witness__c = strWitnessSigneeName;
+                
+                }
+            }
+            try {
+                Edit(DataBag.lstFormObj);
+                DataBag.Exception = "";
+            } 
+            catch (Exception e) {
+                DataBag.Exception = e.Message;
+            }
+            return View();
+    }
+	/*
+    * Description: Method to check the value of the signature is blank or not
+    * Input      : signatureVal: The signature for which the value needs to be checked
+    * Output     : boolean true: if it the signature is blank and false: if not
+    */
+    public bool checkTheSignatureValue(string signatureVal){
+        int firstIndexValues         = signatureVal.IndexOf('[');
+        int lastIndexValues          = signatureVal.LastIndexOf(']');
+        int lengthOfStrSupervisorSig = lastIndexValues - firstIndexValues + 1;
+    
+        string subStringOfSignVal = signatureVal.Substring(firstIndexValues+1,lengthOfStrSupervisorSig-2);
+        if(!string.IsNullOrEmpty(subStringOfSignVal)){
+            return true;
+        }
+        return false;
+    }
+}

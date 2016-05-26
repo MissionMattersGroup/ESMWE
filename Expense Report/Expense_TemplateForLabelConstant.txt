@@ -1,0 +1,22 @@
+<div class="active-template">
+<header>
+<script>  
+var ErrorMessageForExpenseToApprove;
+var ErrorMessageForExpenseToReject;
+var ErrorMessageForMileageToApprove;
+var ErrorMessageForMileageToReject;
+var ErrorMessageForRequiredSupervisorSignature;
+intializeJsGlobalForConstant();
+
+//Method to set the global valriable of js with label value and current user role
+function intializeJsGlobalForConstant(){
+    //used custom label for store error meassage for Expense To Approve
+    ErrorMessageForExpenseToApprove ='<%:CustomLabels.ShowErrorMessageToSelectCheckboxes%>';
+    ErrorMessageForExpenseToReject ='<%:CustomLabels.ShowErrorMessageToRejectExpense%>';
+    ErrorMessageForMileageToApprove = '<%:CustomLabels.ShowErrorMessageToApproveMileage%>';
+    ErrorMessageForMileageToReject = '<%:CustomLabels.ShowErrorMessageToRejectMileage%>'; 
+    ErrorMessageForRequiredSupervisorSignature = '<%:CustomLabels.ShowErrorMessageForRequiredSupervisorSignature%>'; 
+    
+}
+</script>
+</div>

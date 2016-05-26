@@ -1,0 +1,102 @@
+        .kbw-signature { width: 400px; height: 200px; }
+        .noteClass {
+            color: #656565 !important;
+            font-size: 11px;
+            display: block;
+            float: none;
+        }
+        .scrollBarCssForService {
+            overflow:auto; 
+            width:100%;
+        }
+        .backgroundForService {
+            background-color: #77b800 !important;
+            color: white !important;
+        }
+        .scrollBarCssForGoal{
+            overflow:auto; 
+            width:100%; 
+            margin-left:0%;
+        }
+        .backgroundForGoal {
+            background-color: #ff7900 !important;
+            color: white !important;
+        }
+        .scrollBarCssForObjectives {
+            overflow:auto;
+            width:92%; 
+            margin-left:8%;
+        }
+        .backgroundForObjective {
+            background-color: #7F99CC;
+        }
+         .panelClass{
+            background-color: #77b800 !important;
+            color: white !important;
+        }
+        .top-links{
+                margin-bottom: -10%;
+        }
+        .showonPop{
+            background: #EDEFF0;
+            position: relative; 
+            border-top: 1px solid #CFD4D8; 
+            border-bottom: 1px solid #CFD4D8;
+        }
+        .fsRequiredMarker{
+            padding-left: 2px;
+            color: #ba0000;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: Verdana;
+            float: none;
+        }
+        
+        .wordBreakClass{
+            word-break :  break-all;
+        }
+        .backgroundForButton {
+            color: #fff;
+            background-color: #ff7900;
+        }
+        .red-tooltip + .tooltip > .tooltip-inner {background-color: black;}
+
+        .tooltip.bottom .tooltip-arrow {
+          top: 0;
+          left: 50%;
+          margin-left: -5px;
+          border-bottom-color:  black; /* black */
+          border-width: 0 5px 5px;
+        }
+        
+        .borderofPanel {
+            border-color: #0086c5 !important;
+        }
+        .panel-heading {
+            color: #fff;
+            background-color: #0086c5 !important;
+            border-color: #0086c5 !important;
+        }
+        .panel-headingInline {
+            color: #fff;
+            background-color: #77b800 !important;
+            border-color: #77b800 !important;
+            padding: 10px 15px; 
+            border-bottom: 1px solid transparent;
+            border-top-left-radius: 3px; 
+            border-top-right-radius: 3px;
+        }
+        .backgroundForMainButton {
+            color: #fff;
+            background-color: #0086c5;
+        }
+        .hrCustomClass { 
+            display: block;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            margin-left: auto;
+            margin-right: auto;
+            border-style: inset;
+            border-width: 1px;
+        }
+        

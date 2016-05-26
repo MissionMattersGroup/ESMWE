@@ -1,0 +1,26 @@
+<div class="active-template">
+<header>
+<script>  
+var current_user_role;
+var Family_role;
+var ErrorMessageForFamilySignatureValidation;
+var ErrorMessageForStaffSignatureValidation;
+var ErrorMessageForRequiredFamilySignature;
+var ErrorMessageForNullResignValue;
+
+intializeJsGlobalForConstant();
+
+//Method to set the global valriable of js with label value and current user role
+function intializeJsGlobalForConstant(){
+    //extract current user role
+    current_user_role='<%:UserInfo.Role.Name%>';
+    //used custom label for store Family Role name for which family signature is required
+    Family_role='<%:CustomLabels.ISP_RoleForClientSignatures%>';
+    ErrorMessageForFamilySignatureValidation = '<%:CustomLabels.ShowErrorMessageForRequiredFamilySignature%>';
+    ErrorMessageForStaffSignatureValidation = '<%:CustomLabels.ShowErrorMessageForRequiredStaffSignature%>';
+    ErrorMessageForRequiredFamilySignature = '<%:CustomLabels.ShowMessageForRequiredFamilySignature%>';
+    ErrorMessageForNullResignValue = '<%:CustomLabels.ShowErrorMessageForNullResignValue%>';
+    
+}
+</script>
+</div>

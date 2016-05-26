@@ -1,0 +1,82 @@
+<!-------------------------------------------------------------------------------------------------------- 
+    Page: Object Setup Page 
+    Description: This page is used to show the fields of the Service Plan, Service, Goals, Objectives
+                 and allow the user to select the fields for the respective objects.
+----------------------------------------------------------------------------------------------------------> 
+<aspx:AspxPage runat="server" Id="DynamicQueryId" title="Object Configuration">
+<header>
+    <aspx:IncludeStandardScript runat='server' ScriptType='REST' version='2.0' />
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/UtilityFunctions.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/ServicePlanSetup.js")%>'/>
+    <!--Used the css class as not accessible through Static Resource-->
+    <style>
+        .MultiPicklistClass{
+            resize:both;
+        }
+    </style>
+</header>
+ <body>
+    <!-- Button to Save or Redirect according to the functionality -->
+    <aspx:ViewSection runat='server' title=''>
+        <aspx:SectionItem runat='server'>
+            <div class="row">
+            
+                    
+                    <div class="col-md-14 text-right">
+                        <aspx:CommandButton runat='server' id='PreviousIdOnTop' CssClass='btn btn-danger'  text='Previous' onClick='redirectToPrevious();'/>
+		                <aspx:CommandButton runat='server' id='SaveIdOnTop' CssClass='btn btn-danger' text='Save' onClick='SaveTheQuery("Save");'/>
+                        <aspx:CommandButton runat='server' id='SaveNextIdOnTop' CssClass='btn btn-danger' text='Save & Next' onClick='SaveTheQuery("SaveNext");'/>
+    		            <aspx:CommandButton runat='server'  CssClass='btn btn-danger' text='Cancel' onClick='Cancel();'/>
+		                <aspx:CommandButton runat='server' id='NextIdOnTop' CssClass='btn btn-danger'  text='Next' onClick='redirectToNext()'/>
+    	            </div>
+                    
+                    
+                
+            </div>
+        </aspx:SectionItem>
+    </aspx:ViewSection>
+    
+    <!-- Section to show the Object to configure Service Interface and its respective fields -->
+    <aspx:ViewPanel runat='server' title='Dynamic List View Creation Wizard'>
+        <body>
+        
+            <!-- Section For Service -->
+            <aspx:ViewSection runat='server' title='Service Fields' columns='1' labelPosition='top'>
+                <aspx:SectionItem runat='server'>
+                    <aspx:FieldMultipicklist runat='server' id='multiselectForService' Rows='10' CssClass='MultiPicklistClass'/>
+                </aspx:SectionItem>
+            </aspx:ViewSection>
+            
+            <!-- Section For Goals -->
+            <aspx:ViewSection runat='server' title='Goals Fields' columns='1' labelPosition='top'>
+                <aspx:SectionItem runat='server'>
+                    <aspx:FieldMultipicklist runat='server' id='multiselectForGoals' Rows='10'/>
+                </aspx:SectionItem>
+            </aspx:ViewSection>
+            
+            <!-- Section For Objective -->
+            <aspx:ViewSection runat='server' title='Objective Fields' columns='1' labelPosition='top'>
+                <aspx:SectionItem runat='server'>
+                    <aspx:FieldMultipicklist runat='server' id='multiselectForObjectives' Rows='10'/>
+                </aspx:SectionItem>
+            </aspx:ViewSection>
+        </body>
+    </aspx:ViewPanel>
+    
+    <!-- Button to Save or Redirect according to the functionality -->
+    <aspx:ViewSection runat='server' title=''>
+        <aspx:SectionItem runat='server'>
+            <div class="row">
+                
+                <div class="col-md-14 text-right">
+                    <aspx:CommandButton runat='server' id='PreviousId' CssClass='btn btn-danger'  text='Previous' onClick='redirectToPrevious();'/>
+	                <aspx:CommandButton runat='server' id='SaveId' CssClass='btn btn-danger' text='Save' onClick='SaveTheQuery("Save");'/>
+                    <aspx:CommandButton runat='server' id='SaveNextId' CssClass='btn btn-danger' text='Save & Next' onClick='SaveTheQuery("SaveNext");'/>
+		            <aspx:CommandButton runat='server'  CssClass='btn btn-danger' text='Cancel' onClick='Cancel();'/>
+	                <aspx:CommandButton runat='server' id='NextId' CssClass='btn btn-danger'  text='Next' onClick='redirectToNext()'/>
+	            </div>
+            </div>
+        </aspx:SectionItem>
+    </aspx:ViewSection>
+</body>
+</aspx:AspxPage>

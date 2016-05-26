@@ -1,0 +1,36 @@
+    
+    .kbw-signature { width: 250px; height: 150px; }
+    .backgroundForMainButton {
+        color: #fff;
+        background-color: #0086c5;
+    }
+    .noteClass {
+        color: #656565 !important;
+        font-size: 11px;
+        display: block;
+        float: none;
+    }
+    td {
+        padding: 5px 15px;
+    }
+    .signClass {
+        border-collapse: collapse;
+        width : 1000px; 
+        }
+    .signClass tr td{
+        border-bottom: 1px solid black;
+        border-left: 20px solid white;
+    }
+    .signClass tr:last-child td {
+        border:0;
+        border-left: 20px solid white;
+    }
+    .classWidthForSign{
+        width:350px;
+    }
+    .classWidthForDate{
+        width:100px;
+    }
+    .classForBtn{
+        margin-top: 125px;
+    }

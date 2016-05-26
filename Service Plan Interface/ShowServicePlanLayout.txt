@@ -1,0 +1,16 @@
+<div class="active-template">
+<header>
+<script>  
+Redirect();
+
+function Redirect() {
+    var url = window.location.pathname;
+    //alert(url);
+    
+    var strServicePlanId = url.substring(url.lastIndexOf('/') + 1);
+    //alert(strServicePlanId);
+    window.location = "https://eastersealsmidwest.magentrixcloud.com/aspx/ServicePlanInterface?id="+strServicePlanId;
+}
+</script>
+</header>
+</div>

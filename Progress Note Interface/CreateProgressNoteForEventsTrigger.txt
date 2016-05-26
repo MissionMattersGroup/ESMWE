@@ -1,0 +1,75 @@
+
+public class CreateProgressNoteForEventsTrigger : ActiveTrigger<Event>
+{
+    /*
+     * Description : This trigger is used to create progress note when event get created
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Anuradha N            25/3/2016                 Initial Draft
+     * 1.2                  Anuradha N            29/3/2016         Implement the functionality to related newly created progress note to the event.
+    */
+	public override void Execute(TransactionContext<Event> trigger)
+	{
+	    if (trigger.IsInsert && trigger.IsAfter){
+	        
+	        //List of Service Ids
+	        List<string> setServiceIds = trigger.Records.Select(s=>s.New.Service__c).ToList();
+	        
+	        //List of User Ids
+	        List<string> setUserIds = trigger.Records.Select(s=>s.New.OwnerId).ToList();
+	        
+	        Dictionary<string,Force__Service__c> mapOfService = new Dictionary<string,Force__Service__c>();
+	        
+	        Dictionary<string,string> mapOfUserId_ContactId = new Dictionary<string,string>();
+	        
+	        List<Force__Progress_Note__c> lstOfProgressNoteToInsert = new List<Force__Progress_Note__c>();
+	        
+	        Dictionary<string,Force__Progress_Note__c> mapOfEventId_ProgressNote =  new Dictionary<string,Force__Progress_Note__c>();
+	        
+	        //List of service for which progress note need to be created
+	        if (setServiceIds != null && setServiceIds.Count > 0) {
+	            mapOfService = CreateProgressNoteForEventsTriggerHandler.getServiceRecordsRelatedToEvent(setServiceIds);
+	        }
+	        
+	        //List of User to get related contact Id
+	        if (setUserIds != null && setUserIds.Count > 0) {
+	            mapOfUserId_ContactId = CreateProgressNoteForEventsTriggerHandler.getUserRecordsRelatedToEvent(setUserIds);
+	        }
+	        
+	        //Check if the Count is greater than zero, create the progress note
+            if(mapOfService != null && mapOfService.Count > 0){
+               
+                List<Event> lstEvent = new List<Event>();
+                
+                List<Event> lstEventToUpdate = new List<Event>();
+
+                foreach(var recordContext in trigger.Records)
+                {
+                    lstEvent.Add(recordContext.New);
+                }
+                
+                //Assign the list of progress note which needs to be created
+                mapOfEventId_ProgressNote= CreateProgressNoteForEventsTriggerHandler.createProgressNoteRelatedToEvent(mapOfService,lstEvent,mapOfUserId_ContactId); 
+                foreach (var objProgress in mapOfEventId_ProgressNote.Values) {
+                    lstOfProgressNoteToInsert.Add(objProgress);
+                }
+                
+                //If the count is greater than zero then create progress note
+                if(lstOfProgressNoteToInsert.Count > 0){
+                    Create(lstOfProgressNoteToInsert);
+                }
+                
+                foreach(var objEvent in lstEvent) {
+                    if(mapOfEventId_ProgressNote.ContainsKey(objEvent.Id)) {
+                        objEvent.Progress_Note__c = mapOfEventId_ProgressNote[objEvent.Id].Id;
+                        lstEventToUpdate.Add(objEvent);
+                    }
+                }
+                
+                //If the count is greater than zero then update event record
+                if(lstEventToUpdate.Count > 0) {
+                    Edit(lstEventToUpdate);
+                }
+            }
+	    }
+	}
+}

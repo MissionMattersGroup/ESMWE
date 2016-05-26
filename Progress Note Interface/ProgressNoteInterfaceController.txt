@@ -1,0 +1,1505 @@
+[SerializeViewData]
+public class ProgressNoteInterfaceController : AspxController
+{
+    /* Description : This controller is used to display the Goals,objectives and TimeEntries related to Progress Note
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Anuradha N          18/1/2016                 Initial Draft
+     * 1.2                  Anuradha N          8/3/2016                  Implement save and complete progress note functionality
+     * 1.3                  Anuradha N          17/3/2016                 Implement the functionality to lock the record for supervisor and staff
+     * 1.4                  Anuradha N          22/3/2016                 Implement the functionality to capture Name and Date for Signature Areas
+     * 1.5                  Anuradha N          5/4/2016                  Create UI Notification when Save and Complete has been successful
+     * 1.6                  Twinkle P           13/4/2016                 Implemented the functionality to add relationship type text and save the updated value. [ESMWE-498]
+     * 1.7                  Anuradha N          18/4/2016                 Make Fields for Time Entry Required [ESMWE-500]
+     * 1.8                  Twinkle P           03/05/2016                Updated the functionality for Add More Rows for Time Entries and Added Service Title [ESMWE-413 & 561]
+     * 1.9                  Anuradha N          03/05/2016                Change Title of Progress Note Page [ESMWE-554]
+     * 2.0                  Geeta K             11/05/2016                Updated 'Save Signatures' functionality to save External Signatures in 'Signature Section'. [ESMWE-570]
+     *                                                                    Resolved issue for dates being updated even though the signature haven't been changed while saving signature.
+     * 2.1                  Anuradha N          10/05/2016                Convert Funding Source and Billing Code to drop down lists on Progress Note Interface
+     * 2.2                  Anuradha N          13/05/2016                Implemented functionality to display and save title for all signatures [ESMWE-571]
+    */
+    
+    // This variable is used to store the value of progress Note id passed in URL
+    string strProgressNoteId;
+    // This variable is used to store the value of Type View passed in URL
+    string strProgressNoteTypeView;
+    // This variable is used to store the value of Service id passed in URL
+    string strServiceId;
+    
+   /*********************************start Dropdown***********************************************/
+    //Map of FunderId and list of BillingCode
+	Dictionary<string,List<WrapperForOption>> mapFunderId_lstFunderCode ;
+   /*********************************End Dropdown***********************************************/
+	
+	public override ActionResponse Index()
+	{
+	    init();
+	    //string for fields commaseprated values for progress note
+	    string strprogressNoteFields = "Staff_Name__c,Status__c,Client__c,Client_DOB__c,Service__c,Service_Title__c,Progress_Funder__c,Billing_Code__c,Time_In__c,Time_Out__c,Units_of_service__c,Completion_Date__c,Progress_Note_Narrative__c";
+	    
+	    //string for fields commaseprated values for Goal
+	    string strGoalFields ="Outcome__c,Goal_Name__c";
+	    
+	    // string for fields commaseprated values for Goal data
+	    string strGoalDataFields = "Goal_Status__c,Progress_Key__c,Percent_Complete__c,Goal_Notes__c";
+	    
+	    // string for fields commaseprated values for Time Entries
+	    string strTimeEntriesFields = "Payer_Code__c,Time_Entries_Billing_Code__c,Time_Entries_Time_In__c,Time_Entries_Time_Out__c,Time_Entries_Units_of_Service__c,Description__c";
+	    
+	    //This databag contains the progress note comma separated fields
+	    DataBag.lstProgressNoteFields = getTheCommaSeperatedValues(strprogressNoteFields);
+	    
+	    //This databag contains the Goal comma separated fields
+	    DataBag.lstGoalFields = getTheCommaSeperatedValues(strGoalFields);
+	    
+	    //This databag contains the Goal data comma separated fields
+	    DataBag.lstGoalDataFields = getTheCommaSeperatedValues(strGoalDataFields);
+	    
+	    //This databag contains the Time Entries comma separated fields
+	    DataBag.lstTimeEntriesFields = getTheCommaSeperatedValues(strTimeEntriesFields);
+	    
+	    
+	    //check the page url contains typeView if not contains return error message to page
+	    // otherwise go forward to inside the code for fetch id 
+	    string CurrentURL = Request.Url.AbsoluteUri;
+        bool bType=CurrentURL.Contains("?typeView=");
+        
+	    if(bType==false){
+        	AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteType);
+        	DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteType;
+            return View(); 
+	    }
+	    else{
+    	    // Stores the type of the page which is passed as a param in the URL
+            strProgressNoteTypeView = AspxPage.GetParameter("typeView");
+            
+            //if the TypeView is blank or empty then show the error message on page
+            if(string.IsNullOrEmpty(strProgressNoteTypeView)){
+               	AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteType);
+               	DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteType;
+               	return View();
+            }
+            else{ // if TypeView contains value
+                    strProgressNoteTypeView =  strProgressNoteTypeView.ToLower();
+                    // Check if TypeView values are not equal to new , edit and detail show error message on page
+                    if (!strProgressNoteTypeView.Equals("new") &&
+                        !strProgressNoteTypeView.Equals("edit") &&
+                        !strProgressNoteTypeView.Equals("detail") &&
+                        !strProgressNoteTypeView.Equals("clone")) {
+                            
+                        AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteType);
+                        DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteType;
+               	        return View();
+                    } 
+                    else { // if TypeView Contains correct values
+                        // if TypeView is equal to edit or detail then check for the progress note id
+                        if (strProgressNoteTypeView.Equals("edit") || strProgressNoteTypeView.Equals("detail") || strProgressNoteTypeView.Equals("clone") ) {
+                            
+                            DataBag.strProgressNoteTypeView = strProgressNoteTypeView;
+                            bool bId = CurrentURL.Contains("id=");
+                            //Check if URL contains Id parameter if not then show the error message
+                            if(bId==false){
+                            	AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteId);
+                            	DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteId;
+                                return View(); 
+                    	    }
+                    	    else { // Url contains Id paramter
+                    	       // Stores the type of the id which is passed as a param in the URL
+                               strProgressNoteId = AspxPage.GetParameter("id");
+                               //Check the Id is blank
+                                if(string.IsNullOrEmpty(strProgressNoteId)){
+                                   	AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteId);
+                                   	DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteId;
+                                   	return View();
+                                }
+                                else {
+            		                 
+            		                 //Assign the dynamic query to the Progress Note
+            		                 List<Force__Progress_Note__c> lstpronoteobj = new List<Force__Progress_Note__c>();
+            		                 lstpronoteobj = getProgressNote(strProgressNoteId);
+            		                 
+            		                  if(lstpronoteobj != null && lstpronoteobj.Count() > 0) {
+            		                    
+            		                    DataBag.DisplayPNI = true;
+            		                    //This code snippet will set the value of the Scroll Position on Save Button on all the rows
+            		                    bool bScrollView = CurrentURL.Contains("scrollToOnLoad=");
+            		                    if(bScrollView == true){
+            		                        DataBag.PositionOfTheButton =  AspxPage.GetParameter("scrollToOnLoad");
+            		                         //DataBag.IdOfTheButton =  AspxPage.GetParameter("scrollToOnLoad");
+            		                    }
+            		                    
+            		                    DataBag.lstProgressNoteObj = lstpronoteobj;
+            		                    
+            		                    DataBag.IsProgressNoteRecordLocked = lstpronoteobj[0].IsProgressNoteRecordLocked__c;
+            		                    
+            		                    DataBag.IsProgressNoteRecordLockedForSupervisor = lstpronoteobj[0].IsProgressNoteRecordLockedForSupervisor__c;
+            		                    
+            		                    DataBag.strProgressNoteId = strProgressNoteId;
+            		                    
+            		                    DataBag.strServiceId = lstpronoteobj[0].Service__c;
+            		                    
+            		                    DataBag.lstGoalObj = getGoals(strGoalFields);
+            		                    
+            		                    List<string> setOfGoalId = new List<string>();
+                        	            // Strore Goal's Ids into List
+                        	            foreach (Force__Goals__c element in  DataBag.lstGoalObj) {
+                        	                setOfGoalId.Add(element.Id);
+                        	            }
+                        	            
+                        	            DataBag.lstGoalDataObj = getGoalData(strGoalDataFields, setOfGoalId);
+                        	            
+                        	            DataBag.lstTimeEntriesObj = getTimeEntries(strTimeEntriesFields);
+                        	            
+                        	            //to get current staff member user to initialize DataBag.strStaffContactId
+                                        getStaffContactId();
+                                        
+                                        //to get current progress note service name
+                                        getProgressNoteServiceName();
+                                        
+                                        checkStatusCompleted(DataBag.lstProgressNoteObj);
+                                        
+                                        showInDetailViewWhenRecordLocked();
+                                        
+                                        /*********************************start Dropdown***********************************************/
+                                        createOptionLists(DataBag.lstProgressNoteObj[0].Service__c);
+                                        /*********************************End Dropdown***********************************************/
+            		                }
+            		                else {
+            		                    //The error message displayed when No Records Found:Record does not exist for the passed id in the parameter.
+            		                    AspxPage.AddMessage(CustomLabels.ErrorOnProgressNoteId);
+            		                    DataBag.errorMessage = CustomLabels.ErrorOnProgressNoteId;
+            		                    return View();
+            		                }
+                                }
+                    	    }
+                        }
+                        else { //if TypeView is equal to new
+                            // Check if TypeView is equal to new
+                            if (strProgressNoteTypeView.Equals("new")) {
+                                
+                               createNewProgressNoteRecord();
+                               
+                            }
+                        }
+                    }
+                    
+            }
+	    }
+		return View();
+	}
+	
+	/*
+	* Description: Method to intialize the DataBag and the string with appropriate value
+	*/
+	public void init(){
+	    // This Databag is used to store the value of IsProgressNoteRecordLocked__c checkbox to locked the progress note record
+	    DataBag.IsProgressNoteRecordLocked = "";
+	    
+	    // This Databag is used to store the value of IsProgressNoteRecordLockedForSupervisor__c checkbox to locked the progress note record for supervisor
+	    DataBag.IsProgressNoteRecordLockedForSupervisor = "";
+	    
+	    // This Databag is used to store the exception occured on page
+	    DataBag.Exception = "";
+	    
+	    //This Databag is used to store the Custom error message , generate via wrong value passed in URL
+	    DataBag.errorMessage = "";
+	    
+	    // This Databag list is used to store the value of progress Note object
+	    DataBag.lstProgressNoteObj = new List<Force__Progress_Note__c>();
+	    
+	    // This Databag is used to store the value of progress Note Id
+	    DataBag.strProgressNoteId="";
+	    
+	    // This Databag is used to store the value of TypeView
+	    DataBag.strProgressNoteTypeView="";
+	    
+	    // This Databag is used to store the value of Staff contact id (Magentrix user contact id)
+	    DataBag.strStaffContactId = "";
+	    
+	    //This Databag is used to store the value of Service id from progress note for edit and detail view
+	    //This Databag is used to store the value of Service id get grom url for New View
+	    DataBag.strServiceId = "";
+	    
+	    // This Databag list is used to store the value of goal object
+	    DataBag.lstGoalObj = new List<Force__Goals__c>();
+	    
+	    // This Databag list is used to store the value of Goal data object
+	    DataBag.lstGoalDataObj = new List<Force__Progress_Update__c>();
+	    
+	    // This Databag list is used to store the value of Time Entries data object
+	    DataBag.lstTimeEntriesObj = new List<Force__Time_Entries__c>();
+	    
+        
+        //This databag variable is used to show the progress Note interface or hide it
+	    DataBag.DisplayPNI = false;
+	    
+	    //This databag variable is used to show the field in readonly mode or not
+	    DataBag.IsStaffMember = false;
+	    
+	    //This databag variable is used to show/hide the Add time Entries button
+	    DataBag.IsActiveButton = false;
+	    
+	    // This databag variable is used to store the list of login user
+	    //DataBag.lstStaffMemberUser = new List<User>() ;
+	    
+	    //This databag is used to create new Goal Data(Goal Update) 
+	    DataBag.lstNewGoalData = new List<Force__Progress_Update__c>();
+	    
+	    //This databag is used to create new Time Entries
+	    DataBag.lstNewTimeEntries = new List<Force__Time_Entries__c>();
+	    
+	    //This databag is used to store the id of the Button Clicked
+	    DataBag.IdOfTheButton = "";
+	    
+	    //This databag is used to store the positon of the Button Clicked
+	    DataBag.PositionOfTheButton = "";
+	    
+	    //This databag is used to show the success meassage on popup
+	    DataBag.IsSuccessProgressNote = "false";
+	    
+	    //This databag is used to hide the buttons
+	    DataBag.IsStatusCompleted = false;
+	    
+	    //This databag is used to check the size of Time Entries list
+	    DataBag.IsTimeEntriesPresent = "false";
+	    
+	    //This databag is used to store the value of Service name
+	    DataBag.strProgressNoteServiceName = "";
+	    
+	    //This Databag is used to throw the exception when multiple methods calls at onces
+	    DataBag.IsMultipleMethodThrowException = false;
+	    
+	    //This Databag is used to throw the exception when Save and Complete calls at onces
+	    DataBag.IsMultipleMethodThrowExceptionForSaveAndComplete = false;
+	    
+	    /*********************************start Dropdown***********************************************/
+	    //This databag is used to store the Active value for status of Authorization Line item
+	    DataBag.strStatusActive = "Active";
+	    
+	    //This databag is used to store the list of funder option
+	    DataBag.lstFunderOptions = new List<WrapperForOption>();
+	    
+	    //This databag is used to store the list of Billing Code option
+	    DataBag.lstBillingCodeOptions = new List<WrapperForOption>();
+	    
+	    /*********************************End Dropdown***********************************************/
+	}
+	
+    /*
+    * Description: Method to to get Progress Note Details
+    * Input      : Id(string) of Progress Note
+    * Output     : List of Progress Note
+    */
+	public List<Force__Progress_Note__c> getProgressNote(string strProgressNoteId) 
+	{
+    	    //Start --Progress Note Query Record Fetch and Create LIst of FIleds to display 
+            string queryStr="SELECT";
+            string fixFieldsProgressNote=" Id,Service__c,Family_Signature__c,Staff_Signature__c,Supervisor_Signature__c,IsProgressNoteRecordLocked__c,";
+            fixFieldsProgressNote += "IsProgressNoteRecordLockedForSupervisor__c,Family_Signee_Name__c,Staff_Signee_Name__c,Supervisor_Signee_Name__c,";
+            fixFieldsProgressNote += "Family_Signed_Date__c,Staff_Signed_Date__c,Supervisor_Signed_Date__c,";
+            fixFieldsProgressNote += "External_Signature__c,External_Signee_Name__c,External_Role_Name__c,External_Relationship__c,External_Signed_Date__c,";
+            fixFieldsProgressNote += "Family_Role_Name__c,Staff_Role_Name__c,Supervisor_Role_Name__c,Relationship_Type_Family__c";
+            queryStr+= createQueryStringFields(fixFieldsProgressNote,DataBag.strProgressNoteFields,"Force__Progress_Note__c");
+            queryStr+=" WHERE Id=\""+strProgressNoteId+"\"";
+            queryStr+=" LIMIT 1";
+        
+        //Assign the dynamic query to the Progress Note 
+        return  (List<Force__Progress_Note__c>)Database.Query(queryStr);
+	}
+    
+	/*
+    * Description: Method to save the progress note with the updated values
+    * Input      : lstProgressNoteObj : lst of Progress Note which have the updated values
+    * Output     : Redirects to the Page with updated values
+    */
+   
+    [HttpPost]
+	public ActionResponse SaveProgressNote(List<Force__Progress_Note__c> lstProgressNoteObj){
+	    int count = 0;
+       
+        foreach (var progressNoteObj in lstProgressNoteObj)
+        {
+            foreach (var field in DataBag.lstProgressNoteFields)
+            {
+                //To save the progress note data when opens in new view
+                if(DataBag.strProgressNoteTypeView == "new") {
+                    if(field != "Staff_Name__c") {
+                        string val = Request["m$" + count.ToString() + "$." +  field];
+                        progressNoteObj.Set(field, val);  
+                    }
+                    if(field == "Staff_Name__c") {
+                        progressNoteObj.Set("Staff_Name__c", DataBag.strStaffContactId);
+                    }
+                }
+                //To save the progress note data when opens in edit view
+                if (DataBag.strProgressNoteTypeView == "edit") {
+                    if(field != "Staff_Name__c" && field != "Status__c"){
+                        string val = Request["m$" + count.ToString() + "$." +  field];
+                        progressNoteObj.Set(field, val);  
+                    }
+                }
+                //To save the status as in progress when click on save in detail and edit mode
+                if (DataBag.strProgressNoteTypeView == "edit" || DataBag.strProgressNoteTypeView == "detail") {
+                    if(field == "Status__c"){
+                        progressNoteObj.Set("Status__c", "In Progress");  
+                    }
+                }   
+            }
+             count++;
+        }
+        
+        // On save check if progress note id is present then update the record otherwise create the new record of progress note
+        if (lstProgressNoteObj.Count > 0) {
+            if(string.IsNullOrEmpty(lstProgressNoteObj[0].Id)){
+                try {
+                    Insert(lstProgressNoteObj);
+                    DataBag.Exception = "";
+                } catch (Exception e) {
+                    DataBag.Exception = e.Message;
+                    if(DataBag.IsMultipleMethodThrowException == true){
+	                     throw e;
+	                }
+                    return View();
+                }
+                DataBag.strProgressNoteId = lstProgressNoteObj[0].Id;
+            }
+            else {
+                try {
+                    Edit(lstProgressNoteObj);
+                    DataBag.Exception = "";
+                } catch (Exception e) {
+                    DataBag.Exception = e.Message;
+                    if(DataBag.IsMultipleMethodThrowException == true){
+                         DataBag.IsMultipleMethodThrowException = false;
+	                     throw e;
+	            }
+                    return View();
+                }
+            }
+        }
+        return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId });
+    }
+    
+    /*
+    * Description: Method to set lookup filter of billing code
+    * Input      : lstProgressNoteObj : lst of Progress Note which have the updated values
+    * Output     : set billing code lookup
+    */
+    [HttpPost]
+	public ActionResponse UpdateLookUpFilter(List<Force__Progress_Note__c> lstProgressNoteObj){
+	    int count = 0;
+       
+        foreach (var progressNoteObj in lstProgressNoteObj)
+        {
+            foreach (var field in DataBag.lstProgressNoteFields)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                progressNoteObj.Set(field, val);
+                   
+            }
+             count++;
+        }
+        return View();
+    }
+    
+    /*
+    * Description: Method to get Contact Id of current magentrix login User
+    * Output : Id(String) of Contact
+    */
+	public void getStaffContactId() 
+	{
+	    List<User> lstUser = new List<User>();
+	    var CurrentUserId = Database.Retrieve(SystemInfo.UserId).Id;
+	    string queryStr="SELECT Id, ContactId From User Where Id =\""+CurrentUserId+"\"";
+	    lstUser = (List<User>)Database.Query(queryStr);
+	    if (lstUser.Count >0) {
+	        if(!string.IsNullOrEmpty(lstUser[0].ContactId)) {
+	            DataBag.IsStaffMember = true;
+	            //DataBag.lstStaffMemberUser = lstUser;
+	            DataBag.strStaffContactId = lstUser[0].ContactId;
+	        }
+	    }
+	}
+	
+	/*
+    * Description: Method to get the Service name of the service of progress note
+    */
+	public void getProgressNoteServiceName() 
+	{
+	    List<Force__Service__c> lstService = new List<Force__Service__c>();
+	    string strProgressNoteService = DataBag.strServiceId;
+	    if(!string.IsNullOrEmpty(strProgressNoteService)) {
+           
+            lstService = Database.Query<Force__Service__c>(a => a.Id == strProgressNoteService).Select(f => new { f.Id, f.Name })
+                                                         .ToListAsAdmin();
+                                                         
+            if (lstService.Count >0 && !string.IsNullOrEmpty(lstService[0].Name)){
+                DataBag.strProgressNoteServiceName = lstService[0].Name;
+            }
+	    }
+	}
+	
+	/*
+    * Description: Method to get Service record autopopulate fields on progress Note
+    * Input : Id(String) of Service
+    * Output: List of Progress Note
+    */
+	public void getServiceToAutopopulate(string serviceId) 
+	{
+	    // list of progress note for databag
+	    List<Force__Progress_Note__c> lstpronoteobj = new List<Force__Progress_Note__c>();
+                                       
+        //create new record for new view of Progress note Information
+        Force__Progress_Note__c pronoteobj = new Force__Progress_Note__c();
+                                       
+        //add staff member id to New progress note records for auto populate
+        pronoteobj.Staff_Name__c =DataBag.strStaffContactId;
+        pronoteobj.Service__c = DataBag.strServiceId;
+	    
+	    if(!string.IsNullOrEmpty(serviceId))
+	    {
+    	    List<Force__Service__c> lstService = new List<Force__Service__c>();
+    	    string queryStr="SELECT";
+    	    string fixServiceFields = " Id";
+    	    string strServiceFields = "Funder__c,Client__c,Billing_Code__c";
+    	    queryStr+= createQueryStringFields(fixServiceFields,strServiceFields,"Force__Service__c");
+            queryStr+=" WHERE Id=\""+serviceId+"\"";
+    	    lstService = (List<Force__Service__c>)Database.Query(queryStr);
+    	    if (lstService.Count >0) {
+    	        
+    	        pronoteobj.Progress_Funder__c = lstService[0].Funder__c;
+    	        pronoteobj.Client__c = lstService[0].Client__c;
+    	        pronoteobj.Billing_Code__c = lstService[0].Billing_Code__c;
+    	        
+    	    }
+	    }
+        lstpronoteobj.Add(pronoteobj);                              
+        // add new record list of Progress note to Data bag for display on page
+        DataBag.lstProgressNoteObj = lstpronoteobj;
+	}
+	
+	/*
+    * Description: Method to create new progress note record
+    * Output: New View for Progress Note
+    */
+	public void createNewProgressNoteRecord() {
+	    
+	    DataBag.strProgressNoteTypeView = strProgressNoteTypeView;
+                                       
+        DataBag.DisplayPNI = true;
+       
+        //to get current staff member user to initialize DataBag.strStaffContactId
+        getStaffContactId();
+       
+        // Stores the Service id which is passed as a param in the URL
+        strServiceId= AspxPage.GetParameter("ServiceId");
+        
+        DataBag.strServiceId = strServiceId;
+        
+        getServiceToAutopopulate(DataBag.strServiceId);
+        
+        /*********************************start Dropdown***********************************************/
+        createOptionLists(DataBag.strServiceId);
+        /*********************************End Dropdown***********************************************/            		           
+	}
+	
+	/*
+    * Description: Method to to get all Goals related to Services
+    * Input      : Id(string) of goal Fields
+    * Output     : List of Goals
+    */
+	public List<Force__Goals__c> getGoals(string strGoalFields) 
+	{
+    	//Start --Goal Query Record Fetch and Create LIst of FIleds to display 
+        string queryStr="SELECT";
+        string fixFieldsGoals=" Id,Service__c";
+        queryStr+= createQueryStringFields(fixFieldsGoals,strGoalFields,"Force__Goals__c");
+        queryStr+=" WHERE Service__c=\""+DataBag.strServiceId+"\"";
+        
+        //Assign the dynamic query to the Goal
+        List<Force__Goals__c> lstGoalobj = new List<Force__Goals__c>();
+        lstGoalobj = (List<Force__Goals__c>)Database.Query(queryStr);
+        return lstGoalobj;
+	}
+	
+	/*
+    * Description: Method to to get all Goal Data related to Objective
+    * Input      : Id(string) of Goal Data Fields
+    * Input      : List of Objective
+    * Output     : List of Goal data
+    */
+	public List<Force__Progress_Update__c> getGoalData(string strGoalDataFields, List<string> setOfGoalId) 
+	{
+    	//Start --Goal data Query Record Fetch and Create List of fields to display 
+        string queryStr="SELECT";
+        string fixFieldsGoalData=" Id,Goal__c,Progress_Note__c";
+        queryStr+= createQueryStringFields(fixFieldsGoalData,strGoalDataFields,"Force__Progress_Update__c");
+        
+        queryStr+=" WHERE Progress_Note__c=\""+DataBag.strProgressNoteId+"\"";
+        //To fetch latest created Goal Data and display on the page accordingly.
+        queryStr+= " Order By CreatedOn Desc";
+        
+        //Assign the dynamic query to the Objective
+        List<Force__Progress_Update__c> lstGoalDataobj = new List<Force__Progress_Update__c>();
+        lstGoalDataobj = (List<Force__Progress_Update__c>)Database.Query(queryStr);
+        
+        List<Force__Progress_Update__c> listOfFilteredGoalData = new List<Force__Progress_Update__c>();
+        foreach (Force__Progress_Update__c element in lstGoalDataobj) {
+	        if(setOfGoalId.Contains(element.Goal__c)) {
+	            listOfFilteredGoalData.Add(element);
+	        }
+	    }
+	    
+        return listOfFilteredGoalData;
+	}
+	
+	/*
+    * Description: Method to save the signature on Progress Note object for Staff and Supervisor Signature 
+    * Input      : lstProgressNoteObj : list of Progress Note which have the updated values
+    * Output     : save the signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveSignature(List<Force__Progress_Note__c> lstProgressNoteObj){
+        
+        foreach (var progressNoteObj in lstProgressNoteObj)
+        {
+            //Stored the value of Staff signature
+            string StaffSignval    = Request["StaffSignToUpdateProgressNote"];
+            
+            //Check whether the Staff Signature is Blank or Not
+            bool checkStaffSignatureVal = checkTheSignatureValue(StaffSignval);
+            
+            //Stored the value of Supervisor signature
+            string SupervisorSignval = Request["SupervisorSignToUpdateProgressNote"];
+           
+            //Check whether the Supervisor Signature is Blank or Not
+            bool checkSupervisorSignatureVal = checkTheSignatureValue(SupervisorSignval);
+            
+            //stored the value of family signee name
+            string StaffSigneeName = Request["m$0$.Staff_Signee_Name__c"]; 
+            
+            //stored the value of family signee name
+            string SupervisorSigneeName = Request["m$0$.Supervisor_Signee_Name__c"];
+            
+            //Stored the value of External signature
+            string ExternalSignval = Request["ExternalSignToUpdateProgressNote"];
+            
+            //Check whether the External Signature is Blank or Not
+            bool checkExternalSignatureVal = checkTheSignatureValue(ExternalSignval);
+            
+            //stored the value of External signee name
+            string ExternalName = Request["m$0$.External_Signee_Name__c"]; 
+            
+            //stored the value of External signee's relationship to the client
+            string ExternalRelationship = Request["m$0$.External_Relationship__c"]; 
+            
+            if(checkStaffSignatureVal == false){
+                progressNoteObj.Set("Staff_Signature__c", "");
+                progressNoteObj.Set("Staff_Signed_Date__c","");
+                progressNoteObj.Set("Staff_Signee_Name__c", "");
+                progressNoteObj.Set("Staff_Role_Name__c", "");
+            }
+            else{
+                // To check if the existing and new signatures are not same then change the date and signee's title
+                if(progressNoteObj.Staff_Signature__c != StaffSignval) {
+                    progressNoteObj.Set("Staff_Signed_Date__c", DateTime.Today);
+                    progressNoteObj.Set("Staff_Role_Name__c", UserInfo.Role.Name);
+                }
+                progressNoteObj.Set("Staff_Signature__c", StaffSignval);
+                progressNoteObj.Set("Staff_Signee_Name__c", StaffSigneeName);
+            }
+            
+            if(checkSupervisorSignatureVal == false){
+                progressNoteObj.Set("Supervisor_Signature__c","");
+                progressNoteObj.Set("Supervisor_Signed_Date__c", "");
+                progressNoteObj.Set("Supervisor_Signee_Name__c", ""); 
+                progressNoteObj.Set("Supervisor_Role_Name__c", "");
+            }
+            else{
+                // To check if the existing and new signatures are not same then change the date and signee's title
+                if(progressNoteObj.Supervisor_Signature__c != SupervisorSignval) {
+                    progressNoteObj.Set("Supervisor_Signed_Date__c", DateTime.Today); 
+                    progressNoteObj.Set("Supervisor_Role_Name__c", UserInfo.Role.Name);
+                }
+                progressNoteObj.Set("Supervisor_Signature__c", SupervisorSignval);
+                progressNoteObj.Set("Supervisor_Signee_Name__c", SupervisorSigneeName);   
+            }
+            
+            
+            if(checkExternalSignatureVal == false){
+                progressNoteObj.Set("External_Signature__c","");
+                progressNoteObj.Set("External_Signed_Date__c", "");
+                progressNoteObj.Set("External_Signee_Name__c", "");
+                progressNoteObj.Set("External_Relationship__c", "");  
+                progressNoteObj.Set("External_Role_Name__c", "");  
+            }
+            else{
+                // To check if the existing and new signatures are not same then change the date and signee's title
+                if(progressNoteObj.External_Signature__c != ExternalSignval) {
+                    progressNoteObj.Set("External_Signed_Date__c", DateTime.Today);  
+                    progressNoteObj.Set("External_Role_Name__c", UserInfo.Role.Name);  
+                }
+                progressNoteObj.Set("External_Signature__c", ExternalSignval);
+                progressNoteObj.Set("External_Signee_Name__c", ExternalName);  
+                progressNoteObj.Set("External_Relationship__c", ExternalRelationship);  
+            }
+            
+        }
+        
+        try {
+            Edit(lstProgressNoteObj);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            
+            //set the blank if signature contain error while saving 
+            List<Force__Progress_Note__c> lstOfProgressNote = new List<Force__Progress_Note__c>();
+            lstOfProgressNote = getProgressNote(DataBag.strProgressNoteId);
+            foreach (var progressNoteObj in lstOfProgressNote)
+            {
+                DataBag.lstProgressNoteObj[0].Set("Supervisor_Signature__c",progressNoteObj.Get("Supervisor_Signature__c"));
+                DataBag.lstProgressNoteObj[0].Set("Staff_Signature__c",progressNoteObj.Get("Staff_Signature__c"));
+                DataBag.lstProgressNoteObj[0].Set("External_Signature__c",progressNoteObj.Get("External_Signature__c"));
+            }    
+                
+            if(DataBag.IsMultipleMethodThrowException == true){
+                 DataBag.IsMultipleMethodThrowException = false;
+                 throw e;
+            }
+            return View();
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId , scrollToOnLoad = DataBag.PositionOfTheButton});
+	}
+	
+	
+	/*
+    * Description: Method to save the Family signature on Progress Note object
+    * Input      : lstProgressNoteObj : list of Progress Note which have the updated values
+    * Output     : save the Family signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveFamilySignature(List<Force__Progress_Note__c> lstProgressNoteObj){
+        
+        foreach (var progressNoteObj in lstProgressNoteObj)
+        {
+            //Stored the value of Family signature
+            string FamilySignval = Request["FamilySignToUpdateProgressNote"]; 
+            //Check whether the Family Signature is Blank or Not
+            bool checkFamilySignatureVal = checkTheSignatureValue(FamilySignval);
+            //stored the value of family signee name
+            string FamilySigneeName = Request["m$0$.Family_Signee_Name__c"]; 
+            
+            //stored the value of the relationship of the Signee
+            string relationshipName = Request["m$0$.Relationship_Type_Family__c"];
+            
+            if(checkFamilySignatureVal == false){
+                progressNoteObj.Set("Family_Signature__c", "");
+                progressNoteObj.Set("Family_Signed_Date__c","");
+                progressNoteObj.Set("Family_Signee_Name__c","");
+                progressNoteObj.Set("Relationship_Type_Family__c","");
+                progressNoteObj.Set("Family_Role_Name__c", "");
+            }
+            else{
+                // To check if the existing and new signatures are not same then change the date
+                if(progressNoteObj.Family_Signature__c != FamilySignval) {
+                    progressNoteObj.Set("Family_Signed_Date__c", DateTime.Today);  
+                    progressNoteObj.Set("Family_Role_Name__c", UserInfo.Role.Name);
+                }
+                progressNoteObj.Set("Family_Signature__c", FamilySignval);
+                progressNoteObj.Set("Family_Signee_Name__c",FamilySigneeName);
+                progressNoteObj.Set("Relationship_Type_Family__c",relationshipName);
+                
+            }
+        }
+        
+        try {
+            Edit(lstProgressNoteObj);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            foreach (var progressNoteObj in lstProgressNoteObj)
+            {
+                progressNoteObj.Set("Family_Signature__c", "");
+                progressNoteObj.Set("Family_Signed_Date__c","");
+                progressNoteObj.Set("Family_Signee_Name__c","");
+                progressNoteObj.Set("Relationship_Type_Family__c","");
+                progressNoteObj.Set("Family_Role_Name__c", "");
+            }
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+       //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId , scrollToOnLoad = DataBag.PositionOfTheButton});
+	}
+	
+	/*
+    * Description: Method to check the value of the signature is blank or not
+    * Input      : signatureVal: The signature for which the value needs to be checked
+    * Output     : boolean true: if it the signature is blank and false: if not
+    */
+    public bool checkTheSignatureValue(string signatureVal){
+        int firstIndexValues         = signatureVal.IndexOf('[');
+        int lastIndexValues          = signatureVal.LastIndexOf(']');
+        int lengthOfStrSupervisorSig = lastIndexValues - firstIndexValues + 1;
+    
+        string subStringOfSignVal = signatureVal.Substring(firstIndexValues+1,lengthOfStrSupervisorSig-2);
+        if(!string.IsNullOrEmpty(subStringOfSignVal)){
+            return true;
+        }
+        return false;
+    }
+	
+	/*
+    * Description: Method to single Row for Goal Data
+    * Input      : lstNewGoalData : list of Goal Data
+    * Output     : Add the single row for Goal Data
+    */
+	[HttpPost]
+	public ActionResponse AddGoalDataRowToList(List<Force__Progress_Update__c> lstNewGoalData)
+	{   
+	   
+	    lstNewGoalData.Clear();
+	    DataBag.lstNewGoalData = lstNewGoalData;
+	   
+	    DataBag.goalIdForNewGoalData = Request["GoalIDforListofGoalDataToInsert"];
+	   
+	    Force__Progress_Update__c ObjNewGoalData = new Force__Progress_Update__c();
+	    //Add new instance to the Goal Data list
+		lstNewGoalData.Add(ObjNewGoalData);
+	    
+		DataBag.lstNewGoalData = lstNewGoalData;
+		
+		//Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+		return View();
+	}
+	
+	/*
+    * Description: Method to Add Row for Goal Data
+    * Input      : lstNewGoalData : list of Goal Data
+    * Output     : Add more rows for Goal Data
+    */
+	[HttpPost]
+	public ActionResponse AddMoreGoalDataRowToList(List<Force__Progress_Update__c> lstNewGoalData)
+	{   
+	   int count = 0;
+	   // For loop to add new rows for Goal data
+       foreach (var ObjGoalData in lstNewGoalData)
+        {
+            // For loop to add new rows for Goal data with specific fields
+            foreach (var field in DataBag.lstGoalDataFields)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                
+                ObjGoalData.Set(field, val);
+                
+            }
+            count++;
+        }
+	    
+	    Force__Progress_Update__c  ObjNewGoalData = new Force__Progress_Update__c();
+	    //Add new instance to the Goal data list
+		lstNewGoalData.Add(ObjNewGoalData);
+	    
+	    DataBag.lstNewGoalData = lstNewGoalData;
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    
+	    return View();
+	} 
+	
+	/*
+    * Description: Method to Remove Row for Goal Data
+    * Input      : lstNewGoalData : list of Goal Data
+    * Output     : Remove the rows for Goal Data
+    */
+	[HttpPost]
+	public ActionResponse RemoveGoalDataRowToList(List<Force__Progress_Update__c> lstNewGoalData)
+	{   
+	    if(lstNewGoalData.Count>0){
+	        lstNewGoalData.RemoveAt(lstNewGoalData.Count-1);
+	    }
+	    
+	    if(lstNewGoalData.Count==0){
+	       DataBag.goalIdForNewGoalData =""; 
+	    }
+	    
+	    DataBag.lstNewGoalData = lstNewGoalData;
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	     
+	}
+	
+	/*
+    * Description: Method to save Goal Data
+    * Input      : lstNewGoalData : list of Goal Data
+    * Output     : save Goal Data records
+    */
+	[HttpPost]
+	public ActionResponse SaveGoalData(List<Force__Progress_Update__c> lstNewGoalData)
+	{   
+	    int count = 0;
+	    foreach (var newGoalDataObj in lstNewGoalData)
+        {
+            foreach (var field in DataBag.lstGoalDataFields)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                newGoalDataObj.Set(field, val);
+                   
+            }
+             count++;
+        }
+        
+        foreach (var goalDataObj in lstNewGoalData) {
+           goalDataObj.Goal__c = DataBag.goalIdForNewGoalData;
+           goalDataObj.Progress_Note__c = DataBag.strProgressNoteId;
+        }
+            
+        try {
+            Insert(lstNewGoalData);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+               DataBag.IsMultipleMethodThrowException =  false;
+               throw e;
+            }
+            return View();
+        }
+        
+        DataBag.goalIdForNewGoalData =""; 
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId , scrollToOnLoad = DataBag.PositionOfTheButton });
+	}
+	
+	/*
+    * Description: Method to to get all Time Entries related to Progress Note
+    * Input      : Id(string) of Time Entires Fields
+    * Output     : List of Time Entries
+    */
+	public List<Force__Time_Entries__c> getTimeEntries(string strTimeEntriesFields) 
+	{
+    	//Start --Time Entries Query Record Fetch and Create List of Fileds to display 
+        string queryStr="SELECT";
+        string fixFieldsTimeEntries=" Id,Progress_Note__c";
+        queryStr+= createQueryStringFields(fixFieldsTimeEntries,strTimeEntriesFields,"Force__Time_Entries__c");
+        queryStr+=" WHERE Progress_Note__c =\""+DataBag.strProgressNoteId+"\"";
+        
+        //Assign the dynamic query to the Time Entries
+        List<Force__Time_Entries__c> lstTimeEntriesobj = new List<Force__Time_Entries__c>();
+        lstTimeEntriesobj = (List<Force__Time_Entries__c>)Database.Query(queryStr);
+        
+        if(lstTimeEntriesobj.Count > 0) {
+            DataBag.IsTimeEntriesPresent = "true";
+        }
+        return lstTimeEntriesobj;
+	}
+	
+	/*
+    * Description: Method to single Row for Time Entries
+    * Input      : lstNewTimeEntries : list of Time Entries
+    * Output     : Add the single row for Time Entries
+    */
+	[HttpPost]
+	public ActionResponse AddTimeEntriesRowToList(List<Force__Time_Entries__c> lstNewTimeEntries)
+	{   
+	    DataBag.IsActiveButton = true;
+	    
+	    Force__Time_Entries__c ObjNewTimeEntries = new Force__Time_Entries__c();
+	    //Add new instance to the Time Entries list
+		lstNewTimeEntries.Add(ObjNewTimeEntries);
+	    
+		DataBag.lstNewTimeEntries = lstNewTimeEntries;
+		
+		//Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+		return View();
+	}
+	
+	/*
+    * Description: Method to Add Row for Time Entries
+    * Input      : lstNewTimeEntries : list of Time Entries
+    * Output     : Add more rows for Time Entries
+    */
+	[HttpPost]
+	public ActionResponse AddMoreTimeEntriesRowToList(List<Force__Time_Entries__c> lstNewTimeEntries)
+	{   
+	   int count = 0;
+	   // For loop to add new rows for Time Entries
+       foreach (var ObjTimeEntries in lstNewTimeEntries)
+        {
+            // For loop to add new rows for Time Entries with specific fields
+            foreach (var field in DataBag.lstTimeEntriesFields)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                
+                ObjTimeEntries.Set(field, val);
+                
+            }
+            count++;
+        }
+	    
+	    Force__Time_Entries__c  ObjNewTimeEntries = new Force__Time_Entries__c();
+	    //Add new instance to the Time Entries list
+		lstNewTimeEntries.Add(ObjNewTimeEntries);
+	    
+	    DataBag.lstNewTimeEntries = lstNewTimeEntries;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	} 
+	
+	/*
+    * Description: Method to Remove Row for Time Entries
+    * Input      : lstNewTimeEntries : list of Time Entries
+    * Output     : Remove the rows for Time Entries
+    */
+	[HttpPost]
+	public ActionResponse RemoveTimeEntriesRowToList(List<Force__Time_Entries__c> lstNewTimeEntries)
+	{   
+	    if(lstNewTimeEntries.Count>0){
+	        lstNewTimeEntries.RemoveAt(lstNewTimeEntries.Count-1);
+	    }
+	    
+	    if(lstNewTimeEntries.Count==0){
+	       DataBag.IsActiveButton = false;
+	    }
+	    
+	    DataBag.lstNewTimeEntries = lstNewTimeEntries;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	     
+	}
+	
+	/*
+    * Description: Method to save Time Entries
+    * Input      : lstNewTimeEntries : list of Time Entries
+    * Output     : save Time Entries records
+    */
+	[HttpPost]
+	public ActionResponse SaveTimeEntries(List<Force__Time_Entries__c> lstNewTimeEntries)
+	{   
+	    int count = 0;
+	    foreach (var newTimeEntriesObj in lstNewTimeEntries)
+        {
+            foreach (var field in DataBag.lstTimeEntriesFields)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                newTimeEntriesObj.Set(field, val);
+                   
+            }
+             count++;
+        }
+        
+        foreach (var timeEntriesObj in lstNewTimeEntries) {
+           timeEntriesObj.Contact__c = DataBag.strStaffContactId;
+           timeEntriesObj.Progress_Note__c = DataBag.strProgressNoteId;
+        }
+        
+        try {
+            Insert(lstNewTimeEntries);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        
+        DataBag.IsActiveButton = false;
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId , scrollToOnLoad = DataBag.PositionOfTheButton});
+	}
+	
+	/*
+    * Description: Method to save Progress note with Completion date and status picklist
+    * Input      : lstProgressNoteObj : list of Progress Note
+    * Output     : Save the Progress Note with completion date and status as completed
+    */
+    [HttpPost]
+    public ActionResponse SavePNWithCompletionDateAndStatus(List<Force__Progress_Note__c> lstProgressNoteObj){
+        
+        foreach (var progresssNoteDateObj in lstProgressNoteObj)
+        {
+            progresssNoteDateObj.Set("Completion_Date__c", DateTime.Today);
+            progresssNoteDateObj.Set("Status__c", "Completed");
+        }
+        if(lstProgressNoteObj.Count > 0){
+            lstProgressNoteObj[0].Id = DataBag.strProgressNoteId;
+            try {
+                Edit(lstProgressNoteObj);
+                DataBag.Exception = "";
+            }
+            catch (Exception e) {
+                DataBag.Exception = e.Message;
+                if(DataBag.IsMultipleMethodThrowExceptionForSaveAndComplete == true){
+                     DataBag.IsMultipleMethodThrowExceptionForSaveAndComplete = false;
+                    throw e;
+                }
+                
+                return View();
+            }
+        }
+        
+        return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId });
+    }
+    
+    /*
+    * Description: Method to save the signature and all the information related to Progress Note
+    * Output     : save the all information on Progress Note
+    */
+    [HttpPost]
+    public ActionResponse SaveCompleteProgressNote(){
+        
+        try{
+	        
+	        DataBag.IsMultipleMethodThrowException = true;
+	        
+            SaveProgressNote(DataBag.lstProgressNoteObj);
+        
+            if (DataBag.lstNewTimeEntries.Count > 0) {
+                SaveTimeEntries(DataBag.lstNewTimeEntries) ;
+            }
+            if (DataBag.lstNewGoalData.Count > 0) {
+                SaveGoalData(DataBag.lstNewGoalData);
+            }
+            
+             // save to staff and Supervisor signature 
+            SaveSignature(DataBag.lstProgressNoteObj);
+            
+            //save to family signature
+            SaveFamilySignature(DataBag.lstProgressNoteObj);
+            
+            DataBag.IsMultipleMethodThrowException = false;
+           
+        }
+	    catch(Exception e){
+	        DataBag.Exception = e.Message;
+	        //This is called when the user clicks on Save and Complete to display error if any error occurs in the Methods
+	        if(DataBag.IsMultipleMethodThrowExceptionForSaveAndComplete == true){
+	           DataBag.IsMultipleMethodThrowExceptionForSaveAndComplete = false;
+	            throw e;
+	        }
+	        
+            return View();
+	    }
+	    DataBag.Exception = "";
+        return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId });
+    }
+    
+    /*
+    * Description: Method to save the signature and all the information related to Progress Note with save And complete Information
+    * Output     : save the all information on Progress Note with status Information
+    */
+    [HttpPost]
+    public ActionResponse SaveAllInfoOnCompletePN(){
+        
+         try{
+             //Set the Databag to true when Multiple Methods need to be called to throw an exception on Save and Complete
+	        DataBag.IsMultipleMethodThrowExceptionForSaveAndComplete = true;
+            
+            //Multiple method called to Save all the Data related to the sections.
+            SaveCompleteProgressNote();
+	        
+            //Method to Change the Status of Progress Note To 'Completed'
+            SavePNWithCompletionDateAndStatus(DataBag.lstProgressNoteObj);
+        
+            // Check if there are no exceptions, if it does not have any then set IsSuccessProgressNote to true else set it to false
+            if(string.IsNullOrEmpty(DataBag.Exception)){
+                DataBag.IsSuccessProgressNote = "true";
+            }
+            else{
+                DataBag.IsSuccessProgressNote = "false";
+            }
+            
+            //Set the DataBag to false again after multiple method invoke [Reason: if set true then hampers the single call method]
+            DataBag.IsMultipleMethodThrowExceptionForSaveAndComplete = false;
+        }
+	    catch(Exception e){
+	        DataBag.Exception = e.Message;
+            return View();
+	    }
+	    
+	    DataBag.Exception = "";
+        return View(); 
+    }
+    
+	/*
+    * Description: Method to Lock the record on edit view
+    */
+	public void lockProgressNoteRecord()
+	{   
+	    if(DataBag.IsProgressNoteRecordLocked == true && DataBag.strProgressNoteTypeView == "edit" 
+	       && (CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) || CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) {
+	        DataBag.strProgressNoteTypeView = "detail";
+	    }
+	    
+	}
+	
+	/*
+    * Description: Method to unlock record for supervisor
+    * Input      : lstProgressNoteObj : list of Progress Note
+    * Output     : unlock the record for supervisor
+    */
+    [HttpPost]
+	public ActionResponse unlockProgressNoteRecordForSupervisor(List<Force__Progress_Note__c> lstProgressNoteObj)
+	{   
+	    foreach (var progresssNoteUnLockObjForSupervisor in lstProgressNoteObj)
+        {
+            progresssNoteUnLockObjForSupervisor.Set("IsProgressNoteRecordLockedForSupervisor__c", false);
+        }
+	    if(lstProgressNoteObj.Count > 0){
+            lstProgressNoteObj[0].Id = DataBag.strProgressNoteId;
+            try {
+                Edit(lstProgressNoteObj);
+                DataBag.Exception = "";
+            }
+            catch (Exception e) {
+                DataBag.Exception = e.Message;
+                return View();
+            }
+        }
+        return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId });
+	}
+	
+	/*
+    * Description: Method to unlock record for staff
+    * Input      : lstProgressNoteObj : list of Progress Note
+    * Output     : unlock the record for staff
+    */
+    [HttpPost]
+	public ActionResponse unlockProgressNoteRecordForStaff(List<Force__Progress_Note__c> lstProgressNoteObj)
+	{   
+	    foreach (var progresssNoteUnLockObjForStaff in lstProgressNoteObj)
+        {
+            progresssNoteUnLockObjForStaff.Set("IsProgressNoteRecordLocked__c", false);
+        }
+	    if(lstProgressNoteObj.Count > 0){
+            lstProgressNoteObj[0].Id = DataBag.strProgressNoteId;
+            try {
+                Edit(lstProgressNoteObj);
+                DataBag.Exception = "";
+            }
+            catch (Exception e) {
+                DataBag.Exception = e.Message;
+                return View();
+            }
+        }
+        return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId });
+	}
+	
+	/*
+    * Description: Method to unlock the record for supervisor and staff member
+    * Input      : lstProgressNoteObj : list of Progress Note
+    * Output     : unlock the record for supervisor and staff member
+    */
+    [HttpPost]
+    public ActionResponse unlockProgressNoteRecord(List<Force__Progress_Note__c> lstProgressNoteObj)
+    {
+        
+        foreach (var progresssNoteUnLockObj in lstProgressNoteObj)
+        {
+            progresssNoteUnLockObj.Set("IsProgressNoteRecordLocked__c", false);
+            progresssNoteUnLockObj.Set("IsProgressNoteRecordLockedForSupervisor__c", false);
+        }
+        if(lstProgressNoteObj.Count > 0){
+            lstProgressNoteObj[0].Id = DataBag.strProgressNoteId;
+            try {
+                Edit(lstProgressNoteObj);
+                DataBag.Exception = "";
+            }
+            catch (Exception e) {
+                DataBag.Exception = e.Message;
+                return View();
+            }
+        }
+        return Redirect(ActivePages.ProgressNoteInterface, new { typeView = "detail",id=DataBag.strProgressNoteId });
+    }
+    
+    /*
+    * Description: Method to redirect to service record
+    * Input      : lstProgressNoteObj : list of Progress Note
+    * Output     : redirect to the service record
+    */
+    [HttpPost]
+    public ActionResponse redirectToServiceRecord(List<Force__Progress_Note__c> lstProgressNoteObj)
+    {
+        return Redirect("/"+lstProgressNoteObj[0].Service__c) ;
+    }
+    
+    /*
+    * Description: Method to Hide the buttons
+    * Input      : lstProgressNoteObj : list of Progress Note
+    * Output     : Hide the buttons on progress Note interface
+    */
+    public void checkStatusCompleted(List<Force__Progress_Note__c> lstProgressNoteObj)
+    {
+        foreach (var progresssNoteHideObj in lstProgressNoteObj) {
+            if (progresssNoteHideObj.Status__c != null && progresssNoteHideObj.Status__c.Equals("Completed", StringComparison.OrdinalIgnoreCase)) {
+                DataBag.IsStatusCompleted = true;
+            }
+        }
+    }
+    /*
+	* Description: Method to form the Query
+	* Input      : strOfQueryFields : The fields in comma seperated format
+	* Input      : fixFields : Fixed fields such as Id
+    * Output     : strQuery: returns a query of string which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public string createQueryStringFields(string fixFields, string strOfQueryFields, string ObjectName){
+	    
+	    string strQuery = "";
+	    
+	    if(string.IsNullOrEmpty(fixFields) ){
+	        
+	        strQuery = strOfQueryFields;
+	    }
+	    else{
+	      strQuery = fixFields+", "+strOfQueryFields; 
+	    }
+	    strQuery = strQuery + " FROM "+ ObjectName;
+	    
+	    return strQuery;      
+	}
+	
+	/*
+	* Description: Method to get the list of fields in comma seperated double quote to be accessed by the DataBag
+	* Input      : strOfFields : The fields in comma seperated format
+    * Output     : lstOfFieldForTheObj: returns a list of fields which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public List<string> getTheCommaSeperatedValues(string strOfFields){
+	    
+	    List<string> lstOfFieldForTheObj = new List<string>();
+	    if(strOfFields != null){
+	        var tempConfig = (string)strOfFields;
+            string[] separators = {","};
+            lstOfFieldForTheObj = tempConfig.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();
+	    }
+	    return lstOfFieldForTheObj;      
+	}
+	/*
+    * Description: Method to get the scroll position
+    * Input      : 
+    * Output     : Stores the scroll value
+    */
+	[HttpPost]
+	public ActionResponse getScrollValue()
+	{   
+	    DataBag.IdOfTheButton = Request["scrollIdName"];
+	    DataBag.PositionOfTheButton = (Request["scrollPositionIdName"]);
+	    return View();
+	}
+	
+	/*
+     * Description: Method to check if the status is 'Completed' then set as detail view
+     * Input      : 
+     * Output     : Rerenders the page and displays detail view if Status 'Completed'
+    */
+	public void showInDetailViewWhenRecordLocked(){
+	    if(DataBag.IsStatusCompleted == true){
+	        DataBag.strProgressNoteTypeView = "detail";
+	    }
+	}
+	
+	/*********************************start Dropdown********************************************************************************/
+	/*
+    * Description: Method to get authorization line items records related to service of progress note  
+    * Input : Id(String) of Service
+    */
+	public Dictionary<string,List<WrapperForOption>> createOptionLists(string strServiceId) 
+	{
+	    // list of authorizatio line items
+	    List<Force__Authorization_Line_Item__c> lstAuthorizationLineitems = new List<Force__Authorization_Line_Item__c>();
+	    
+	    string strStatusActive = "Active";
+	    
+        //get related authorization records related to Progress Note's Service parent
+        lstAuthorizationLineitems = Database.Query<Force__Authorization_Line_Item__c>(f=>f.Client_Service__c == strServiceId && f.Status__c == strStatusActive)
+                                              .Select(f => new { f.Id,f.Funder__c,f.Client_Service__c,f.Status__c,f.Billing_Code__c})
+                                              .ToListAsAdmin();             
+	     
+	    getFunderOption(lstAuthorizationLineitems);
+	    
+	    return  getBillingCodeOption(lstAuthorizationLineitems);
+	  
+	}
+    
+    /*
+    * Description: Method to get funder related to Autnoriztion's funder
+    * Input :lstAuthorizationLineitems of Authorization Line item
+    */
+	public void getFunderOption(List<Force__Authorization_Line_Item__c> lstAuthorizationLineitems){
+	    
+	    List<Force__Funder__c> lstFunder = new List<Force__Funder__c>();
+	    
+	    List<string> setOfFunderId = new List<string>();
+	     
+	     if(lstAuthorizationLineitems.Count > 0) { 
+	        
+            foreach(var objAuthorization in lstAuthorizationLineitems) {
+                
+                //check funder is present in authorization line items list
+                if(objAuthorization.Funder__c != "") {
+                    setOfFunderId.Add(objAuthorization.Funder__c);
+                }
+    	    }
+            
+            if(setOfFunderId.Count > 0) {
+                
+                //List to query funder related to Autnoriztion's funder
+                lstFunder = Database.Query<Force__Funder__c>(f => setOfFunderId.Contains(f.Id))
+                                              .Select(f => new { f.Id,f.Name })
+                                              .ToListAsAdmin(); 
+                
+                List<WrapperForOption> lstFunderOptions = new List<WrapperForOption>();
+    			    
+			    foreach(var objFunder in lstFunder) {
+		            WrapperForOption wrapperInstance = new WrapperForOption();
+		            
+		            //Wrapper to set key and values of the Funder
+		            wrapperInstance.key = (string) objFunder.Get("Id");
+    			    wrapperInstance.value = (string) objFunder.Get("Name");
+    			    lstFunderOptions.Add(wrapperInstance);
+		        }
+		        //list of databag with funder options
+        	    DataBag.lstFunderOptions = lstFunderOptions;
+            }
+	    } 
+	}
+	
+	/*
+    * Description: Method to get Billing code related to Autnoriztion's funder
+    * Input :lstAuthorizationLineitems of Authorization Line item
+    */
+	public Dictionary<string,List<WrapperForOption>> getBillingCodeOption(List<Force__Authorization_Line_Item__c> lstAuthorizationLineitems ){
+	    
+	    List<Force__Funder_Code__c> lstFunderCode = new List<Force__Funder_Code__c>();
+	    
+	    List<string> setOfFunderCodeId = new List<string>();
+	     
+	    mapFunderId_lstFunderCode = new Dictionary<string,List<WrapperForOption>>();
+	    
+	    Dictionary<string,List<string>> mapFunderCodeId_lstFunderId = new Dictionary<string,List<string>>();
+	    
+	    // To check the size of Authorization Line items list
+	    if(lstAuthorizationLineitems.Count > 0) { 
+	        
+            foreach(var objAuthorization in lstAuthorizationLineitems) {
+                
+                // To check if billing code is present in authorization line items
+                if(objAuthorization.Billing_Code__c != "") {
+                    
+                    // To check if funder is present in authorization line items
+                    if(objAuthorization.Funder__c != "") {
+                      
+                        //Map to fill with Billing Code Id and list of Funder if map not contains the billing code
+                        if(!mapFunderCodeId_lstFunderId.ContainsKey(objAuthorization.Billing_Code__c)) {
+                            
+                            List<string> lstFunderId =  new List<string>();
+                            lstFunderId.Add(objAuthorization.Funder__c);
+                            
+                            //Add Billing code and funder list to the map
+                            mapFunderCodeId_lstFunderId.Add(objAuthorization.Billing_Code__c,lstFunderId);
+                            
+                            //Map to fill with Funder Code Id and list of Billing code with new instance
+                            if(!mapFunderId_lstFunderCode.ContainsKey(objAuthorization.Funder__c)){
+                                mapFunderId_lstFunderCode.Add(objAuthorization.Funder__c,new List<WrapperForOption>()) ; 
+                            }
+                        }
+                        else{
+                            List<string> lstFunderId = new List<string>();
+                            //To get the list of funder
+                            lstFunderId = mapFunderCodeId_lstFunderId[objAuthorization.Billing_Code__c];
+                            
+                            //Override the map values with list of funder
+                            if (!lstFunderId.Contains(objAuthorization.Funder__c)) {
+                                lstFunderId.Add(objAuthorization.Funder__c);
+                                mapFunderCodeId_lstFunderId[objAuthorization.Billing_Code__c]= lstFunderId;
+                            }
+                        }
+                    }
+                }
+    	    }
+            
+            //Check if funder code ids count are greater than zero
+            if(mapFunderCodeId_lstFunderId.Keys.Count > 0) {
+                
+                //List to query funder code related to Autnoriztion's funder
+                lstFunderCode = Database.Query<Force__Funder_Code__c>(f => mapFunderCodeId_lstFunderId.Keys.Contains(f.Id))
+                                              .Select(f => new { f.Id,f.Name })
+                                              .ToListAsAdmin(); 
+                
+                List<WrapperForOption> lstFunderCodeOptions = new List<WrapperForOption>();
+    			    
+			    foreach(var objFunderCode in lstFunderCode) {
+		            WrapperForOption wrapperInstance = new WrapperForOption();
+		            //Wrapper to set key and values of the billing code
+		            wrapperInstance.key = (string) objFunderCode.Get("Id");
+    			    wrapperInstance.value = (string) objFunderCode.Get("Name");
+    			    
+    			    //check map contains the key(billing code id)
+    			    if(mapFunderCodeId_lstFunderId.ContainsKey(wrapperInstance.key)) {
+        			    foreach(var strFunderId in mapFunderCodeId_lstFunderId[wrapperInstance.key]) {
+        			    
+            			    List<WrapperForOption> lstFunderCodeItermidiateOption = mapFunderId_lstFunderCode[strFunderId];
+            			    lstFunderCodeItermidiateOption.Add(wrapperInstance);
+            			    
+            			    //override map with list of billing code
+            			    mapFunderId_lstFunderCode[strFunderId]= lstFunderCodeItermidiateOption;
+        			    }
+    			    }
+		        }
+            }
+	    }
+	    
+	    return mapFunderId_lstFunderCode;
+	}
+	
+	/*
+    * Description: Method to Change the billing code list on change of funder Id
+    * Input      : strFunderId contains selected funder id
+    */
+	public ActionResponse ChangedBillingCodeListOnChangeOfFunder(string strFunderId, string strServiceId) {
+	    
+	    Dictionary<string,List<WrapperForOption>> mapContrId_lstOfDepenValues = createOptionLists(strServiceId);
+	    
+	    List<WrapperForOption> lstOfDepenValues = new List<WrapperForOption>();
+	    
+	    if (mapContrId_lstOfDepenValues.ContainsKey(strFunderId)) {
+	        
+	        lstOfDepenValues = mapContrId_lstOfDepenValues[strFunderId];
+	    }
+	    
+	   return Json(lstOfDepenValues,true);
+    }
+    
+	//Wrapper Class for options
+    public class WrapperForOption {
+        public string key {get;set;}
+        public string value {get;set;}
+    }
+    /*********************************End Dropdown*********************************************************************************/
+}

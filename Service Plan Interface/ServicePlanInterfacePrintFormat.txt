@@ -1,0 +1,1703 @@
+<aspx:AspxPage runat="server" Id="ServicePlanPrintId" title="ServicePlanPrintFormat">
+<header>
+    <aspx:ActiveTemplate runat="server" Name="ISP_TemplateForLabelConstant"/>
+    <aspx:IncludeStyleSheet runat="server" url='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css'/> 
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignaturemin.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignature.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/excanvas.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.ToAbsoluteUrl(Url.Asset("Css/signature.css"))%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/ServicePlanInterfacePrint.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/ServicePlanInterfacePrintServiceAgreement.js")%>'/>
+    <style>
+        @page {
+          size: A4;
+          margin: 5mm;
+        }
+        @media print { 
+            html, body {
+                position: relative;
+                width:100%;
+                height: 297mm;
+            }
+            table { page-break-inside:auto }
+            tr    { page-break-inside:avoid; page-break-after:auto }
+            thead { display:table-header-group;}
+            tfoot { display:table-footer-group }
+            .panel-primary>.panel-heading, .data-text {
+                background-color: #337ab7 !important;
+                color: #fff !important;
+                border-color: #337ab7 !important;
+                -webkit-print-color-adjust: exact; 
+            }
+            .form-group {
+                margin-bottom: 15px !important;
+            }
+            .panel-heading {
+                padding: 10px 15px;
+                border-bottom: 1px solid transparent;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+            body {
+                font-family: "Helvetica Neue",Helvetica,Arial,sans-serif !important;
+                font-size: 14px !important;
+                line-height: 1.42857143;
+                color: #333;
+                background-color: #fff;
+                -webkit-print-color-adjust: exact;
+            }
+            @media (min-width: 992px)
+            .col-md-6 {
+                width: 50%;
+            }
+            @media (min-width: 992px)
+            .col-sm-12 {
+                width: 100%;
+            }
+            
+            
+            .text-center {
+                text-align: center;
+            }
+            .scrollBarCssForObjectives {
+                overflow:hidden !important;
+                width:92%; 
+                margin-left:8%;
+            }
+            
+            .btn-toolbar:after,.clearfix:after, .container-fluid:after, 
+            .container:after, .modal-footer:after, .nav:after, .navbar-collapse:after, 
+            .navbar-header:after, .navbar:after, .pager:after, .panel-body:after, .row:after {
+                display: table;
+                content: " ";
+            }
+            @media (min-width: 768px)
+            .form-horizontal .control-label {
+                padding-top: 7px;
+                margin-bottom: 0;
+                text-align: right;
+            }
+            @media (min-width: 992px)
+            .col-md-4 {
+                width: 33.33333333%;
+            }
+            .col-md-4, .col-sm-3, .col-md-8, .col-sm-9,  {
+                position: relative;
+                min-height: 1px;
+                padding-right: 15px;
+                padding-left: 15px;
+            }
+            label {
+                display: inline-block;
+                max-width: 100%;
+                font-weight: 700;
+            }
+            @media (min-width: 768px)
+            .form-horizontal .control-label {
+                padding-top: 7px;
+                margin-bottom: 0;
+                text-align: right;
+            }
+            @media (min-width: 992px)
+            .col-md-8 {
+                width: 66.66666667%;
+            }
+            
+        }
+        .kbw-signature { width: 400px; height: 200px; }
+        .noteClass {
+            color: #656565 !important;
+            font-size: 11px;
+            display: block;
+            float: none;
+        }
+        
+        .backgroundForService {
+            background-color: #77b800 !important;
+            color: white !important;
+        }
+        
+        .backgroundForGoal {
+            background-color: #ff7900 !important;
+            color: white !important;
+        }
+        .scrollBarCssForObjectives {
+            overflow:auto;
+            width:92%; 
+            margin-left:8%;
+        }
+        .backgroundForObjective {
+            background-color: #7F99CC;
+        }
+        .panelClass{
+            background-color: #77b800 !important;
+            color: white !important;
+        }
+        .top-links{
+                margin-bottom: -10%;
+        }
+        .showonPop{
+            background: #EDEFF0;
+            position: relative; 
+            border-top: 1px solid #CFD4D8; 
+            border-bottom: 1px solid #CFD4D8;
+        }
+        .fsRequiredMarker{
+            padding-left: 2px;
+            color: #ba0000;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: Verdana;
+            float: none;
+        }
+        
+        .wordBreakClass{
+            word-break :  break-all;
+        }
+        .backgroundForButton {
+            color: #fff;
+            background-color: #ff7900;
+        }
+        .red-tooltip + .tooltip > .tooltip-inner {background-color: black;}
+
+        .tooltip.bottom .tooltip-arrow {
+          top: 0;
+          left: 50%;
+          margin-left: -5px;
+          border-bottom-color:  black; /* black */
+          border-width: 0 5px 5px;
+        }
+        
+        .borderofPanel {
+            border-color: #0086c5 !important;
+        }
+        .panel-heading {
+            color: #fff;
+            background-color: #0086c5 !important;
+            border-color: #0086c5 !important;
+        }
+        .panel-headingInline {
+            color: #fff;
+            background-color: #77b800 !important;
+            border-color: #77b800 !important;
+            padding: 10px 15px; 
+            border-bottom: 1px solid transparent;
+            border-top-left-radius: 3px; 
+            border-top-right-radius: 3px;
+        }
+        .backgroundForMainButton {
+            color: #fff;
+            background-color: #0086c5;
+        }
+        .hrCustomClass { 
+            display: block;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            margin-left: auto;
+            margin-right: auto;
+            border-style: inset;
+            border-width: 1px;
+        }
+    </style>
+    <script>
+        function doit(){
+            
+            if (!window.print){
+                alert("You need NS4.x to use this print button!");
+                return;
+            }
+            
+            for(var i=0;i<document.getElementsByTagName("button").length;i++){
+               document.getElementsByTagName("button")[i].style.display="none";
+            }
+            
+            for(var i=0;i<document.getElementsByTagName("a").length;i++){
+               document.getElementsByTagName("a")[i].removeAttribute("href");
+            }
+            for(var i=0;i<document.getElementsByTagName("input").length;i++){
+               if(document.getElementsByTagName("input")[i].type == "button"){
+                   document.getElementsByTagName("input")[i].style.display="none";
+               }
+            }
+            document.getElementById("printbtnID").style.display="none";
+            window.print();
+        } 
+        document.addEventListener("visibilitychange", function() {
+            window.close();
+        });
+    </script>
+</header>
+<body>
+    <!--Display the error messages if any issue on the Page-->
+    <%if(DataBag.Exception == "") { %>
+        <aspx:ViewMessages runat='server' inline='false'/>
+    <%}%>
+    
+    <!-- Display the DML Exception Errors Ex: Lookup Filters Error -->
+    <%if(DataBag.Exception!="") { %>
+        <div class="tabMessages container-fluid">
+            <div class="messageContainer row Error">
+                 <table class="messageTable">
+                      <tbody>
+                           <tr style="vertical-align:top;">
+                                <td align="center" valign="top">
+                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Error" title="Error">
+                                 </td>
+                                 <td class="messageCell">
+                                        <div class="messageText"><h4>Error: </h4>
+                                             <span><%=DataBag.Exception%></span>
+                                        </div>
+                                 </td>
+                            </tr>
+                        </tbody>
+                 </table>
+            </div>
+        </div>
+    <%}%>
+    
+    <%if(DataBag.DisplayISP==true){%>
+        
+    <div class="container">
+        <h3>Service Plan 
+            <% if (DataBag.strServicePlanClientName !="") {%>
+                for <b><%=DataBag.strServicePlanClientName%></b>
+            <%}%>
+        </h3><br/>  
+        <center>
+            <button type="button" id="saveAllISPInfoId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);"><span class="glyphicon glyphicon-save"></span>&nbsp;Save</button>
+            <button type="button" id="saveCompleteId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);"><span class="glyphicon glyphicon-save"></span>&nbsp;Save and Complete ISP</button>
+        </center><br/>
+        <div class="panel-group" >
+            <div  class="panel borderofPanel" style="page-break-after:always;"> <!-- ******************************************-->
+              <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-th-large"></span>&nbsp;Service Plan
+                
+              </div><br/>
+              <center>
+                <% if (DataBag.IsEditable==false){%>
+                    <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="__doPostBack('EditServicePlan');"><span class="glyphicon glyphicon-pencil">&nbsp;Edit</button>
+                <%}else{%>
+                   <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="__doPostBack('SaveServicePlan');"><span class="glyphicon glyphicon-save">&nbsp;Save</button>
+                    <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirect();"><span class="glyphicon glyphicon-remove">&nbsp;Cancel</button>
+                <%}%>
+              </center>
+              <div class="panel-body">
+                <%
+                Html.Repeat(DataBag.lstServicePlanObj as IList, html => { %>
+        		
+                    <% int counterServicePlan=0;%>
+                    <%
+                       
+                         Html.Repeat(DataBag.lstOfServicePlanSection as IList, htmlSection => { %>   
+                        <div class="panel panelClass">                                                        
+                            <div class="panel-headingInline" style="height: 35px;">
+                                <h4 class="panel-title" style="color: #fff !important;">
+                                <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOne<%=counterServicePlan%>" >
+                                    <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                                </a>
+                                <%=htmlSection.DisplayTextFor("Title_Of_Section__c")%>
+                                </h4>
+                            </div>
+                        </div>
+                        <br/>
+                        
+                        <!-- The if condition is specificed to show the section collapsiable or not depending on the checkbox on Service Plan Section 
+                        DataBag.isEditable: connditon is applied to display the section in non collapsiable format-->
+                        <div id="collapseOne<%=counterServicePlan%>" class="section container-fluid panel-collapse collapse 
+                            <% string strCollapseSec = htmlSection.DisplayTextFor("Collapse_Section__c");
+                              if(strCollapseSec.Contains("false") || DataBag.isEditable==true){        
+                            %>
+                              in
+                            <%}if(strCollapseSec.Contains("true") && DataBag.isEditable==false){%>
+                              Out
+                            <%}%>
+                         ">
+                            <div id="body_ServicePlanPageId_ctl03_body" class="sectionBody row form-horizontal  form-2-cols ">
+                            <%foreach(var field in DataBag.lstSectionsFieldsDataBag[counterServicePlan]) { %>
+                            
+                                <% if(DataBag.BlankSpace != field){ %>
+                                     <%-- No column in section to display if for 2 column and else for 1 column--%>
+                                        <% if(htmlSection.DisplayTextFor("No_Of_Columns__c")=="2"){ %>
+                                		   <div class="col-md-6 col-sm-12 col-xs-6 WidenlenthFor-2-Column">
+                                		       <div class="form-group form-group-0" >
+                                		        <!-- The if condition is specificed to apply the css if the label does not contain space to display in a proper format-->
+                                                    <label class="col-md-6 col-sm-3 col-xs-6 control-label  
+                                                    <% string strLabelOfServicePlan = html.LabelFor(field);
+                                                          if(strLabelOfServicePlan.Contains(" ")){        
+                                                        %>
+                                                         
+                                                        <%}else{%>
+                                                        wordBreakClass
+                                                        <%}%>
+                                                     ">
+                                    				   <%=html.LabelFor(field)%>
+                                    				</label>
+                                    				<div class="col-md-6 col-sm-9 col-xs-6">
+                                                        <% if (DataBag.IsEditable==false){%>
+                                                            <%=html.DisplayTextFor(field)%>
+                                                        <%}else{%>
+                                                            <%=html.DisplayEditorFor(field)%>
+                                                         <%}%>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                		<%} else{%>
+                            		    <div class="col-md-12 col-sm-12 col-xs-12 WidenlenthFor-1-Column">
+                            		     <div class="form-group form-group-0">
+                            		     <!-- The if condition is specificed to apply the css if the label does not contain space to display in a proper format-->
+                                            <label class="col-md-3 col-sm-3 col-xs-5 control-label
+                                            <% string strLabelOfServicePlan = html.LabelFor(field);
+                                                          if(strLabelOfServicePlan.Contains(" ")){        
+                                                        %>
+                                                         
+                                                        <%}else{%>
+                                                        wordBreakClass
+                                                        <%}%>
+                                            ">
+                            				   <%=html.LabelFor(field)%>
+                            				</label>
+                            				<div class="col-md-9 col-sm-9 col-xs-7">
+                                                <% if (DataBag.IsEditable==false){%>
+                                                    <%=html.DisplayTextFor(field)%>
+                                                <%}else{%>
+                                                    <%=html.DisplayEditorFor(field)%>
+                                                 <%}%>
+                                            </div>
+                                        </div>
+                                    </div>
+                            		<% }%>
+                                <% }%>
+                                <% if(DataBag.BlankSpace == field){ %>
+                                    <%-- No column in section to display if for 2 column and else for 1 column--%>
+                                    <% if(htmlSection.DisplayTextFor("No_Of_Columns__c")=="2"){ %>
+                            		   <div class="col-md-6 col-sm-12 col-xs-6">
+                            		       <div class="form-group form-group-0" >
+                                                <label class="col-md-4 col-sm-3 col-xs-3 control-label">
+                                				</label>
+                                				<div class="col-md-8 col-sm-9 col-xs-9">
+                                                </div>
+                                            </div>
+                                        </div>
+                                	<%} else{%>
+                            		    <div class="col-md-12 col-sm-12 col-xs-12">
+                                		      <div class="form-group form-group-0" >
+                                                <label class="col-md-2 col-sm-3 col-xs-3 control-label">
+                                				</label>
+                                				<div class="col-md-10 col-sm-9 col-xs-9"></div>
+                                              </div>
+                                        </div>
+                            		<% }%>
+                                <% }%>
+                            <%}%>
+                            </div>    
+                        </div>
+                     <%counterServicePlan=counterServicePlan+1;%>
+                    <% });%>
+                <% }); %>
+                <center>
+                <% if (DataBag.IsEditable==false){%>
+                    <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="__doPostBack('EditServicePlan');"><span class="glyphicon glyphicon-pencil">&nbsp;Edit</button>
+                <%}else{%>
+                   <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="__doPostBack('SaveServicePlan');"><span class="glyphicon glyphicon-save">&nbsp;Save</button>
+                    <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirect();"><span class="glyphicon glyphicon-remove">&nbsp;Cancel</button>
+                 <%}%>
+                </center>
+              </div>
+            </div><br/>
+            
+            <!-------------------- Risk Assessment Section ------------------------------------->
+            <div class="panel-group" style="page-break-after:always;"> <!-- ******************************************-->
+            <div class="panel borderofPanel">
+              <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-th-large"></span>&nbsp;Risk Assessment</div>
+                
+                 <!-- Display informative message that no records are available, with a create button; if the list lstRiskAssessmentObj is empty  -->   
+                <% if(DataBag.lstRiskAssessmentObj.Count == 0){%>
+                    
+                    <div class="panel-body">
+                        
+                        <!-- Informative message for no records present for Risk Assessment -->
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                        
+                        <!-- 'Create' button to create a new Risk Assessment record -->
+                        <div style="margin-top:14px">
+                            <center>
+                                <button type="button" class="btn backgroundForButton"  
+                                        onclick="__doPostBack('CreateRiskAssesmentRecord');">
+                                            
+                                            <span class="glyphicon glyphicon-save">&nbsp;Create</span>
+                                                
+                                </button>
+                            </center>
+                        </div>
+                    </div> 
+                   
+                <%}%>
+                   
+                <!-- Display remaining section if 'lstRiskAssessmentObj' contains a Risk Assessment record -->
+                <% if(DataBag.lstRiskAssessmentObj.Count>0){%>
+                    
+                    <!-- Start of div that contains buttons to be displayed when the record is editable and non-editable -->   
+                    <div style="margin-top:14px">
+                        <center>
+                       
+                            <!-- Display 'Edit' button if in non-editable mode -->
+                            <% if (DataBag.isEditableForRiskAssesment==false){%>
+                              
+                                    <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="getTheLocationOftheButton(this);__doPostBack('EditRiskAssesment');">
+                                        
+                                        <span class="glyphicon glyphicon-pencil">&nbsp;Edit</span>
+                                                            
+                                    </button>
+                            
+                            <%}else{%>
+                            
+                                <!-- Display 'Save' and 'Cancel' buttons if in editable mode -->
+                                <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="__doPostBack('SaveRiskAssessment');">
+                                    
+                                    <span class="glyphicon glyphicon-save">&nbsp;Save</span>
+                                    
+                                </button>
+                                <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirect();">
+                                
+                                    <span class="glyphicon glyphicon-remove">&nbsp;Cancel</span>
+                                    
+                                </button>
+                            <%}%>
+                        </center>
+                    </div>
+                    <!-- End of div that contains buttons to be displayed when the record is editable and non-editable -->   
+                
+                    <!-- Start of div to display Sections and Risk Assessment records -->
+                    <div class="panel-body">
+                    
+                    <%
+                    Html.Repeat(DataBag.lstRiskAssessmentObj as IList, html => { %>
+            		
+                    
+                        <% int counterRiskAssessment=0;%>
+                        <%
+                           
+                             Html.Repeat(DataBag.lstOfRiskAssessmentSection as IList, htmlSection => { %>   
+                            <div class="panel panelClass">                                                        
+                                <div class="panel-headingInline" style="height: 35px;">
+                                    <h4 class="panel-title" style="color: #fff !important;">
+                                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapse<%=counterRiskAssessment%>" >
+                                        <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                                    </a>
+                                    <%=htmlSection.DisplayTextFor("Title_Of_Section__c")%>
+                                    </h4>
+                                </div>
+                            </div>
+                            <br/>
+                            
+                            <!-- The if condition is specificed to show the section collapsiable or not depending on the checkbox on Service Plan Section 
+                                  DataBag.isEditableForRiskAssesment: connditon is applied to display the section in non collapsiable format-->
+                            <div id="collapse<%=counterRiskAssessment%>" class="section container-fluid panel-collapse collapse 
+                                <% string strCollapseSec = htmlSection.DisplayTextFor("Collapse_Section__c");
+                                  if(strCollapseSec.Contains("false") || DataBag.isEditableForRiskAssesment==true){        
+                                %>
+                                  in
+                                <%}if(strCollapseSec.Contains("true") && DataBag.isEditableForRiskAssesment==false){%>
+                                  Out
+                                <%}%>
+                             ">
+                                <div id="body_ServicePlanPageId_ctl03_body" class="sectionBody row form-horizontal  form-2-cols ">
+                                <%foreach(var field in DataBag.lstSectionsFieldsDataBagForRiskAssesment[counterRiskAssessment]) { %>
+                                
+                                    <% if(DataBag.BlankSpace != field){ %>
+                                         <%-- No column in section to display if for 2 column and else for 1 column--%>
+                                            <% if(htmlSection.DisplayTextFor("No_Of_Columns__c")=="2"){ %>
+                                    		   <div class="col-md-6 col-sm-12 col-xs-6 WidenlenthFor-2-Column">
+                                    		       <div class="form-group form-group-0" >
+                                    		        <!-- The if condition is specificed to apply the css if the label does not contain space to display in a proper format-->
+                                                        <label class="col-md-6 col-sm-3 col-xs-6 control-label  
+                                                        <% string strLabelOfServicePlan = html.LabelFor(field);
+                                                              if(strLabelOfServicePlan.Contains(" ")){        
+                                                            %>
+                                                             
+                                                            <%}else{%>
+                                                            wordBreakClass
+                                                            <%}%>
+                                                         ">
+                                        				   <%=html.LabelFor(field)%>
+                                        				</label>
+                                        				<div class="col-md-6 col-sm-9 col-xs-6">
+                                                            <% if (DataBag.isEditableForRiskAssesment==false){%>
+                                                                <%=html.DisplayTextFor(field)%>
+                                                            <%}else{%>
+                                                                <%=html.DisplayEditorFor(field)%>
+                                                             <%}%>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                    		<%} else{%>
+                                		    <div class="col-md-12 col-sm-12 col-xs-12 WidenlenthFor-1-Column">
+                                		     <div class="form-group form-group-0" >
+                                		     <!-- The if condition is specificed to apply the css if the label does not contain space to display in a proper format-->
+                                                <label class="col-md-3 col-sm-3 col-xs-5 control-label
+                                                <% string strLabelOfServicePlan = html.LabelFor(field);
+                                                              if(strLabelOfServicePlan.Contains(" ")){        
+                                                            %>
+                                                             
+                                                            <%}else{%>
+                                                            wordBreakClass
+                                                            <%}%>
+                                                ">
+                                				   <%=html.LabelFor(field)%>
+                                				</label>
+                                				<div class="col-md-9 col-sm-9 col-xs-7">
+                                                    <% if (DataBag.isEditableForRiskAssesment==false){%>
+                                                        <%=html.DisplayTextFor(field)%>
+                                                    <%}else{%>
+                                                        <%=html.DisplayEditorFor(field)%>
+                                                     <%}%>
+                                                </div>
+                                            </div>
+                                        </div>
+                                		<% }%>
+                                    <% }%>
+                                    <% if(DataBag.BlankSpace == field){ %>
+                                        <%-- No column in section to display if for 2 column and else for 1 column--%>
+                                        <% if(htmlSection.DisplayTextFor("No_Of_Columns__c")=="2"){ %>
+                                		   <div class="col-md-6 col-sm-12 col-xs-12">
+                                		       <div class="form-group form-group-0" >
+                                                    <label class="col-md-4 col-sm-3 col-xs-6 control-label">
+                                    				</label>
+                                    				<div class="col-md-8 col-sm-9 col-xs-6">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                    	<%} else{%>
+                                		    <div class="col-md-12 col-sm-12 col-xs-12">
+                                    		      <div class="form-group form-group-0" >
+                                                    <label class="col-md-2 col-sm-3 col-xs-6 control-label">
+                                    				</label>
+                                    				<div class="col-md-10 col-sm-9 col-xs-6"></div>
+                                                  </div>
+                                            </div>
+                                		<% }%>
+                                    <% }%>
+                                <%}%>
+                                </div>    
+                            </div>
+                         <%counterRiskAssessment=counterRiskAssessment+1;%>
+                        <% });%>
+                    <% }); %>
+                    
+                    <center>
+                    <% if (DataBag.isEditableForRiskAssesment==false){%>
+                        <% if ( DataBag.lstOfRiskAssessmentSection.Count > 0){%>
+                            <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="getTheLocationOftheButton(this);__doPostBack('EditRiskAssesment');"><span class="glyphicon glyphicon-pencil">&nbsp;Edit</button>
+                        <%}%>
+                    <%}else{%>
+                       <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="__doPostBack('SaveRiskAssessment');"><span class="glyphicon glyphicon-save">&nbsp;Save</button>
+                        <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirect();"><span class="glyphicon glyphicon-remove">&nbsp;Cancel</button>
+                    <%}%>
+                    </center>
+                  </div>
+              
+            <%}%>  
+            <!---- End of If list contains a record--->  
+            </div></div><!-- End of div for class="panel-group" for Risk Assisment -->
+            
+            <!--Display the Section for Service Goals and Objectives with the dynamic fields selected from the Object Configuration Page-->
+            <div class="panel borderofPanel" style="page-break-after:always;"> <!-- ***************************************-->
+            <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Service Outcomes and Goals</div>
+            <div class="panel-body" id="ServiceGoalPanelId">
+                
+                <!-- Show the msg when records are not available-->
+                <% if(Model.lstServiceModel.Count == 0){%>
+                    <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                <%}%>
+                
+                <!--Start This table is to show service related to service plan -->
+                <% int serviceRecordIndex = 0;%>
+              
+                <!--Start for to display Service in editable/non editable format-->
+                <%foreach(var ServiceModel in  Model.lstServiceModel) { %>
+                
+                    <!-- start of if Filter services -->
+                    <%if(ServiceModel.lstService[0].Funder__c == DataBag.filteredBy || DataBag.filteredBy == "All") {%>
+                    
+                        <%Html.Repeat(ServiceModel.lstService as IList, htmlServices => { %>
+                           
+                            <% if(serviceRecordIndex != 0){%>
+                                <hr class="hrCustomClass"/>
+                            <%}%>
+                            
+                            <div style="width:100%;">
+                                <table class="table table-bordered" style="width:100%;">
+                                    
+                                    <!--Start of Service Table Header (Fields of Services-->
+                                    <thead class="text-center backgroundForService">
+                                        <tr>
+                                            
+                                            <!-- Print all fields(header) of Services available in 'Object Configuration' Object-->
+                                            <%foreach(var field in  DataBag.ServiceFields) { %>   
+                                                <th  style="background-color: #77b800 !important; color: white !important;">          
+                                                    <%=htmlServices.LabelFor(field)%>
+                                                </th>
+                                            <%}%>
+                                            
+                                        </tr>
+                                    </thead>
+                                    <!--End of Service Table Header -->
+                                     
+                                    <!--Start of Service records -->
+                                    <tbody class="text-center">
+                                        <tr>
+                                            
+                                            <!-- Print all Records of Services related to current Service Plan-->
+                                            <%foreach(var field in  DataBag.ServiceFields) { %>   
+                                                <td > 
+                                                
+                                                    <!--Display Service in editable format if editable else non editable-->
+                                                    <%if(ServiceModel.isEditable==false || field == "Name") { %>
+                                                        <%=htmlServices.DisplayTextFor(field)%>
+                                                    <%}else{%>
+                                                        <%=htmlServices.DisplayEditorFor(field)%>
+                                                    <%}%>
+                                   
+                                                </td>
+                                            <%}%>
+                                        
+                                            
+                                        </tr>      
+                                    </tbody> 
+                                    <!--End of Service records -->
+                                    
+                                </table>
+                            </div>
+                                
+                            <!--Start This table is to show Goals related to service -->
+                            
+                            <!-- If Goal is related to service then display it with header -->
+                            <div style="width:100%;">
+                                <table class="table table-bordered" style="width:100%;">   
+                                    <!-- int counterForGoals to compare Id(Lookup) of each Goal with Service's Id -->
+                                    <%  int counterForGoals = 0; %>
+                                    <% int headerGoals = 0; %>
+                                    <% Boolean DisplayExistingGoal = false; %>
+                                    <%foreach(var GoalModel in  Model.lstGoalModel) { %>
+                                    
+                                        <%Html.Repeat(GoalModel.lstGoals as IList, htmlGoal => { %>
+                                        
+                                            <!-- Check if the Goal is related to particular Service(Comparing Id) -->
+                            				<%if( Model.lstGoalModel[counterForGoals].lstGoals[0].Service__c==htmlServices.DisplayTextFor("Id")){%>	
+                                            
+                                            <%if(headerGoals==0){%> 
+                                                <!-- Start of Goal Table Header -->
+                                                <thead class="text-center backgroundForGoal">
+                                                    <tr>
+                                                        
+                                                        <!-- Print all fields(header) of Goals available in 'Object Configuration' Object-->
+                                                        <%foreach(var fieldGoal in  DataBag.GoalFields) { %>   
+                                                    		<th nowrap style="background-color: #ff7900 !important;color: white !important;">          
+                                                    			<%=htmlGoal.LabelFor(fieldGoal)%>
+                                                        	</th>                        
+                                                    	<%}%>
+                                                    	
+                                                    </tr>
+                                                </thead>
+                                                <!-- End of Goal Table Header -->
+                                            <%  
+            									headerGoals=1;
+            								}%> 
+                                        <tbody>
+                                            <tr>
+                                                
+                                                <!-- Print all Records of Goals related to current Service Plan-->
+                                        	    <%foreach(var fieldGoal in  DataBag.GoalFields) { %>   
+                                        	        <%DisplayExistingGoal = true;%>
+                                                    <td >          
+                                                        <!--Display Service in editable format if editable else non editable-->
+                                                        <%if(GoalModel.isEditable==false) { %>
+                                                            <%=htmlGoal.DisplayTextFor(fieldGoal)%>
+                                                        <%}else{%>
+                                                            <%=htmlGoal.DisplayEditorFor(fieldGoal)%>
+                                                        <%}%>
+                                                    </td>
+                                        		<%}%>
+                                        		
+                                            </tr>
+                                        </tbody>
+                                            <%}%>    
+                                            <!-- End of If of Goals-->
+                                            
+                                	    <% }); %>
+                                	    <%counterForGoals=counterForGoals+1; %>
+                            	    <% } %>
+                            	    <!-- End of Repeat of Goal -->
+                                    <!--End This table is to show Goals related to service -->    
+                                    
+                                    <!--start of Add more Goal sections when existng goals are present-->
+                                    <% if(htmlServices.DisplayTextFor("Id") == DataBag.serviceIdForNewGoal && DisplayExistingGoal == true) { %>
+                    				    <% int RowCount=0; %>
+                                        <% Html.Repeat(DataBag.lstNewGoal as IList, htmlNewGoal => { %>
+                                        	<!--Start of goal records -->  
+                                    		<tbody>
+                                    		<tr>
+                                    		    <td >
+                                    		    </td>
+                                    			<%foreach(var field in DataBag.GoalFields) { %>
+                                    				<td>
+                                    					<%=htmlNewGoal.DisplayEditorFor(field)%>
+                                    				</td>               
+                                    			<%}%>
+                                    			<% RowCount=RowCount+1; %>
+                                    		</tr>
+                                    		 </tbody> 
+                                        <% }); %> 
+                                    <%}%>
+                                    <!--End of Add more Goal sections when existng goals are present-->
+                                     
+                            	   
+                                    <!--End of Goal records -->
+                                    
+                                </table>
+                            </div>
+                            
+                            <% if(htmlServices.DisplayTextFor("Id") != DataBag.serviceIdForNewGoal) { %>
+                    	        <div>
+                            	    <!-- objectiveID custom tag created only used to store objective id which can not store in name attribute command button-->  
+                            	    <button id="GoalBtn" 
+                            	            type="button" 
+                            	            class="btn backgroundForButton"
+                            	            name='<%=htmlServices.DisplayTextFor("Id")%>'
+                            	            onclick="setServiceIDValue(this);getTheLocationOftheButton(this);__doPostBack('AddGoalRowToList',{ validate:false});">
+                            	            <span class="glyphicon glyphicon-plus-sign"></span>
+                            	            Add Goals
+                            	    </button>
+                        	    </div>
+                            <%}%>  
+                            
+                            <!--start of Add more Goal sections when goals are not present-->
+                            <% if(htmlServices.DisplayTextFor("Id") == DataBag.serviceIdForNewGoal && DisplayExistingGoal == false) { %>
+                            
+                                <!--Start This table is to show new Goal record row -->
+                                <div>
+                                	<table class="table table-bordered" >
+                                		<tbody class="text-center">   
+                                			 <% int RowCount=0; 
+                                			 int headerNewGoal = 0; %>
+                                			 <% Html.Repeat(DataBag.lstNewGoal as IList, htmlNewGoal => { %>
+                                				 <!-- Start of Goal Table Header -->
+                                				 
+                                				<!--Set one variable to display header of Goal only once -->
+                                				<%if(headerNewGoal==0){%>
+                                				<thead class="text-center backgroundForGoal">
+                                					<tr>
+                                						
+                                						<!-- Print all fields(header) of Goal for available fields-->
+                                						<%foreach(var fieldGoal in  DataBag.GoalFields) { %>   
+                                							<th nowrap>          
+                                								<%=htmlNewGoal.LabelFor(fieldGoal)%>
+                                							</th>                        
+                                						<%}%>
+                                						
+                                					</tr>
+                                				</thead>
+                                				<!-- End of Goal Table Header -->
+                                				<%  
+                                					headerNewGoal=1;
+                                				}%> 
+                                				 <!--Start of Goal records -->                                        
+                                					<tr>
+                                						<%foreach(var field in DataBag.GoalFields) { %>
+                                							<td>
+                                								<%=htmlNewGoal.DisplayEditorFor(field)%>
+                                							</td>               
+                                						<%}%>
+                                						<% RowCount=RowCount+1; %>
+                                					</tr>
+                                			 <% }); %> 
+                                	   </tbody> 
+                                   </table>
+                                   <!--End This table is to show new Goal record row -->
+                                </div>
+                            
+                            <%}%>    
+                            <!-- End of If of Goals-->
+                            
+                            <% if(htmlServices.DisplayTextFor("Id") == DataBag.serviceIdForNewGoal) { %>
+                                <div>
+                                	<button id="AddMoreGoalbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('AddMoreGoalsRowToList',{ validate:false});"><span class="glyphicon glyphicon-plus-sign"></span>Add More Rows</button>
+                                
+                                	<button id="RemoveGoalbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('RemoveGoalRowToList',{ validate:false});"><span class="glyphicon glyphicon-remove-sign"></span>Remove Row</button>
+                                
+                                	<button id="SaveGoalbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('SaveGoals');"><span class="glyphicon glyphicon-save"></span>Save</button> 
+                                	
+                                	<button id="cancelGoalbtn" type="button" class="btn backgroundForButton" onclick="doRedirectOnCancel();"><span class="glyphicon glyphicon-remove"></span>Cancel</button>
+                                </div><br/>
+                            <%}%>
+                            
+                            <%serviceRecordIndex = serviceRecordIndex+1; %>
+                            
+                        <% }); %>
+                        
+                        <% } %>  
+                        
+                    <% } %>
+                    <!--End for to display Service in editable/non editable format-->
+        </div></div><br/>
+        <!-- End of Repeat of Services -->
+        <!--End This table is to show service related to service plan -->
+        
+        <!--Display the Section for Rich Text Area which is configured from the Object Setup Page-->
+	    <div class="panel borderofPanel" style="page-break-after:always;"> <!-- ******************************************-->
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-cog"></span>&nbsp;
+                <aspx:Field id='ClientServiceIdTitle' runat='server' Value='{!Model.objConfigSetup.Clients_Rights_and_Consent_Title__c}'/>
+            </div>
+            <div class="panel-body">
+                <aspx:Field id='ClientServiceId' runat='server' Value='{!Model.objConfigSetup.Clients_Rights_and_Consent__c}'/>
+                
+                    <%if(CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)){ %>
+                        <% Html.Repeat(DataBag.lstServicePlanObj as IList, servicePlanConditionObj => { %>
+                            
+                                <%foreach(var field in  DataBag.lstServicePlanClientConsentFields) { %>
+                                    <ul><li>
+                                         <b>
+                                         <%if(field=="Terms_And_Conditions__c") {%>
+                                            <%:CustomLabels.Permission_to_communicate_and_send_information%>
+                                         <%}%>
+                                         <%if(field=="Client_Guardian_Phone__c") {%>
+                                            <%:CustomLabels.Permission_to_text_message%>
+                                         <%}%>
+                    			
+                                         <%=servicePlanConditionObj.DisplayTextFor(field)%>
+                                         </b>
+                                    </li></ul>
+                                <%}%> 
+                           
+                        <% }); %>
+                        <center>
+                            <button type="button" id="saveConsentId" class="btn backgroundForMainButton" onclick="getTheLocationOftheButton(this);__doPostBack('saveClientConsentInformation');"><span class="glyphicon glyphicon-save"></span>&nbsp;Save</button>
+                       </center>
+                    <%}%> 
+                    <%if(CustomLabels.ISP_RoleForAdminSignatures.Equals(UserInfo.Role.Name)
+                         || CustomLabels.ISP_RoleForClientSignatures.Equals(UserInfo.Role.Name)
+                         || CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)){ %>
+                         
+                        <% Html.Repeat(DataBag.lstServicePlanObj as IList, servicePlanConditionObj => { %>
+                            <%foreach(var field in  DataBag.lstServicePlanClientConsentFields) { %>
+                                <ul><li>
+                                     <b>
+                                     <%if(field=="Terms_And_Conditions__c") {%>
+                                        <%:CustomLabels.Permission_to_communicate_and_send_information%>
+                                        
+                                     <%}%>
+                                     <%if(field=="Client_Guardian_Phone__c") {%>
+                                        <%:CustomLabels.Permission_to_text_message%>
+                                     <%}%>
+                			
+                                     <%=servicePlanConditionObj.DisplayTextFor(field)%>
+                                    </b>
+                                </li></ul>
+                            <%}%> 
+                        <% }); %>
+                    <%}%>  
+            </div>
+        </div><br/>
+	    <div class="panel borderofPanel" style="page-break-after:always;"> <!-- ******************************************-->
+            <div class="panel-heading"><span class="glyphicon glyphicon-cog"></span>&nbsp;
+                <aspx:Field id='ClientIdTitle' runat='server' Value='{!Model.objConfigSetup.Client_Responsibilities_Title__c}'/>
+            </div>
+            <div class="panel-body">
+                <aspx:Field id='ClientId' runat='server' Value='{!Model.objConfigSetup.Client_Responsibilities__c}'/>
+            </div>
+        </div><br/>
+         <div class="panel borderofPanel" style="page-break-after:always;"> <!-- ******************************************-->
+            <div class="panel-heading"><span class="glyphicon glyphicon-cog"></span>&nbsp;
+                <aspx:Field id='ClinicaleIdTitle' runat='server' Value='{!Model.objConfigSetup.Clinical_Therapy_Service_Agreement_Title__c}'/>
+            </div>
+            <div class="panel-body">
+                    <aspx:Field id='ClinicaleId' runat='server' Value='{!Model.objConfigSetup.Clinical_Therapy_Service_Agreement__c}'/>
+            </div>
+        </div>
+        <br/>
+         <!------------------------------------------Start of Service Agreement Plan Section ---------------------------------------------->
+        <div class="panel borderofPanel" style="page-break-after:always;"  id="ServiceAgreementSectionId">
+            <div class="panel-heading"><span class="glyphicon glyphicon-cog"></span>&nbsp;
+               SERVICE AGREEMENT
+            </div>
+                 <!-- Display informative message that no records are available,if the list lstOfServicePlanAgreementSection is empty  -->   
+                <% if(DataBag.lstOfServicePlanAgreementSection.Count == 0){%>
+                    
+                    <div class="panel-body">
+                        
+                        <!-- Informative message for no records present for SERVICE AGREEMENT Section -->
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                    </div>
+                <%}%>
+                
+                <!-- Display remaining section if 'lstOfServicePlanAgreementSection' contains a Service Agreement Plan record -->
+                <% if(DataBag.lstOfServicePlanAgreementSection.Count>0){%>
+                                    
+                    <!-- Start of div to display Sections and Service Agreement Plan  records -->
+                    <div class="panel-body" >
+                    <% int counterServiceAgreement=0;%>
+                    <%
+                    Html.Repeat(DataBag.lstOfServicePlanAgreementSection as IList, html => { %>
+                    
+                            <!---------Display the Service Agreement Sub-Section Header----------------->
+                            <% string strSectionContent = "";
+                                    strSectionContent = html.DisplayTextFor("Section_Content__c");
+                                  	if(!String.IsNullOrEmpty(strSectionContent)){%>        
+                                       <div style="page-break-inside: auto;">
+                            <%}%>
+                            <div class="panel panelClass" id="panelParentServiceAgreementSectionId<%=counterServiceAgreement%>">                                                        
+                                <div class="panel-headingInline" style="height: 35px;" id="panelDivId<%=counterServiceAgreement%>">
+                                    <h4 class="panel-title" >
+                                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseSA<%=counterServiceAgreement%>" >
+                                        <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                                    </a>
+                                       <!----------------------Display the Title of  Service Agreement  Section ------------------------->
+                                        <%=html.DisplayTextFor("Title_Of_Section__c")%>
+                                    </h4>
+                                </div>
+                            </div>
+                            <br/>
+                            <!---------End Of Display the Service Agreement Sub-Section Header----------------->
+                            
+                            <!-- The if condition is specificed to show the section collapsiable or not depending on the checkbox on Service Agreement Section-->
+                            <div id="collapseSA<%=counterServiceAgreement%>" class="section container-fluid panel-collapse collapse 
+                                <% string strCollapseSec = html.DisplayTextFor("Collapse_Section__c");
+                                  if(strCollapseSec.Contains("false") ){        
+                                %>
+                                  in
+                                <%}if(strCollapseSec.Contains("true")){%>
+                                  Out
+                                <%}%>
+                             ">
+                             
+                            <!----------------------Display the Service Agreement Rich Text Section ------------------------->
+                            
+                                <div id="body_ServicePlanPageId_ctl03_body" class="sectionBody row form-horizontal  form-2-cols ">
+                        		   <div class="col-md-12 col-sm-12 col-xs-12">
+                        		       <div class="form-group form-group-0" >
+                            				<div class="col-md-12">                                                            
+                                                 <%=html.DisplayTextFor("Section_Content__c")%>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>    
+                            </div>
+                            <% if(!String.IsNullOrEmpty(strSectionContent)){ %>      
+                                  </div>
+                                   
+                            <%}%>
+                            <%counterServiceAgreement=counterServiceAgreement+1;%>
+                            
+                        <% });%>
+                        
+                  </div>
+              
+                <%}%>  
+        </div>
+        <br/>  
+        <!------------------------------------------End of Service Agreement Plan Section ---------------------------------------------->
+   <!-----------------------------------------START OF ADMIN SIGNATURE SECTION ----------------------------------------->
+
+     <%if(CustomLabels.ISP_RoleForAdminSignatures.Equals(UserInfo.Role.Name) ){ %>
+        
+        <!-- To Display Signature Sections of the service plan Record -->
+        <div class="panel borderofPanel" > <!-- ******************************************-->
+            <div class="panel-heading" style="color: #fff !important;">
+            <span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+            <div class="panel-body" > <!-- ******************************************-->
+                <!-----------------Show the Existing Signature For Client/Family and Staff ----------------------->
+                <div class="panel panelClass">                                                        
+                    <div class="panel-headingInline" style="height: 35px;">
+                        <h4 class="panel-title" style="color: #fff !important;">
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOnewe" >
+                            <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                        </a>
+                            Existing Signatures
+                        </h4>
+                    </div>
+                </div>
+                <br/>
+                
+                <!-- Collapsible existing signature section-->
+                <div id="collapseOnewe" class="section container-fluid panel-collapse collapse in">
+                     
+                     <p><b>Client/Family Signature (<%=DataBag.lstFamilySignature.Count%>) </b></p>
+                     
+                     <!-- Display message if no family records to display -->
+                     <% if(DataBag.lstFamilySignature.Count == 0){%>
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                     <%}%>
+                     
+                     <div>
+                     
+                         <!-- Start Display existing Family signature section-->
+                         <% int RecordIndexCountForExistingFamilySign=-1;%>
+                         
+                		 <% Html.Repeat(DataBag.lstFamilySignature  as IList, htmlExistingFamilySignDiv => { %>
+        		            <% RecordIndexCountForExistingFamilySign = RecordIndexCountForExistingFamilySign+1; %> 
+            			    <div id="ExistingfamilySig<%=RecordIndexCountForExistingFamilySign%>" style="pointer-events: none;background-color: #EFEFEF;"></div><br/>
+                            
+                            <!--Hidden field to display value of family signature -->
+                            <input type='hidden' id="SaveFamilySignId<%=RecordIndexCountForExistingFamilySign%>" 
+                                                name="FamilySignToDisplay<%=RecordIndexCountForExistingFamilySign%>" 
+                                                value="<%=htmlExistingFamilySignDiv.DisplayTextFor("Signature__c")%>">
+                            
+                            <!-- Display name and date for family signature area --->
+                            <div class="row">  
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Signee_Name__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-4 col-md-3">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("User_Role_Name__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Relationship_Type__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-2 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Signed_Date__c")%></b>
+                                    </div>
+                                </div>
+                            
+                            <div class="row"> 
+                                <div class="col-xs-3 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signee_Name__c")%>
+                                </div>
+                                <div class="col-xs-4 col-md-3">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("User_Role_Name__c")%>
+                                </div> 
+                                <!-------------------------------Start Of Relationship Section -------------->
+                                <div class="col-xs-3 col-md-2">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("Relationship_Type__c")%>
+                                </div> 
+                                <!-------------------------------End Of Relationship Section -------------->
+                                <div class="col-xs-2 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signed_Date__c")%>
+                                </div>
+                            </div>
+                            
+                		 <% }); %>
+                		 
+                		 <!--Hidden field to display count of family signature -->
+                		 <input type='hidden' id="ExistingCountOfFamilySignId" name="ExistingRowCountofFamilySign" 
+                		        value="<%=RecordIndexCountForExistingFamilySign%>">
+                     </div>
+                     <!-- End Display existing Family signature section-->
+                     <hr class="hrCustomClass"/>
+                        <!-- Start Display existing Staff signature section-->
+                         <p><b>Staff Signature (<%=DataBag.lstStaffSignature.Count%>) </b></p>
+                         
+                         <% if(DataBag.lstStaffSignature.Count == 0){%>
+                            <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                         <%}%>
+                         
+                         <div >
+                         
+                             <% int RecordIndexCountForExistingStaffSign=-1;%>
+                             
+                    		 <% Html.Repeat(DataBag.lstStaffSignature  as IList, htmlExistingStaffSignDiv => { %>
+            		            <% RecordIndexCountForExistingStaffSign = RecordIndexCountForExistingStaffSign+1; %> 
+                			    <div id="ExistingStaffSig<%=RecordIndexCountForExistingStaffSign%>" style="pointer-events: none;background-color: #EFEFEF;"></div><br/>
+                                
+                                <!--Hidden field to display value of staff signature -->
+                                <input type='hidden' id="SaveStaffSignId<%=RecordIndexCountForExistingStaffSign%>" 
+                                                    name="StaffSignToDisplay<%=RecordIndexCountForExistingStaffSign%>" 
+                                                    value="<%=htmlExistingStaffSignDiv.DisplayTextFor("Signature__c")%>">
+                                
+                                <!-- Display name and date for staff signature area --->
+                                <div class="row">  
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingStaffSignDiv.LabelFor("Signee_Name__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-4 col-md-3">
+                                        <b><%=htmlExistingStaffSignDiv.LabelFor("User_Role_Name__c")%></b>
+                                    </div>
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingStaffSignDiv.LabelFor("Signed_Date__c")%></b>
+                                    </div>
+                                </div>
+                                <div class="row"> 
+                                    <div class="col-xs-3 col-md-2">
+                                       <%=htmlExistingStaffSignDiv.DisplayTextFor("Signee_Name__c")%>
+                                    </div>
+                                    <div class="col-xs-4 col-md-3">
+                                       <%=htmlExistingStaffSignDiv.DisplayTextFor("User_Role_Name__c")%>
+                                    </div>
+                                    <div class="col-xs-3 col-md-2">
+                                       <%=htmlExistingStaffSignDiv.DisplayTextFor("Signed_Date__c")%>
+                                    </div>
+                                </div>
+                                
+                		     <% }); %>
+                		 
+                    		 <!--Hidden field to display count of Staff signature -->
+                    		 <input type='hidden' id="ExistingCountOfStaffSignId" name="ExistingRowCountofStaffSign" 
+                    		        value="<%=RecordIndexCountForExistingStaffSign%>"><br/>
+                		  </div>
+                		 <!-- End Display existing Staff signature section-->
+                </div>
+                <!-- collapsible existing signature section-->
+                
+                <% if(DataBag.lstFamilySignature.Count > 0 && DataBag.lstStaffSignature.Count > 0){%>  
+                    <div style="page-break-before:always;"></div>
+                <%}%>
+                    <!-- When user logged through as Admin should be able to see Supervisor Signature Section in read only format-->
+                     <%
+                            Html.Repeat(DataBag.lstServicePlanObj as IList, htmlServicePlanObj => { %>
+                                
+                                    <div class="panel panelClass">                                                        
+                                        <div class="panel-headingInline" style="height: 35px;">
+                                            <h4 class="panel-title" style="color: #fff !important;">
+                                            <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseTwowe" >
+                                                <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                                            </a>
+                                            Supervisor Signature Section
+                                            </h4>
+                                        </div>
+                                    </div><br/>
+                                    <% if(htmlServicePlanObj.DisplayTextFor("Supervisor_Signature__c") == ""){%>
+                                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                                    <%}%>
+                                    <%else{%> 
+        				            <div id="SupervisorSig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+        				            
+        				            <!-- Display name and date for supervisor signature area --->
+                                    <div class="row">  
+                                        <div class="col-xs-3 col-md-2">
+                                            <b><%=htmlServicePlanObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                                        </div> 
+                                        <div class="col-xs-4 col-md-2">
+                                            <b><%=htmlServicePlanObj.LabelFor("Supervisor_Role_Name__c")%></b>
+                                        </div> 
+                                        <div class="col-xs-3 col-md-2">
+                                            <b><%=htmlServicePlanObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                                        </div>
+                                    </div>
+                                    <div class="row"> 
+                                       <div class="col-xs-3 col-md-2">
+                                           <%=htmlServicePlanObj.DisplayTextFor("Supervisor_Signee_Name__c")%>
+                                       </div>
+                                       <div class="col-xs-4 col-md-2">
+                                           <%=htmlServicePlanObj.DisplayTextFor("Supervisor_Role_Name__c")%>
+                                       </div>
+                                       <div class="col-xs-3 col-md-2">
+                                           <%=htmlServicePlanObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                                       </div>
+                                    </div>
+                                    <%}%>   
+                        <% }); %>
+        	        
+           </div>
+           <br/>
+           
+        </div>
+        <%}%>
+        <!-- End of Signature Sections of the service plan Record -->
+        <!-----------------------------------------END OF ADMIN SIGNATURE SECTION ----------------------------------------->
+        
+        <!-----------------------------------------START OF STAFF SIGNATURE SECTION ----------------------------------------->
+
+        <%if(CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) ){ %>
+        
+        <!-- To Display Signature Sections of the service plan Record -->
+        <div class="panel borderofPanel"> <!-- ******************************************-->
+            <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+            <div class="panel-body" >
+                <!-----------------Show the Existing Signature For Client/Family and Staff ----------------------->
+                <div class="panel panelClass">                                                        
+                    <div class="panel-headingInline" style="height: 35px;">
+                        <h4 class="panel-title" >
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOnewe" >
+                            <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                        </a>
+                            Existing Signatures
+                        </h4>
+                    </div>
+                </div>
+                <br/>
+                
+                <!-- Collapsible existing signature section-->
+                <div id="collapseOnewe" class="section container-fluid panel-collapse collapse in">
+                     
+                     <p><b>Client/Family Signature (<%=DataBag.lstFamilySignature.Count%>) </b></p>
+                     
+                     <!-- Display message if no family records to display -->
+                     <% if(DataBag.lstFamilySignature.Count == 0){%>
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                     <%}%>
+                     
+                     <div>
+                     
+                         <!-- Start Display existing Family signature section-->
+                         <% int RecordIndexCountForExistingFamilySign=-1;%>
+                         
+                		 <% Html.Repeat(DataBag.lstFamilySignature  as IList, htmlExistingFamilySignDiv => { %>
+        		            <% RecordIndexCountForExistingFamilySign = RecordIndexCountForExistingFamilySign+1; %> 
+            			    <div id="ExistingfamilySig<%=RecordIndexCountForExistingFamilySign%>" style="pointer-events: none;background-color: #EFEFEF;"></div><br/>
+                            
+                            <!--Hidden field to display value of family signature -->
+                            <input type='hidden' id="SaveFamilySignId<%=RecordIndexCountForExistingFamilySign%>" 
+                                                name="FamilySignToDisplay<%=RecordIndexCountForExistingFamilySign%>" 
+                                                value="<%=htmlExistingFamilySignDiv.DisplayTextFor("Signature__c")%>">
+                            
+                            <!-- Display name and date for family signature area --->
+                            <div class="row">  
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Signee_Name__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-4 col-md-3">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("User_Role_Name__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Relationship_Type__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-2 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Signed_Date__c")%></b>
+                                    </div>
+                                </div>
+                            
+                            <div class="row"> 
+                                <div class="col-xs-3 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signee_Name__c")%>
+                                </div>
+                                <div class="col-xs-4 col-md-3">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("User_Role_Name__c")%>
+                                </div> 
+                                <!-------------------------------Start Of Relationship Section -------------->
+                                <div class="col-xs-3 col-md-2">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("Relationship_Type__c")%>
+                                </div> 
+                                <!-------------------------------End Of Relationship Section -------------->
+                                <div class="col-xs-2 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signed_Date__c")%>
+                                </div>
+                            </div>
+                            
+                		 <% }); %>
+                		 
+                		 <!--Hidden field to display count of family signature -->
+                		 <input type='hidden' id="ExistingCountOfFamilySignId" name="ExistingRowCountofFamilySign" 
+                		        value="<%=RecordIndexCountForExistingFamilySign%>">
+                     </div>
+                     <!-- End Display existing Family signature section-->
+                     <hr class="hrCustomClass"/>
+                        <!-- Start Display existing Staff signature section-->
+                         <p><b>Staff Signature (<%=DataBag.lstStaffSignature.Count%>) </b></p>
+                         
+                         <% if(DataBag.lstStaffSignature.Count == 0){%>
+                            <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                         <%}%>
+                         
+                         <div>
+                         
+                         <% int RecordIndexCountForExistingStaffSign=-1;%>
+                         
+                		 <% Html.Repeat(DataBag.lstStaffSignature  as IList, htmlExistingStaffSignDiv => { %>
+        		            <% RecordIndexCountForExistingStaffSign = RecordIndexCountForExistingStaffSign+1; %> 
+            			    <div id="ExistingStaffSig<%=RecordIndexCountForExistingStaffSign%>" style="pointer-events: none;background-color: #EFEFEF;"></div><br/>
+                            
+                            <!--Hidden field to display value of staff signature -->
+                            <input type='hidden' id="SaveStaffSignId<%=RecordIndexCountForExistingStaffSign%>" 
+                                                name="StaffSignToDisplay<%=RecordIndexCountForExistingStaffSign%>" 
+                                                value="<%=htmlExistingStaffSignDiv.DisplayTextFor("Signature__c")%>">
+                            
+                            <!-- Display name and date for staff signature area --->
+                            <div class="row">  
+                                <div class="col-xs-3 col-md-2">
+                                    <b><%=htmlExistingStaffSignDiv.LabelFor("Signee_Name__c")%></b>
+                                </div> 
+                                <div class="col-xs-4 col-md-3">
+                                    <b><%=htmlExistingStaffSignDiv.LabelFor("User_Role_Name__c")%></b>
+                                </div>
+                                <div class="col-xs-3 col-md-2">
+                                    <b><%=htmlExistingStaffSignDiv.LabelFor("Signed_Date__c")%></b>
+                                </div>
+                            </div>
+                            <div class="row"> 
+                                <div class="col-xs-3 col-md-2">
+                                   <%=htmlExistingStaffSignDiv.DisplayTextFor("Signee_Name__c")%>
+                                </div>
+                                <div class="col-xs-4 col-md-3">
+                                   <%=htmlExistingStaffSignDiv.DisplayTextFor("User_Role_Name__c")%>
+                                </div>
+                                <div class="col-xs-3 col-md-2">
+                                   <%=htmlExistingStaffSignDiv.DisplayTextFor("Signed_Date__c")%>
+                                </div>
+                            </div>
+                                
+                		 <% }); %>
+                		 
+                		 <!--Hidden field to display count of Staff signature -->
+                		 <input type='hidden' id="ExistingCountOfStaffSignId" name="ExistingRowCountofStaffSign" 
+                		        value="<%=RecordIndexCountForExistingStaffSign%>"><br/>
+                		  </div>
+                		 <!-- End Display existing Staff signature section-->
+                </div>
+                <!-- collapsible existing signature section-->
+                    
+           </div>
+           <br/>
+           
+        </div>
+        <%}%>
+        <!-- End of Signature Sections of the service plan Record -->
+        <!-----------------------------------------END OF STAFF SIGNATURE SECTION ----------------------------------------->
+        
+        <!-----------------------------------------START OF SUPERVISOR SIGNATURE SECTION ----------------------------------------->
+
+        <%if(CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name) ){ %>
+        
+        <!-- To Display Signature Sections of the service plan Record -->
+        <div class="panel borderofPanel"> <!-- ******************************************-->
+            <div class="panel-heading"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+            <div class="panel-body" >
+                <!-----------------Show the Existing Signature For Client/Family and Staff ----------------------->
+                <div class="panel panelClass">                                                        
+                    <div class="panel-headingInline" style="height: 35px;">
+                        <h4 class="panel-title" >
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOnewe" >
+                            <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                        </a>
+                            Existing Signatures
+                        </h4>
+                    </div>
+                </div>
+                <br/>
+                
+                <!-- Collapsible existing signature section-->
+                <div id="collapseOnewe" class="section container-fluid panel-collapse collapse in">
+                     
+                     <p><b>Client/Family Signature (<%=DataBag.lstFamilySignature.Count%>) </b></p>
+                     
+                     <!-- Display message if no family records to display -->
+                     <% if(DataBag.lstFamilySignature.Count == 0){%>
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                     <%}%>
+                     
+                     <div>
+                     
+                         <!-- Start Display existing Family signature section-->
+                         <% int RecordIndexCountForExistingFamilySign=-1;%>
+                         
+                		 <% Html.Repeat(DataBag.lstFamilySignature  as IList, htmlExistingFamilySignDiv => { %>
+        		            <% RecordIndexCountForExistingFamilySign = RecordIndexCountForExistingFamilySign+1; %> 
+            			    <div id="ExistingfamilySig<%=RecordIndexCountForExistingFamilySign%>" style="pointer-events: none;background-color: #EFEFEF;"></div><br/>
+                            
+                            <!--Hidden field to display value of family signature -->
+                            <input type='hidden' id="SaveFamilySignId<%=RecordIndexCountForExistingFamilySign%>" 
+                                                name="FamilySignToDisplay<%=RecordIndexCountForExistingFamilySign%>" 
+                                                value="<%=htmlExistingFamilySignDiv.DisplayTextFor("Signature__c")%>">
+                            
+                            <!-- Display name and date for family signature area --->
+                            <div class="row">  
+                                <div class="col-xs-3 col-md-2">
+                                    <b><%=htmlExistingFamilySignDiv.LabelFor("Signee_Name__c")%></b>
+                                </div> 
+                                <div class="col-xs-4 col-md-3">
+                                    <b><%=htmlExistingFamilySignDiv.LabelFor("User_Role_Name__c")%></b>
+                                </div> 
+                                <div class="col-xs-3 col-md-2">
+                                    <b><%=htmlExistingFamilySignDiv.LabelFor("Relationship_Type__c")%></b>
+                                </div> 
+                                <div class="col-xs-2 col-md-2">
+                                    <b><%=htmlExistingFamilySignDiv.LabelFor("Signed_Date__c")%></b>
+                                </div>
+                            </div>
+                            
+                            <div class="row"> 
+                                <div class="col-xs-3 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signee_Name__c")%>
+                                </div>
+                                <div class="col-xs-4 col-md-3">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("User_Role_Name__c")%>
+                                </div> 
+                                <!-------------------------------Start Of Relationship Section -------------->
+                                <div class="col-xs-3 col-md-2">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("Relationship_Type__c")%>
+                                </div> 
+                                <!-------------------------------End Of Relationship Section -------------->
+                                <div class="col-xs-2 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signed_Date__c")%>
+                                </div>
+                            </div>
+                            
+                		 <% }); %>
+                		 
+                		 <!--Hidden field to display count of family signature -->
+                		 <input type='hidden' id="ExistingCountOfFamilySignId" name="ExistingRowCountofFamilySign" 
+                		        value="<%=RecordIndexCountForExistingFamilySign%>">
+                     </div>
+                     <!-- End Display existing Family signature section-->
+                     <hr class="hrCustomClass"/>
+                    <!-- Start Display existing Staff signature section-->
+                     <p><b>Staff Signature (<%=DataBag.lstStaffSignature.Count%>) </b></p>
+                     
+                     <% if(DataBag.lstStaffSignature.Count == 0){%>
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                     <%}%>
+                     
+                     <div>
+                     
+                     <% int RecordIndexCountForExistingStaffSign=-1;%>
+                     
+            		 <% Html.Repeat(DataBag.lstStaffSignature  as IList, htmlExistingStaffSignDiv => { %>
+    		            <% RecordIndexCountForExistingStaffSign = RecordIndexCountForExistingStaffSign+1; %> 
+        			    <div id="ExistingStaffSig<%=RecordIndexCountForExistingStaffSign%>" style="pointer-events: none;background-color: #EFEFEF;"></div><br/>
+                        
+                        <!--Hidden field to display value of staff signature -->
+                        <input type='hidden' id="SaveStaffSignId<%=RecordIndexCountForExistingStaffSign%>" 
+                                            name="StaffSignToDisplay<%=RecordIndexCountForExistingStaffSign%>" 
+                                            value="<%=htmlExistingStaffSignDiv.DisplayTextFor("Signature__c")%>">
+                        
+                        <!-- Display name and date for staff signature area --->
+                        <div class="row">  
+                            <div class="col-xs-3 col-md-2">
+                                <b><%=htmlExistingStaffSignDiv.LabelFor("Signee_Name__c")%></b>
+                            </div> 
+                            <div class="col-xs-4 col-md-3">
+                                <b><%=htmlExistingStaffSignDiv.LabelFor("User_Role_Name__c")%></b>
+                            </div>
+                            <div class="col-xs-3 col-md-2">
+                                <b><%=htmlExistingStaffSignDiv.LabelFor("Signed_Date__c")%></b>
+                            </div>
+                        </div>
+                        <div class="row"> 
+                            <div class="col-xs-3 col-md-2">
+                               <%=htmlExistingStaffSignDiv.DisplayTextFor("Signee_Name__c")%>
+                            </div>
+                            <div class="col-xs-4 col-md-3">
+                               <%=htmlExistingStaffSignDiv.DisplayTextFor("User_Role_Name__c")%>
+                            </div>
+                            <div class="col-xs-3 col-md-2">
+                               <%=htmlExistingStaffSignDiv.DisplayTextFor("Signed_Date__c")%>
+                            </div>
+                        </div>
+                            
+            		 <% }); %>
+            		 
+            		 <!--Hidden field to display count of Staff signature -->
+            		 <input type='hidden' id="ExistingCountOfStaffSignId" name="ExistingRowCountofStaffSign" 
+            		        value="<%=RecordIndexCountForExistingStaffSign%>"><br/>
+            		  </div>
+            		 <!-- End Display existing Staff signature section-->
+            </div>
+            <!-- collapsible existing signature section-->
+            
+            <% if(DataBag.lstFamilySignature.Count > 0 && DataBag.lstStaffSignature.Count > 0){%>  
+                <div style="page-break-before:always;"></div>
+            <%}%>
+              
+            <!-- When user logged through as Supervisor should be able to see Supervisor Signature Section in editable format-->
+             <%
+                Html.Repeat(DataBag.lstServicePlanObj as IList, htmlServicePlanObj => { %>
+                    
+                    <div class="panel panelClass">                                                        
+                        <div class="panel-headingInline" style="height: 35px;">
+                            <h4 class="panel-title" >
+                            <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseTwowe" >
+                                <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                            </a>
+                            Supervisor Signature Section
+                            </h4>
+                        </div>
+                    </div><br/>
+                    
+                    <div id="SupervisorSig"></div>
+                    <p style="clear: both;"><input type="button" id="clearSupervisor" value="Clear"/>
+                    <!-- When user logged through supervisor able to see save supervisor signature button-->
+                    
+                    <!-- Display name and date for supervisor signature area --->
+                    <div class="row">  
+                        <div class="col-xs-3 col-md-2">
+                            <b><%=htmlServicePlanObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-4 col-md-2">
+                            <b><%=htmlServicePlanObj.LabelFor("Supervisor_Role_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-3 col-md-2">
+                            <b><%=htmlServicePlanObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                        </div>
+                    </div>
+                    <div class="row"> 
+                       <div class="col-xs-3 col-md-2">
+                           <%=htmlServicePlanObj.DisplayTextFor("Supervisor_Signee_Name__c")%>
+                       </div>
+                       <div class="col-xs-4 col-md-2">
+                           <%=htmlServicePlanObj.DisplayTextFor("Supervisor_Role_Name__c")%>
+                       </div>
+                       <div class="col-xs-3 col-md-2">
+                           <%=htmlServicePlanObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                       </div>
+                    </div>
+                       
+                <% }); %>
+        	        
+           </div>
+           <br/>
+           
+        </div>
+        <%}%>
+        <!-- End of Signature Sections of the service plan Record -->
+        <!-----------------------------------------END OF SUPERVISOR SIGNATURE SECTION ----------------------------------------->
+        
+        <!-----------------------------------------START OF CLIENT/FAMILY SIGNATURE SECTION ----------------------------------------->
+
+        <%if(CustomLabels.ISP_RoleForClientSignatures.Equals(UserInfo.Role.Name) ){ %>
+        
+        <!-- To Display Signature Sections of the service plan Record -->
+        <div class="panel borderofPanel"> <!-- ******************************************-->
+            <div class="panel-heading"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+            <div class="panel-body" >
+                <!-----------------Show the Existing Signature For Client/Family and Staff ----------------------->
+                <div class="panel panelClass">                                                        
+                    <div class="panel-headingInline" style="height: 35px;">
+                        <h4 class="panel-title" >
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOnewe" >
+                            <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                        </a>
+                            Existing Signatures
+                        </h4>
+                    </div>
+                </div>
+                <br/>
+                
+                <!-- Collapsible existing signature section-->
+                <div id="collapseOnewe" class="section container-fluid panel-collapse collapse in">
+                     
+                     <p><b>Client/Family Signature (<%=DataBag.lstFamilySignature.Count%>) </b></p>
+                     
+                     <!-- Display message if no family records to display -->
+                     <% if(DataBag.lstFamilySignature.Count == 0){%>
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                     <%}%>
+                     
+                     <div>
+                     
+                         <!-- Start Display existing Family signature section-->
+                         <% int RecordIndexCountForExistingFamilySign=-1;%>
+                         
+                		 <% Html.Repeat(DataBag.lstFamilySignature  as IList, htmlExistingFamilySignDiv => { %>
+        		            <% RecordIndexCountForExistingFamilySign = RecordIndexCountForExistingFamilySign+1; %> 
+            			    <div id="ExistingfamilySig<%=RecordIndexCountForExistingFamilySign%>" style="pointer-events: none;background-color: #EFEFEF;"></div><br/>
+                            
+                            <!--Hidden field to display value of family signature -->
+                            <input type='hidden' id="SaveFamilySignId<%=RecordIndexCountForExistingFamilySign%>" 
+                                                name="FamilySignToDisplay<%=RecordIndexCountForExistingFamilySign%>" 
+                                                value="<%=htmlExistingFamilySignDiv.DisplayTextFor("Signature__c")%>">
+                            
+                            <!-- Display name and date for family signature area --->
+                            <div class="row">  
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Signee_Name__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-4 col-md-3">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("User_Role_Name__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-3 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Relationship_Type__c")%></b>
+                                    </div> 
+                                    <div class="col-xs-2 col-md-2">
+                                        <b><%=htmlExistingFamilySignDiv.LabelFor("Signed_Date__c")%></b>
+                                    </div>
+                                </div>
+                            
+                            <div class="row"> 
+                                <div class="col-xs-3 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signee_Name__c")%>
+                                </div>
+                                <div class="col-xs-4 col-md-3">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("User_Role_Name__c")%>
+                                </div> 
+                                <!-------------------------------Start Of Relationship Section -------------->
+                                <div class="col-xs-3 col-md-2">
+                                    <%=htmlExistingFamilySignDiv.DisplayTextFor("Relationship_Type__c")%>
+                                </div> 
+                                <!-------------------------------End Of Relationship Section -------------->
+                                <div class="col-xs-2 col-md-2">
+                                   <%=htmlExistingFamilySignDiv.DisplayTextFor("Signed_Date__c")%>
+                                </div>
+                            </div>
+                            
+                		 <% }); %>
+                		 
+                		 <!--Hidden field to display count of family signature -->
+                		 <input type='hidden' id="ExistingCountOfFamilySignId" name="ExistingRowCountofFamilySign" 
+                		        value="<%=RecordIndexCountForExistingFamilySign%>">
+                     </div>
+                     <!-- End Display existing Family signature section-->
+                     <hr/>
+                </div>
+                <!-- collapsible existing signature section-->
+                
+           </div>
+           
+           <center>
+                <%if(DataBag.lstNewStaffSignature.Count > 0 || DataBag.lstNewFamilySignature.Count > 0){%> 
+                    <button type="button" id="saveSignatureId" class="btn backgroundForMainButton" onclick="getTheLocationOftheButton(this);setValueToSignTextField(this);"><span class="glyphicon glyphicon-save"></span>&nbsp;Save Signatures</button>
+                <%}%>
+           </center>
+           <br/>
+           
+        </div>
+        <%}%>
+        <!-- End of Signature Sections of the service plan Record -->
+        <!-----------------------------------------END OF CLIENT/FAMILY SIGNATURE SECTION ----------------------------------------->
+        
+        <%
+          Html.Repeat(DataBag.lstServicePlanObj as IList, htmlServicePlanObj => { %>
+            <!-- Below hidden field contains the value of Supervisor signture to save service Plan-->
+            <input type='hidden' id="SaveSupervisorSignId" name="SupervisorToUpdateServicePlan" value="<%=htmlServicePlanObj.DisplayTextFor("Supervisor_Signature__c")%>">
+        <% }); %>
+        
+        <br/>
+        <center>
+            <button type="button" id="saveAllISPInfoId" class="btn backgroundForMainButton" style="margin-left: 10%;" onclick="setValueToSignTextField(this);"><span class="glyphicon glyphicon-save"></span>&nbsp;Save</button>
+            <button type="button" id="saveCompleteId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);"><span class="glyphicon glyphicon-save"></span>&nbsp;Save and Complete ISP</button>
+            <button id="printbtnID" type="button" class="btn backgroundForMainButton" style="float: right;" onclick="doPrint(event);"><span class="glyphicon glyphicon-print"></span>&nbsp;Print Service Plan</button>
+        </center>
+    	<br/>
+    	
+        <!-- Below hidden field contains the value of Service for saving the Goals-->
+        <input type='hidden' id="ServiceIdForSave" name="ServiceIDforListofGoalToInsert" value="">
+        <!-- Below hidden to store the id of the button on click -->
+        <input type='hidden' class="scrollBarClass" id="scrollBarId" name="scrollIdName" value="<%=DataBag.IdOfTheButton%>">
+        
+        <!-- Below hidden field contains the value of Service for Editing/Saving the Service record-->
+        <input type='hidden' id="ServiceIdForEdit" name="ServiceIDforServiceToEdit" value="<%=DataBag.ServiceId%>">
+        <!-- Below hidden field contains the value of Goal for Editing/Saving the Service record-->
+        <input type='hidden' id="GoalIdForEdit" name="GoalIDforGoalToEdit" value="<%=DataBag.GoalId%>">
+        
+        <!-- Below hidden field contains the count of family signature on ISP-->
+        <input type='hidden' id="countOfFamilySignature" value="<%=DataBag.lstFamilySignature.Count%>">
+        <!-- Below hidden field contains the count of staff signature on ISP-->
+        <input type='hidden' id="countOfStaffSignature" value="<%=DataBag.lstStaffSignature.Count%>">
+        
+    <%}%>
+    
+    <script>
+        setTheServiceAgreementOnPrint();
+        doit();
+        
+        //To hide empty Objective tables that lead to extra spacing on the page
+        $(".scrollBarCssForObjectives table:empty").each(function(){ console.log($(this).html());$(this).parent().hide() });
+        
+        //Variable to set the position of the scroll bar
+        var scroll = 0;
+        
+        //Function to get the location of the scroll bar on click of the button
+        function getTheLocationOftheButton(currentElem){
+           scroll = $(window).scrollTop();
+           $('#scrollBarId').val(scroll);
+        }
+         //Function to call the functiona on load and set the scroll bar position
+        scrollBarLocation();
+        
+        //Function to set scroll bar position on load
+        function scrollBarLocation (){
+            var scrollVal= $('#scrollBarId').val();
+            window.scrollTo(0,scrollVal);
+        }
+       
+    </script>
+    
+</body>
+</aspx:AspxPage>

@@ -1,0 +1,145 @@
+<aspx:AspxPage runat="server" Id="ServiceAgreementSetupId" title="Service Agreement Setup">
+<header>
+    <style>
+        .panelClass {
+            background-color: rgb(211, 74, 70) !important;
+            color: white !important;
+        }
+    </style>
+</header>
+<body>
+    <!----- View Message Panel to display Error Message from the Server if any -------------->
+    <aspx:ViewMessages runat='server' inline='false'/>
+    
+    <div>    
+    <!-- Button to Save or Redirect according to the functionality -->
+    <center>
+         
+        <button id="PreviousServicePlanAgreementSectionId" type="button" class="btn btn-danger" onclick="__doPostBack('PreviousServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Previous
+        </button>
+        <button id="AddMoreRowsId" type="button"class="btn btn-danger" onclick="__doPostBack('AddRowServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Add
+        </button>
+        <button id="RemoveRowsId" type="button"class="btn btn-danger" onclick="__doPostBack('RemoveRowServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Remove
+        </button>
+        <button id="SaveTimeEntriesbtn" type="button" class="btn btn-danger" 
+            onclick="__doPostBack('SaveRowServicePlanAgreementSection');">
+            <span class="glyphicon glyphicon-save"></span>
+            Save
+        </button> 
+         
+        <button id="CancelId" type="button" class="btn btn-danger" onclick="__doPostBack('CancelServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Cancel
+        </button>
+     </center>
+     <!-- End of Button to Save or Redirect according to the functionality -->
+     
+     <br/>
+     <!------------------------------Section to display the Service Plan Agreement Sub Section ---------------------->
+    <% int counterServicePlanAgreement=-1;%>
+    <% Html.Repeat(DataBag.lstServicePlanAgreement as IList, htmlServicePlanAgreement => { %>
+    <% counterServicePlanAgreement=counterServicePlanAgreement+1;%>
+       <!------------------------Start of the Section Header ------------------->
+       <div class="col-md-12">
+        <div class="panel panelClass">
+            <div class="panel-heading" style="height: 35px;">
+                <h4 class="panel-title">
+                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOne<%=counterServicePlanAgreement%>">
+                    <i class="indicator glyphicon  pull-left glyphicon-chevron-down"></i>
+                    </a>
+                    <p class="solid" style="font-size: 15px"><b>Section <%=counterServicePlanAgreement+1%></b></p> 
+                </h4>
+            </div>
+        </div>
+        </div>
+        <br/><hr/>
+         <!------------------------End of the Section Header ------------------->
+         
+         <!------------------------Start of the Row Div ------------------->
+        <div class="row">
+        
+        <!--------------------Section to Display the Title of the Service Plan Agreement ----------------------------->
+        <div class="col-md-12">
+            <div class="col-md-6 setPaddingFirstElement">
+                <label id="sequenceNoId"><%=htmlServicePlanAgreement.LabelFor("Title_Of_Section__c")%></label><br>
+                <%=htmlServicePlanAgreement.DisplayEditorFor("Title_Of_Section__c")%>
+            </div>
+        </div>
+        
+        <!--------------------Section to Display the Content of the Service Plan Agreement ----------------------------->
+        <div class="col-md-12">
+            <div class="col-md-6 setPaddingFirstElement">
+                <label id="sequenceNoId"><%=htmlServicePlanAgreement.LabelFor("Section_Content__c")%></label><br>
+                <%=htmlServicePlanAgreement.DisplayEditorFor("Section_Content__c")%>
+            </div>
+        </div>
+        <br/>
+        
+        <!--------------------Section to Display the Collapse checkbox of the Service Plan Agreement ----------------------------->
+        <div class="col-md-12">
+            <div class="col-md-4 setPaddingFirstElement">
+                <label id="sequenceNoId"><%=htmlServicePlanAgreement.LabelFor("Collapse_Section__c")%></label><br>
+                <%=htmlServicePlanAgreement.DisplayEditorFor("Collapse_Section__c")%>
+            </div>
+        </div>
+        
+    </div>
+    <!------------------------End of the Row Div ------------------->
+    <br/>
+        <!-- Hidden Field is used to get the values of the RichTextArea(HTML Text Area) record and assigned it through javascript-->
+      <% string richTextForContent = htmlServicePlanAgreement.DisplayTextFor("Section_Content__c"); %>
+      <input type="hidden"  id="SectionContentValueID<%=counterServicePlanAgreement%>" value="<%:richTextForContent%>" />
+           
+   <% }); %>
+   <%counterServicePlanAgreement=counterServicePlanAgreement+1;%>
+    <!------------------------------Section to display the Service Plan Agreement Sub Section ---------------------->
+    
+   <!--Hidden field to store the Count of the Service Plan Agreement List ------------>
+    <input type="hidden" id="CounterOfServiceAgreementRecords" 
+            name="CounterOfServiceAgreementRecordsName" 
+            value="<%=counterServicePlanAgreement%>" />
+     <br/>
+     
+    <!-- Button to Save or Redirect according to the functionality -->
+    <center>
+         
+        <button id="PreviousServicePlanAgreementSectionId" type="button" class="btn btn-danger" onclick="__doPostBack('PreviousServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Previous
+        </button>
+        
+        <button id="AddMoreRowsId" type="button"class="btn btn-danger" onclick="__doPostBack('AddRowServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Add
+        </button>
+        <button id="RemoveRowsId" type="button"class="btn btn-danger" onclick="__doPostBack('RemoveRowServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Remove
+        </button>
+        <button id="SaveTimeEntriesbtn" type="button" class="btn btn-danger" 
+            onclick="__doPostBack('SaveRowServicePlanAgreementSection');">
+            <span class="glyphicon glyphicon-save"></span>
+            Save
+        </button> 
+        <button id="CancelId" type="button" class="btn btn-danger" onclick="__doPostBack('CancelServicePlanAgreementSection',{ validate:false});">
+            <span class="glyphicon glyphicon-plus-sign"></span>Cancel
+        </button>
+     </center>
+     <!-- End of Button to Save or Redirect according to the functionality -->
+     <br/>    
+    </div>   
+    
+    <script>
+       //Show the details of the Rich Text Area after complete load of the page
+        $( window ).load(function() {
+             var CounterVal = $("#CounterOfServiceAgreementRecords").val();
+             for(i=0;i< CounterVal;i++){
+                var htmlData=$('#SectionContentValueID'+i).val();
+                var checkContent = "m_"+i+"__Section_Content__c";
+                CKEDITOR.instances[checkContent].setData(htmlData);
+             }
+        }); 
+        
+    </script>
+ 
+</body>
+</aspx:AspxPage>

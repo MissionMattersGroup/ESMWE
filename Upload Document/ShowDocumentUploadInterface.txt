@@ -1,0 +1,33 @@
+<div class="active-template">
+<header>
+<script>  
+Redirect();
+
+//the below method used for override and call on load from std layouts(new)
+function Redirect() {
+    
+/* template is used to find correct path to redirect , 
+So that it override default layout by custom interface , 
+It use for document upload Interface */  
+
+    var complete_url = window.location.href;
+    var pathname_url = window.location.pathname
+    
+    var create= 'create';
+    
+    // path name contains 'Create' for creating a records. compare with case insesitive used lowercase for both
+     if(pathname_url.toLowerCase().indexOf(create)>=0) {
+         
+         //extract index of 'create?' , and increase by length of 'create' and  +1 for ?, for parent id extration from Complete URL 
+         var start_index_parentID = complete_url.toLowerCase().indexOf(create)+create.length+1;
+         //parent service id end at '=' 
+         var last_index_parentID = complete_url.toLowerCase().indexOf('=');
+         
+         //extract parent id from url
+         var parentID = complete_url.substring(start_index_parentID , last_index_parentID);
+         window.location.href = "/aspx/UploadDocument?id="+parentID;
+     }
+}
+</script>
+</header>
+</div>

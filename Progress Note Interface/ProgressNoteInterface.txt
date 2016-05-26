@@ -1,0 +1,1479 @@
+<!-------------------------------------------------------------------------------------------------------- 
+    Page: ProgressNoteInterface Page 
+    Description: This page is used to show Goals, Goal Data, Time Entries related to Progress Note
+----------------------------------------------------------------------------------------------------------> 
+<aspx:AspxPage runat="server" Id="ProgressNoteInterfaceId" title="ProgressNoteInterface">
+<header>
+    <aspx:IncludeStyleSheet runat="server" url='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css'/> 
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignaturemin.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignature.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/excanvas.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.ToAbsoluteUrl(Url.Asset("Css/signature.css"))%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/UtilityFunctions.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/ProgressNoteInterface.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.Asset("Css/StyleForProgressNoteInterface.css")%>'/>
+</header>
+<body>
+    
+    <!--------Start Validation Error Popup ---->
+    <div id="errorModal" class="modal fade" role="dialog" data-backdrop="static">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Error</h4>
+                </div>
+                <div class="modal-body">
+                    
+                   <aspx:ViewMessages runat='server' inline='false'/>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+    
+        </div>
+    </div>
+    <!---- End Validation Error Popup ------->
+   
+    <!--------Start Validation Custom Error Popup ---->
+    <div id="errorCustomModal" class="modal fade" role="dialog" data-backdrop="static">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Error</h4>
+                </div>
+                <div class="modal-body">
+                    
+                    <!-- Display the DML Exception Errors Ex: Lookup Filters Error -->
+                    <%if(DataBag.Exception!="") { %>
+                        <div class="tabMessages container-fluid ServerExceptionCustomClass">
+                            <div class="messageContainer row Error">
+                                 <table class="messageTable">
+                                      <tbody>
+                                           <tr style="vertical-align:top;">
+                                                <td align="center" valign="top">
+                                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Error" title="Error">
+                                                 </td>
+                                                 <td class="messageCell">
+                                                        <div class="messageText"><h4>Error: </h4>
+                                                             <span><%=DataBag.Exception%></span>
+                                                        </div>
+                                                 </td>
+                                            </tr>
+                                        </tbody>
+                                 </table>
+                            </div>
+                        </div>
+                    <%}%>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+    
+        </div>
+    </div>
+    <!---- End Validation Custom Error Popup ------->
+   
+    <!--Display the error messages if any issue on the Page like wrong URL Parameters-->
+    <%if(DataBag.DisplayPNI==false){%>
+        <div class="tabMessages container-fluid">
+            <div class="messageContainer row Message">
+                 <table class="messageTable">
+                      <tbody>
+                           <tr style="vertical-align:top;">
+                                <td align="center" valign="top">
+                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Message" title="Message">
+                                 </td>
+                                 <td class="singleMsg messageCell">
+                                        <div class="messageText"><h4>Information</h4>
+                                             <span><%=DataBag.errorMessage%></span>
+                                        </div>
+                                 </td>
+                            </tr>
+                        </tbody>
+                 </table>
+            </div>
+        </div>
+    <%}%>
+    
+    <!-- Display the DML Exception Errors Ex: Lookup Filters Error -->
+    <%if(DataBag.Exception!="") { %>
+        <div class="tabMessages container-fluid ServerExceptionCustomClass">
+            <div class="messageContainer row Error">
+                 <table class="messageTable">
+                      <tbody>
+                           <tr style="vertical-align:top;">
+                                <td align="center" valign="top">
+                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Error" title="Error">
+                                 </td>
+                                 <td class="messageCell">
+                                        <div class="messageText"><h4>Error: </h4>
+                                             <span><%=DataBag.Exception%></span>
+                                        </div>
+                                 </td>
+                            </tr>
+                        </tbody>
+                 </table>
+            </div>
+        </div>
+    <%}%>
+    
+    <!-- This section is set true when all the param passed in the URL are valid and verified-->
+    <%if(DataBag.DisplayPNI==true){%>
+    
+    <% if (DataBag.strProgressNoteTypeView == "edit" || DataBag.strProgressNoteTypeView == "detail") {%>
+        <!-- Display the message ie record is locked for staff and supervisor -->
+        <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) {%>
+            <div class="alert alert-success fade in" style="width: 97.5%;margin-left: 1%;">
+                <strong></strong> <span><%:CustomLabels.showMessageForLockRecord%></span>
+            </div>
+        <%}%>
+    <%}%>
+    
+    <div class="container">
+        <!-- Show the title of the page with Service name --->
+        <h3>Progress Note
+            <% if (DataBag.strProgressNoteServiceName !="") {%>
+                for <b><%=DataBag.strProgressNoteServiceName%></b>
+            <%}%>
+        </h3><br/>
+        
+        <% if (DataBag.strProgressNoteTypeView == "edit" || DataBag.strProgressNoteTypeView == "detail") {%>
+            <center>
+                <% if (((DataBag.IsProgressNoteRecordLocked == false && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) 
+                     || (DataBag.IsProgressNoteRecordLockedForSupervisor == false && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) 
+                     || (!CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) 
+                     && !CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)))
+                     && DataBag.IsStatusCompleted == false) {%>
+                    
+                        <button type="button" id="saveAllPNInfoId" class="btn backgroundForMainButton" onclick="setValueForSignAndSave(this);showValidationErrorPopup();showCustomValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save</button>
+                        <button type="button" id="saveCompletePNId" class="btn backgroundForMainButton" onclick="setValueForSignAndSaveCompletePNI(this);"><span class="glyphicon glyphicon-save"></span>&nbsp;Save and Complete</button>
+                   
+                <%}%>
+                
+                <!----------------------------------------------- Print button for Progress Note Interface -------------------------------------------------------------------------------------->
+                <button type="button" id="printPNI" class="btn backgroundForMainButton" onclick="doPrint(event);"><span class="glyphicon glyphicon-print"></span>&nbsp;Print Progress Note</button>
+
+            </center><br/>
+            
+            <% if ((DataBag.IsProgressNoteRecordLocked == true && DataBag.IsProgressNoteRecordLockedForSupervisor == true 
+                 && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) && DataBag.IsStatusCompleted == false) {%>
+              <center>
+                   <button type="button" id="unLockId" class="btn backgroundForMainButton" data-toggle="modal" data-target="#unLockProgressModal"><span class="glyphicon glyphicon-save"></span>&nbsp;Unlock Record</button>
+              </center><br/>
+            <%}%>
+          
+            <% if ((DataBag.IsProgressNoteRecordLocked == true && DataBag.IsProgressNoteRecordLockedForSupervisor == false 
+                && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))&& DataBag.IsStatusCompleted == false) {%>
+                <center>
+                    <button type="button" id="unLockForStaffId" class="btn backgroundForMainButton" data-toggle="modal" onclick="__doPostBack('unlockProgressNoteRecordForStaff');"><span class="glyphicon glyphicon-save"></span>&nbsp;Unlock Record For Staff</button>
+                </center><br/>
+            <%}%>
+        <%}%>	     
+      
+      <div class="panel-group">
+            <div class="panel borderofPanel">
+              <div class="panel-heading"><span class="glyphicon glyphicon-th-large"></span>&nbsp;Progress Note</div>
+              <div class="panel-body" id="ProgressNoteObjectSectionID">
+              
+                  <!-- Start of Edit Or Detail View -->
+                  <% if (DataBag.strProgressNoteTypeView == "edit" || DataBag.strProgressNoteTypeView == "detail" ) {%>
+                   
+                       <% Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                            <div  class="form-horizontal">
+                                <% int rowIndex=0; %>
+								<%foreach(var field in DataBag.lstProgressNoteFields) { %>
+								    <!-- Display first 7 fields in 2 columns  -->
+                                    <%if(rowIndex%2==0 && rowIndex<=7){%>
+    									<div class="col-md-12 col-sm-12 col-xs-12">
+                                        <div class="form-group form-group-0" >
+    								<%}%>
+    								  
+    								<!-- Display fields in 1 columns after 7th field -->
+    								<%if(rowIndex>7) {%>
+    								    <div class="col-md-12 col-sm-12 col-xs-12">
+                                        <div class="form-group form-group-0" >
+    								<%}%>	
+                                         
+                                    <label class="col-md-3 col-sm-3 control-label">
+                    				   <%=progressNoteObj.LabelFor(field)%>
+                    				</label>
+                    				
+                    				<%if(rowIndex>7) {%>
+                    				        <!-- Display fields in 1 columns -->
+                    				        <div class="col-md-9 col-sm-9">
+                    				<%}else{%>
+                    				        <!-- Display fields in 2 columns -->
+                            				<div class="col-md-3 col-sm-3">
+                            	        <%}%>	
+                            				     <!-- Edit View Field Display -->
+                                                 <%if (DataBag.strProgressNoteTypeView == "edit") {%>
+                                                     
+                                                     <!-- To make these fields as Read only in edit mode-->
+                                                     <%if(field=="Staff_Name__c" || field=="Units_of_service__c" || field=="Completion_Date__c" ) {%>  
+                                                        <%=progressNoteObj.DisplayTextFor(field)%>
+                                                     <%}else{%>
+                                                     
+                                                        <!-----------------------------------------------Start DropDown------------------------------->
+                                        				<%if(field=="Progress_Funder__c") {%>
+                                                            <div id="Div_Id_SelectedFunderOptionToHide" style="display:none">
+                                                                <%=progressNoteObj.DisplayEditorFor(field)%>
+                                                            </div>
+                                                            <select class="form-control" id="FunderOptionId" 
+                                                                    onchange="ChangeLookupValueFromDropdown('#FunderOptionId',
+                                                                                                            '#Div_Id_SelectedFunderOptionToHide',
+                                                                                                            '#m_0__Progress_Funder__c');
+                                                                              changeBillingCode('#FunderOptionId',
+                                                                                                '#BillingCodeOptionId',
+                                                                                                '#m_0__Billing_Code__c','Onchange');">
+                                                                <%foreach(var funderOption in DataBag.lstFunderOptions) { %>   
+                                                                    <option value="<%=funderOption.key%>"><%=funderOption.value%></option>
+                                                                <%}%>
+                                                            </select>
+                                                        <%}%>
+                                                        
+                                                        <%if(field=="Billing_Code__c") {%>
+                                                            <div id="Div_Id_SelectedBillingCodeToHide" style="display:none">
+                                                                <%=progressNoteObj.DisplayEditorFor(field)%>
+                                                            </div>
+                                                            <select class="form-control" id="BillingCodeOptionId" 
+                                                                    onchange="ChangeLookupValueFromDropdown('#BillingCodeOptionId','#Div_Id_SelectedBillingCodeToHide','#m_0__Billing_Code__c');">
+                                                                <%foreach(var billingCodeOption in DataBag.lstBillingCodeOptions) { %>   
+                                                                    <option value="<%=billingCodeOption.key%>"><%=billingCodeOption.value%></option>
+                                                                <%}%>
+                                                            </select>
+                                                        <%}%>
+                                                        
+                                                        <%if(field !="Progress_Funder__c" && field !="Billing_Code__c"){%>
+                                        				    <%=progressNoteObj.DisplayEditorFor(field)%>
+                                        				<%}%>
+                                        				<!-----------------------------------------------End DropDown------------------------------->
+                                        				
+                                        	         <%}%>	
+                                                     
+                                                     <!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                     <%if(field=="Time_In__c") {
+                                                     string timeIn=progressNoteObj.DisplayTextFor(field);%>
+                                                     <input id="timeInValueID" type="hidden" value="<%=timeIn%>"/>
+                                                     <%}%>
+                                                     
+                                                     <!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                     <%if(field=="Time_Out__c") {
+                                                      string timeOut=progressNoteObj.DisplayTextFor(field);%>
+                                                      <input id="timeOutValueID" type="hidden" value="<%=timeOut%>"/>
+                                                     <%}%>
+                                                     
+                                                     <!-- Hidden Field is used to get the values of the RichTextArea(HTML Text Area) record and assigned it through javascript-->
+                                                     <%if(field=="Progress_Note_Narrative__c") {
+                                                      string ProgressNoteNarrative=progressNoteObj.DisplayTextFor(field);%>
+                                                      <input id="ProgressNoteNarrativeValueID" type="hidden" value="<%:ProgressNoteNarrative%>"/>
+                                                     <%}%>  
+                                                    
+                                                 <%}
+                                                  else{%>
+                                                  
+                                                    <!-- Detail View Field Display -->
+                                                    <%if (DataBag.strProgressNoteTypeView == "detail") {%>
+                                                            <!--- Display the Client name as link and on click redirect to the record--->
+                                                           <% if (field == "Client__c" && !String.IsNullOrEmpty(DataBag.strClientId)){%>
+                                                                <a href="/<%=DataBag.strClientId%>">
+                                                                    <span><%=progressNoteObj.DisplayTextFor(field)%></span>
+                                                                </a>
+                                                            <%}else{%>
+                                                                <%=progressNoteObj.DisplayTextFor(field)%>
+                                                            <%}%>
+                                                    <%}%>
+                                                <%}%>
+                                            </div>
+                                                 
+                                        <!-- Close div if field count is < 7 -->  
+                                         <%if(rowIndex%2!=0 && rowIndex<=7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									    
+									    <!-- Close div if field count is > 7 --> 
+									    <%if(rowIndex>7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									
+									<% rowIndex=rowIndex+1; %>
+								    
+                                <%}%>
+										
+                           </div>
+                       <% }); %>
+                       
+                  <%}%>
+                  <!-- End of Edit Or Detail View -->
+                  
+                  <!-- Start of New Section -->
+                  <% if (DataBag.strProgressNoteTypeView == "new") {%>
+                        <% Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                            
+                            <div  class="form-horizontal">
+                                <% int rowIndex=0; %>
+								<%foreach(var field in DataBag.lstProgressNoteFields) { %>
+								     <!-- Display first 6 fields in 2 columns  -->
+                                      <%if(rowIndex%2==0 && rowIndex<=7){%>
+    									  <div class="col-md-12 col-sm-12 col-xs-12">
+                                          <div class="form-group form-group-0" >
+    								  <%}%>
+    								  
+    								  <!-- Display fields in 1 columns after 6th field -->
+    								  <%if(rowIndex>7) {%>
+    								     <div class="col-md-12 col-sm-12 col-xs-12">
+                                         <div class="form-group form-group-0" >
+    								  	 <%}%>	
+                                         
+                                            <label class="col-md-3 col-sm-3 control-label">
+                            				   <%=progressNoteObj.LabelFor(field)%>
+                            				</label>
+                            				
+                            				<%if(rowIndex>7) {%>
+                            				        <!-- Display fields in 1 columns -->
+                            				        <div class="col-md-9 col-sm-9">
+                            				<%}else{%>
+                            				        <!-- Display fields in 2 columns -->
+                                    				<div class="col-md-3 col-sm-3">
+                                    	        <%}%>
+                                    	        
+                                    	        
+                                    	        <%if(field=="Staff_Name__c" || field=="Units_of_service__c" || field=="Completion_Date__c") {%>  
+                                                    <%=progressNoteObj.DisplayTextFor(field)%>
+                                                <%}else{%>
+                                                
+                                				    <!-----------------------------------------------Start DropDown------------------------------->
+                                    				<%if(field=="Progress_Funder__c") {%>
+                                                        <div id="Div_Id_SelectedFunderOptionToHide" style="display:none">
+                                                            <%=progressNoteObj.DisplayEditorFor(field)%>
+                                                        </div>
+                                                        <select class="form-control" id="FunderOptionId" 
+                                                                onchange="ChangeLookupValueFromDropdown('#FunderOptionId',
+                                                                                                        '#Div_Id_SelectedFunderOptionToHide',
+                                                                                                        '#m_0__Progress_Funder__c');
+                                                                          changeBillingCode('#FunderOptionId',
+                                                                                            '#BillingCodeOptionId',
+                                                                                            '#m_0__Billing_Code__c','Onchange');">
+                                                            <%foreach(var funderOption in  DataBag.lstFunderOptions) { %>   
+                                                                <option value="<%=funderOption.key%>"><%=funderOption.value%></option>
+                                                            <%}%>
+                                                        </select>
+                                                    <%}%>
+                                                    
+                                                    <%if(field=="Billing_Code__c") {%>
+                                                        <div id="Div_Id_SelectedBillingCodeToHide" style="display:none">
+                                                            <%=progressNoteObj.DisplayEditorFor(field)%>
+                                                        </div>
+                                                        <select class="form-control" id="BillingCodeOptionId" 
+                                                                onchange="ChangeLookupValueFromDropdown('#BillingCodeOptionId',
+                                                                                                        '#Div_Id_SelectedBillingCodeToHide',
+                                                                                                        '#m_0__Billing_Code__c');">
+                                                            <%foreach(var billingCodeOption in   DataBag.lstBillingCodeOptions) { %>   
+                                                                <option value="<%=billingCodeOption.key%>"><%=billingCodeOption.value%></option>
+                                                            <%}%>
+                                                        </select>
+                                                    <%}%>
+                                                    
+                                                    <%if(field !="Progress_Funder__c" && field !="Billing_Code__c"){%>
+                                    				    <%=progressNoteObj.DisplayEditorFor(field)%>
+                                    				<%}%>
+                                    				<!-----------------------------------------------End DropDown------------------------------->
+                                    	        <%}%>
+                                    	     
+                                            </div>
+                                                 
+                                        <!-- Close div if field count is < 7 -->  
+                                         <%if(rowIndex%2!=0 && rowIndex<=7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									    
+									    <!-- Close div if field count is > 7 --> 
+									    <%if(rowIndex>7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									
+									<% rowIndex=rowIndex+1; %>
+                                <%}%>
+										
+                           </div>
+                            
+                       <% }); %>
+                 <%}%>
+                 <!-- End of New Section -->
+                 
+                <!-- Start Of Button --> 
+                <center>
+                <% if (DataBag.strProgressNoteTypeView == "detail"){%>
+                    <% if (((DataBag.IsProgressNoteRecordLocked == false && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) 
+                         || (DataBag.IsProgressNoteRecordLockedForSupervisor == false && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) 
+                         || (!CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) 
+                         && !CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) && DataBag.IsStatusCompleted == false) {%>
+                        <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirectEditMode();"><span class="glyphicon glyphicon-pencil">&nbsp;Edit</button>
+                        <aspx:LinkButton text='Next Step' action='Next' />
+                    <%}%>
+                <%}else{%>
+                   <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="__doPostBack('SaveProgressNote');showValidationErrorPopup();"><span class="glyphicon glyphicon-save">&nbsp;Save</button>
+                    <% if (DataBag.strProgressNoteTypeView == "edit"){%>
+                        <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirect();"><span class="glyphicon glyphicon-remove">&nbsp;Cancel</button>
+                    <%}%>
+                    <% if (DataBag.strProgressNoteTypeView == "new"){%>
+                        <button type="button" class="btn backgroundForButton" data-dismiss="modal" onclick="doRedirectToService();"><span class="glyphicon glyphicon-remove">&nbsp;Cancel</button>
+                    <%}%>
+                 <%}%>
+                </center>
+                <!--End Of Button --> 
+                
+              </div>
+            </div><br/>
+            
+            <!--  Start Of Sub Section of Progress Note Ex: Goal and Objective Section etc-->
+            <% if (DataBag.strProgressNoteTypeView == "edit" || DataBag.strProgressNoteTypeView == "detail") {%>
+                
+                <!------------------------ Start of Time Entries Sections ----------------------------------------------------------------------->
+                <div class="panel borderofPanel">
+                    <div class="panel-heading"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Time Entries</div>
+                    <div class="panel-body">
+                        
+                        <!-- Show the msg when records are not available-->
+                        <% if(DataBag.IsActiveButton == false && DataBag.lstTimeEntriesObj.Count == 0){%>
+                            <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                        <%}%>
+                            
+                        <!--Start This table is to show Time Entries record row -->
+        				<div class="scrollBarCssForTimeEntries">
+        					<table class="table table-bordered" >
+        						<tbody class="text-center">   
+        							 <% int headerTimeEntries = 0; %>
+        							 <% Html.Repeat(DataBag.lstTimeEntriesObj as IList, htmlTimeEntries => { %>
+        								 <!-- Start of Time Entries Table Header -->
+        								 
+        								<!--Set one variable to display header of Time Entries only once -->
+        								<%if(headerTimeEntries==0){%>
+        								<thead class="text-center backgroundForGoal">
+        									<tr>
+        										
+        										<!-- Print all fields(header) of Time Entries for available fields-->
+        										<%foreach(var fieldTimeEntries in  DataBag.lstTimeEntriesFields) { %>   
+        											<th nowrap>          
+        												<%=htmlTimeEntries.LabelFor(fieldTimeEntries)%>
+        											</th>                        
+        										<%}%>
+        										
+        									</tr>
+        								</thead>
+        								<!-- End of Time Entries Table Header -->
+        								<%  
+        									headerTimeEntries=1;
+        								}%> 
+        								 <!--Start of Time Entries records -->                                        
+        									<tr>
+        										<%foreach(var field in DataBag.lstTimeEntriesFields) { %>
+        											<td>
+        												<%=htmlTimeEntries.DisplayTextFor(field)%>
+        											</td>               
+        										<%}%>
+        									</tr>
+        							 <% }); %> 
+        							 
+        							 <% if(DataBag.IsActiveButton == true && DataBag.lstTimeEntriesObj.Count >0) { %>
+                    				    <% int RowCountForTimeEntries=0; %>
+                                        <% Html.Repeat(DataBag.lstNewTimeEntries as IList, htmlNewTimeEntries => { %>
+                                        	 <!--Start of Time Entries records -->                                        
+                                        		<tr>
+                                        			<%foreach(var field in DataBag.lstTimeEntriesFields) { %>
+                                        				<td>
+                                        				    
+                                        				    <!-----------------------------------------------Start DropDown------------------------------->
+                                            				<%if(field=="Payer_Code__c") {%>
+                                                                <div id="Div_Id_SelectedFunderOptionForTimeEntriesToHide<%=RowCountForTimeEntries%>" style="display:none">
+                                                                    <%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                                                                </div>
+                                                                <select class="form-control input-required" id="FunderOptionIdForTimeEntries<%=RowCountForTimeEntries%>" 
+                                                                        onchange="ChangeLookupValueFromDropdown('#FunderOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                 '#Div_Id_SelectedFunderOptionForTimeEntriesToHide<%=RowCountForTimeEntries%>',
+                                                                                                                 '#m_'+<%=RowCountForTimeEntries%>+'__Payer_Code__c');
+                                                                                  
+                                                                                  changeBillingCodeForTimeEntries('#FunderOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                  '#BillingCodeOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                  '#m_'+<%=RowCountForTimeEntries%>+'__Time_Entries_Billing_Code__c',
+                                                                                                                  'Div_Id_SelectedBillingCodeForTimeEntriesToHide<%=RowCountForTimeEntries%>',
+                                                                                                                  'Onchange');">
+                                                                    
+                                                                    <%foreach(var funderOption in DataBag.lstFunderOptions) { %>   
+                                                                        <option value="<%=funderOption.key%>"><%=funderOption.value%></option>
+                                                                    <%}%>
+                                                                </select>
+                                                            <%}%>
+                                                            
+                                                            <%if(field=="Time_Entries_Billing_Code__c") {%>
+                                                                <div id="Div_Id_SelectedBillingCodeForTimeEntriesToHide<%=RowCountForTimeEntries%>" style="display:none">
+                                                                    <%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                                                                </div>
+                                                                <select class="form-control input-required" id="BillingCodeOptionIdForTimeEntries<%=RowCountForTimeEntries%>" 
+                                                                        onchange="ChangeLookupValueFromDropdown('#BillingCodeOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                '#Div_Id_SelectedBillingCodeForTimeEntriesToHide<%=RowCountForTimeEntries%>',
+                                                                                                                '#m_'+<%=RowCountForTimeEntries%>+'__Time_Entries_Billing_Code__c');">
+                                                                    <%foreach(var billingCodeOption in DataBag.lstBillingCodeOptions) { %>   
+                                                                        <option value="<%=billingCodeOption.key%>"><%=billingCodeOption.value%></option>
+                                                                    <%}%>
+                                                                </select>
+                                                            <%}%>
+                                                            
+                                                            <%if(field !="Payer_Code__c" && field !="Time_Entries_Billing_Code__c"){%>
+                                            				    <%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                                            				<%}%>
+                                            				
+                                            				<!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                            <%if(field=="Time_Entries_Time_In__c") {
+                                                                string timeEntriesTimeIn = htmlNewTimeEntries.DisplayTextFor(field);%>
+                                                                <input id="timeEntriesTimeInValueID<%=RowCountForTimeEntries%>" type="hidden" value="<%=timeEntriesTimeIn%>"/>
+                                                            <%}%>
+                                                             
+                                                            <!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                            <%if(field=="Time_Entries_Time_Out__c") {
+                                                                string timeEntriesTimeOut = htmlNewTimeEntries.DisplayTextFor(field);%>
+                                                                <input id="timeEntriesTimeOutValueID<%=RowCountForTimeEntries%>" type="hidden" value="<%=timeEntriesTimeOut%>"/>
+                                                            <%}%>
+                                                            <!-----------------------------------------------End DropDown------------------------------------------->
+                                                             
+                                        				</td>               
+                                        			<%}%>
+                                        			<% RowCountForTimeEntries=RowCountForTimeEntries+1; %>
+                                        		</tr>
+                                        <% }); %> 
+                                        <!-- input hidden field to access the count of time entries---------------------->
+                            			<input type='hidden' id="RowCountId" value="<%=RowCountForTimeEntries%>" />
+                                     <%}%>
+        					   </tbody> 
+        				   </table>
+        				   <!--End This table is to show Time Entries record row -->
+        				</div>
+        				
+                        <% if(DataBag.IsActiveButton == false) { %>
+                            <% if (((DataBag.IsProgressNoteRecordLocked == false && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) 
+                                 || (DataBag.IsProgressNoteRecordLockedForSupervisor == false && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) 
+                                 || (!CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) 
+                                 && !CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) && DataBag.IsStatusCompleted == false) {%>
+                            	<div class="row">
+                            		<div class="col-md-3" id="AddNewTimeID">
+                            			<button id="AddNewTimebtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('AddTimeEntriesRowToList',{ validate:false});"><span class="glyphicon glyphicon-plus-sign"></span>Add Time</button>
+                            		</div>
+                            	</div>
+                            <%}%>
+                        <%}%>
+                        
+                        <!--start of Add more Time Entries sections-->
+                        <% if(DataBag.IsActiveButton == true && DataBag.lstTimeEntriesObj.Count==0) { %>
+                        
+                            <!--Start This table is to show new Time Entries record row -->
+                            <div class="scrollBarCssForTimeEntries">
+                            	<table class="table table-bordered" >
+                            		<tbody class="text-center">   
+                            			 <% int RowCountForTimeEntries=0; 
+                            			 int headerNewTimeEntries = 0; %>
+                            			 <% Html.Repeat(DataBag.lstNewTimeEntries as IList, htmlNewTimeEntries => { %>
+                            				 <!-- Start of Time Entries Table Header -->
+                            				 
+                            				<!--Set one variable to display header of Time Entries only once -->
+                            				<%if(headerNewTimeEntries==0){%>
+                            				<thead class="text-center backgroundForGoal">
+                            					<tr>
+                            						
+                            						<!-- Print all fields(header) of Time Entries for available fields-->
+                            						<%foreach(var fieldTimeEntries in  DataBag.lstTimeEntriesFields) { %>   
+                            							<th nowrap>          
+                            								<%=htmlNewTimeEntries.LabelFor(fieldTimeEntries)%>
+                            							</th>                        
+                            						<%}%>
+                            						
+                            					</tr>
+                            				</thead>
+                            				<!-- End of Time Entries Table Header -->
+                            				<%  
+                            					headerNewTimeEntries=1;
+                            				}%> 
+                            				 <!--Start of Time Entries records -->                                        
+                            					<tr>
+                            						<%foreach(var field in DataBag.lstTimeEntriesFields) { %>
+                            							<td>
+                            							    
+                            							    <!-----------------------------------------------Start DropDown------------------------------->
+                                            				<%if(field=="Payer_Code__c") {%>
+                                                                <div id="Div_Id_SelectedFunderOptionForTimeEntriesToHide<%=RowCountForTimeEntries%>" style="display:none">
+                                                                    <%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                                                                </div>
+                                                                <select class="form-control input-required" id="FunderOptionIdForTimeEntries<%=RowCountForTimeEntries%>" 
+                                                                        onchange="ChangeLookupValueFromDropdown('#FunderOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                 '#Div_Id_SelectedFunderOptionForTimeEntriesToHide<%=RowCountForTimeEntries%>',
+                                                                                                                 '#m_'+<%=RowCountForTimeEntries%>+'__Payer_Code__c');
+                                                                                  
+                                                                                  changeBillingCodeForTimeEntries('#FunderOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                  '#BillingCodeOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                  '#m_'+<%=RowCountForTimeEntries%>+'__Time_Entries_Billing_Code__c',
+                                                                                                                  'Div_Id_SelectedBillingCodeForTimeEntriesToHide<%=RowCountForTimeEntries%>',
+                                                                                                                  'Onchange');">
+                                                                    
+                                                                    <%foreach(var funderOption in DataBag.lstFunderOptions) { %>   
+                                                                        <option value="<%=funderOption.key%>"><%=funderOption.value%></option>
+                                                                    <%}%>
+                                                                </select>
+                                                            <%}%>
+                                                            
+                                                            <%if(field=="Time_Entries_Billing_Code__c") {%>
+                                                                <div id="Div_Id_SelectedBillingCodeForTimeEntriesToHide<%=RowCountForTimeEntries%>" style="display:none">
+                                                                    <%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                                                                </div>
+                                                                <select class="form-control input-required" id="BillingCodeOptionIdForTimeEntries<%=RowCountForTimeEntries%>" 
+                                                                        onchange="ChangeLookupValueFromDropdown('#BillingCodeOptionIdForTimeEntries<%=RowCountForTimeEntries%>',
+                                                                                                                '#Div_Id_SelectedBillingCodeForTimeEntriesToHide<%=RowCountForTimeEntries%>',
+                                                                                                                '#m_'+<%=RowCountForTimeEntries%>+'__Time_Entries_Billing_Code__c');">
+                                                                    <%foreach(var billingCodeOption in DataBag.lstBillingCodeOptions) { %>   
+                                                                        <option value="<%=billingCodeOption.key%>"><%=billingCodeOption.value%></option>
+                                                                    <%}%>
+                                                                </select>
+                                                            <%}%>
+                                                            
+                                                            <%if(field !="Payer_Code__c" && field !="Time_Entries_Billing_Code__c"){%>
+                                            				    <%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                                            				<%}%>
+                                            				
+                                            				<!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                            <%if(field=="Time_Entries_Time_In__c") {
+                                                                string timeEntriesTimeIn = htmlNewTimeEntries.DisplayTextFor(field);%>
+                                                                <input id="timeEntriesTimeInValueID<%=RowCountForTimeEntries%>" type="hidden" value="<%=timeEntriesTimeIn%>"/>
+                                                            <%}%>
+                                                             
+                                                            <!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                            <%if(field=="Time_Entries_Time_Out__c") {
+                                                                string timeEntriesTimeOut = htmlNewTimeEntries.DisplayTextFor(field);%>
+                                                                <input id="timeEntriesTimeOutValueID<%=RowCountForTimeEntries%>" type="hidden" value="<%=timeEntriesTimeOut%>"/>
+                                                            <%}%>
+                                            				<!-----------------------------------------------End DropDown------------------------------->
+                                            				
+                            							</td>               
+                            						<%}%>
+                            						<% RowCountForTimeEntries=RowCountForTimeEntries+1; %>
+                            					</tr>
+                            			 <% }); %> 
+                            			 
+                            			 <!-- input hidden field to access the count of time entries---------------------->
+                            			 <input type='hidden' id="RowCountId" value="<%=RowCountForTimeEntries%>" />
+                            			 
+                            	   </tbody> 
+                               </table>
+                               <!--End This table is to show new Time Entries record row -->
+                            </div>
+                        <%}%>
+                        <br/>                
+                        <!--start of Add more Time Entries sections-->
+                        <% if(DataBag.IsActiveButton == true) { %>
+                            <div class="TimeEntriesButtonSectionClass" id="TimeEntriesButtonSectionId">
+                        		 <button id="AddMoreTimeEntriesbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('AddMoreTimeEntriesRowToList',{ validate:false});"><span class="glyphicon glyphicon-plus-sign"></span>Add More Rows</button> 
+                        
+                        		<button id="RemoveTimeEntriesbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('RemoveTimeEntriesRowToList',{ validate:false});"><span class="glyphicon glyphicon-remove-sign"></span>Remove Row</button>    
+                        
+                        		<button id="SaveTimeEntriesbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('SaveTimeEntries',{ validate:false});showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>Save</button> 
+                        		
+                        		<button id="CancelTimeEntriesbtn" type="button" class="btn backgroundForButton" onclick="doRedirect();"><span class="glyphicon glyphicon-remove"></span>Cancel</button>
+                            </div><br/>
+                        <%}%>
+                        
+                      </div>
+                </div><br/> 
+                <!------------------------ End of Time Entries Sections ----------------------------------------------------------------------->
+                
+                <!------------------------ Start of Outcomes and Goals Sections ----------------------------------------------------------------------->
+                <div class="panel borderofPanel">
+                  <div class="panel-heading"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Outcomes and Goals</div>
+                  <div class="panel-body">
+                        
+                    <!-- Show the msg when records are not available-->
+                    <% if(DataBag.lstGoalObj.Count == 0){%>
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                    <%}%>
+                
+                     <!--Start This table is to show Goal related to service -->
+                     <%Html.Repeat(DataBag.lstGoalObj as IList, htmlGoals => { %>
+                        
+                        <div class="scrollBarCssForGoal">
+                        
+                            <table class="table table-bordered">
+                                
+                                <!--Start of Goal Table Header (Fields of Goal-->
+                                <thead class="text-center backgroundForGoal">
+                                    <tr>
+                                        
+                                        <!-- Print all fields(header) of Goal for available fields ----->
+                                        <%foreach(var field in  DataBag.lstGoalFields) { %>   
+                                            <th nowrap>          
+                                                <%=htmlGoals.LabelFor(field)%>
+                                            </th>
+                                        <%}%>
+                                        
+                                    </tr>
+                                </thead>
+                                <!--End of Goal Table Header -->
+                                 
+                                <!--Start of Goal records -->
+                                <tbody class="text-center">
+                                    <tr>
+                                    
+                                        <!-- Print all Records of Goals related to current Progress Note-->
+                                        <%foreach(var field in  DataBag.lstGoalFields) { %>   
+                                            <td nowrap>          
+                                                <%=htmlGoals.DisplayTextFor(field)%>
+                                            </td>
+                                        <%}%>
+                                        
+                                    </tr>      
+                                </tbody> 
+                                <!--End of Goal records -->
+                                
+                            </table>
+                        </div>
+                        
+                        <!-- int i to compare Id(Lookup) of each Goal Data with Goal's Id -->
+                        <%  int i = 0; 
+                        Boolean checkExistingGoalDataPerGoal = false;%>
+                        							
+                        <%Html.Repeat(DataBag.lstGoalDataObj as IList, htmlGoalData => { %>
+                        
+                        <!-- Check and  display one Goal Data per Goal will is recently created and
+                        checkExistingGoalDataPerGoal: To check if the goal data exist to related Goal or not incase true the goal data already exist for the Goal data -->
+                       
+                       
+                        <% if(DataBag.lstGoalDataObj[i].Goal__c==htmlGoals.DisplayTextFor("Id") && checkExistingGoalDataPerGoal != true) { %>
+                        
+                            	<%checkExistingGoalDataPerGoal = true;%>
+                            
+                            	<!-- If Goal data is related to Goal then display it with header -->
+                            	<div class="scrollBarCssForGoalData">
+                            		<table class="table table-bordered" >    
+                            			
+                            			<!-- Start of Goal data Table Header -->
+                            			<thead class="text-center backgroundForButton">
+                            				<tr>
+                            					
+                            					<!-- Print all fields(header) of Goal data for available fields-->
+                            					<%foreach(var fieldGoalData in  DataBag.lstGoalDataFields) { %>   
+                            						<th nowrap>          
+                            							<%=htmlGoalData.LabelFor(fieldGoalData)%>
+                            						</th>                        
+                            					<%}%>
+                            					
+                            				</tr>
+                            			</thead>
+                            			<!-- End of Goal data Table Header -->
+                            
+                            			<!--Start of Goal data records -->
+                            			<tbody class="text-center">   
+                            				<tr>
+                            					
+                            					<!-- Print all Records of Goal data related to current Goal -->
+                            					<%foreach(var fieldGoalData in  DataBag.lstGoalDataFields) { %>   
+                            						<td nowrap>          
+                            							<%=htmlGoalData.DisplayTextFor(fieldGoalData)%>
+                            						</td>
+                            					<%}%>
+                            					
+                            				</tr>
+                            			</tbody> 
+                            			<!--End of Goal data records -->
+                            		    </table>
+                                        </div>	
+                            		
+                            	<%}%>    
+                            	<!-- End of If of GoalData--> 
+                        	   <% i=i+1; %>
+                        	<% }); %>
+                           	
+                                
+                        <% if(htmlGoals.DisplayTextFor("Id") != DataBag.goalIdForNewGoalData && checkExistingGoalDataPerGoal != true) { %>
+                            <% if (((DataBag.IsProgressNoteRecordLocked == false && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) 
+                                 || (DataBag.IsProgressNoteRecordLockedForSupervisor == false && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) 
+                                 || (!CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) 
+                                 && !CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) && DataBag.IsStatusCompleted == false) {%>
+                    	        <div>
+                            	    <!-- objectiveID custom tag created only used to store objective id which can not store in name attribute command button-->  
+                            	    <button id="GoalDataBtn" 
+                            	            type="button" 
+                            	            class="btn backgroundForButton"
+                            	            style="margin-left:8%;"
+                            	            name='<%=htmlGoals.DisplayTextFor("Id")%>'
+                            	            onclick="setGoalIDValue(this);getTheLocationOftheButton(this);__doPostBack('AddGoalDataRowToList',{ validate:false});">
+                            	            <span class="glyphicon glyphicon-plus-sign"></span>
+                            	            Add Goal Data
+                            	    </button>
+                        	    </div><br/>
+                        	<%}%>
+                        <%}%>
+                                
+                        <!--start of Add more Goal Data sections-->
+                        <% if(htmlGoals.DisplayTextFor("Id") == DataBag.goalIdForNewGoalData && checkExistingGoalDataPerGoal == false) { %>
+                        
+                        <!--Start This table is to show new Goal Data record row -->
+                        <div class="scrollBarCssForGoalData">
+                        	<table class="table table-bordered" >
+                        		<tbody class="text-center">   
+                        			 <% int RowCount=0; 
+                        			 int headerNewGoalData = 0; %>
+                        			 <% Html.Repeat(DataBag.lstNewGoalData as IList, htmlNewGoalData => { %>
+                        				 <!-- Start of Goal Data Table Header -->
+                        				 
+                        				<!--Set one variable to display header of Goal Data only once -->
+                        				<%if(headerNewGoalData==0){%>
+                        				<thead class="text-center backgroundForGoalData">
+                        					<tr>
+                        						
+                        						<!-- Print all fields(header) of Goal Data for available fields-->
+                        						<%foreach(var fieldGoalData in  DataBag.lstGoalDataFields) { %>   
+                        							<th nowrap>          
+                        								<%=htmlNewGoalData.LabelFor(fieldGoalData)%>
+                        							</th>                        
+                        						<%}%>
+                        						
+                        					</tr>
+                        				</thead>
+                        				<!-- End of Goal Data Table Header -->
+                        				<%  
+                        					headerNewGoalData=1;
+                        				}%> 
+                        				 <!--Start of Goal Data records -->                                        
+                        					<tr>
+                        						<%foreach(var field in DataBag.lstGoalDataFields) { %>
+                        							<td>
+                        								<%=htmlNewGoalData.DisplayEditorFor(field)%>
+                        							</td>               
+                        						<%}%>
+                        						<% RowCount=RowCount+1; %>
+                        					</tr>
+                        			 <% }); %> 
+                        	   </tbody> 
+                           </table>
+                           <!--End This table is to show new Goal Data record row -->
+                        </div>
+                       
+                        
+                        <% if(htmlGoals.DisplayTextFor("Id") == DataBag.goalIdForNewGoalData) { %>
+                            <div>
+                            	<!-- <button id="AddMoreGoalDatabtn" type="button" class="btn backgroundForButton" style="margin-left:8%;" onclick="getTheLocationOftheButton(this);__doPostBack('AddMoreGoalDataRowToList',{ validate:false});"><span class="glyphicon glyphicon-plus-sign"></span>Add More Rows</button>
+                            
+                            	<button id="RemoveGoalDatabtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('RemoveGoalDataRowToList',{ validate:false});"><span class="glyphicon glyphicon-remove-sign"></span>Remove Row</button>  -->  
+                            
+                            	<button id="SaveGoalDatabtn" type="button" class="btn backgroundForButton"   style="margin-left:8%;" onclick="getTheLocationOftheButton(this);__doPostBack('SaveGoalData');showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>Save</button> 
+                            	
+                            	<button id="cancelGoalDatabtn" type="button" class="btn backgroundForButton"  onclick="doRedirect();"><span class="glyphicon glyphicon-remove"></span>Cancel</button>
+                            </div><br/>
+                        <%}%>
+                    <%}%>    
+                    <!-- End of If of Goals-->
+                    
+        	    <% }); %>
+                    
+                </div>
+            </div><br/>
+            <!------------------------ End of Outcomes and Goals Sections ----------------------------------------------------------------------->
+            
+            <!------------------------Start of Famil signature Section Sections --------------------------------------------------------------------------->
+            <div class="panel borderofPanel">
+              <div class="panel-heading"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Client / Family Signature</div>
+              <div class="panel-body">
+                
+                <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                        || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                        || DataBag.IsStatusCompleted == true) {%>
+                    <div id="familySig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                    
+                    <%
+                       Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                        <div class="row">   
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Signee_Name__c")%></b>
+                            </div> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Role_Name__c")%></b>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Relationship_Type_Family__c")%></b>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Signed_Date__c")%></b>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Family_Signee_Name__c")%>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Family_Role_Name__c")%>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Relationship_Type_Family__c")%>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Family_Signed_Date__c")%>
+                            </div>
+                        </div>
+                    <% }); %> 
+                    
+                <%}else{%>
+                    <div id="familySig"></div>
+                    <p style="clear: both;"><input type="button" id="clearFamily" value="Clear"/>
+                    <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+
+                    <%
+                      Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                        <div class="row">
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Signee_Name__c")%></b>
+                            </div>
+                            <% if (progressNoteObj.DisplayTextFor("Family_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Family_Role_Name__c") != null) {%> 
+                                <div class="col-xs-2 col-md-3">
+                                    <b><%=progressNoteObj.LabelFor("Family_Role_Name__c")%></b>
+                                </div>
+                            <%}%>
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Relationship_Type_Family__c")%></b>
+                            </div>
+                            <% if (progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != null) {%>
+                                <div class="col-xs-2 col-md-3">
+                                    <b><%=progressNoteObj.LabelFor("Family_Signed_Date__c")%></b>
+                                </div>
+                            <%}%>
+                            
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayEditorFor("Family_Signee_Name__c")%>
+                            </div>
+                            <% if (progressNoteObj.DisplayTextFor("Family_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Family_Role_Name__c") != null) {%> 
+                                <div class="col-xs-2 col-md-3">
+                                   <%=progressNoteObj.DisplayTextFor("Family_Role_Name__c")%>
+                                </div>
+                            <%}%>
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayEditorFor("Relationship_Type_Family__c")%>
+                            </div>
+                            <% if (progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != null) {%> 
+                                <div class="col-xs-2 col-md-3">
+                                    <%=progressNoteObj.DisplayTextFor("Family_Signed_Date__c")%>
+                                </div>
+                            <%}%>
+                        </div>
+                    <% }); %> 
+                    
+                <%}%>
+                
+                <% if (((DataBag.IsProgressNoteRecordLocked == false && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) 
+                     || (DataBag.IsProgressNoteRecordLockedForSupervisor == false && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) 
+                     || (!CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) 
+                     && !CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) && DataBag.IsStatusCompleted == false) {%>
+                    <div class="row">
+                        <div class="col-md-12" id="saveSignDiv" style="margin-top: 2%;">
+                    		<button id="saveSignId" type="button" class="btn backgroundForMainButton" onclick="getTheLocationOftheButton(this);setValueToFamilySignTextField(this,'FamilySign');"><span class="glyphicon glyphicon-save"></span>&nbsp;Save Signatures</button>
+                    	</div>
+            	    </div><br/>
+        	    <%}%>
+        	   
+              </div>
+        </div><br/>
+        
+        <!------------------------End of Famil signature Section Sections --------------------------------------------------------------------------->
+        
+        <!-----------------------------Start of Display Signature Sections of the Progress Note Record -------------------------------------------------------------->
+        <div class="panel borderofPanel">
+          <div class="panel-heading"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+          <div class="panel-body" >
+             <p><b class="cssForSignatureTitle">Staff Signature</b></p>
+          
+             <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                    || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                    || DataBag.IsStatusCompleted == true) {%>
+                 <div id="staffSig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                 
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row">
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Staff_Signee_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Staff_Role_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Staff_Signed_Date__c")%></b>
+                        </div>
+                    </div>
+                    <div class="row">
+                       <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Staff_Signee_Name__c")%>
+                       </div>
+                       <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Staff_Role_Name__c")%>
+                       </div>
+                       <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Staff_Signed_Date__c")%>
+                       </div>
+                    </div>
+                <% }); %> 
+                
+             <%}else{%>
+                 <div id="staffSig"></div>
+                 <p style="clear: both;"><input type="button" id="clearStaff" value="Clear"/>
+                 <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                 
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Staff_Signee_Name__c")%></b>
+                        </div> 
+                        <% if (progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Staff_Role_Name__c")%></b>
+                            </div>
+                        <%}%>
+                        <% if (progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Staff_Signed_Date__c")%></b>
+                            </div>
+                        <%}%>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayEditorFor("Staff_Signee_Name__c")%>
+                        </div>
+                        <% if (progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <%=progressNoteObj.DisplayTextFor("Staff_Role_Name__c")%>
+                            </div>
+                        <%}%>
+                        <% if (progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <%=progressNoteObj.DisplayTextFor("Staff_Signed_Date__c")%>
+                            </div>
+                        <%}%>
+                    </div>
+                <% }); %> 
+                
+             <%}%>
+             
+             <p style="margin-top: 2%;"><b class="cssForSignatureTitle">Supervisor Signature</b></p>
+             
+             <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                    || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                    || DataBag.IsStatusCompleted == true) {%>
+                 <div id="SupervisorSig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                 
+                <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Role_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                        </div>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Supervisor_Signee_Name__c")%>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c")%>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                        </div>
+                    </div>
+                <% }); %> 
+                    
+             <%}else{%>
+                 <div id="SupervisorSig"></div>
+                 <p style="clear: both;"><input type="button" id="clearSupervisor" value="Clear"/>
+                 <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                 
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                        </div> 
+                        <% if (progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Supervisor_Role_Name__c")%></b>
+                            </div>
+                        <%}%>
+                        <% if (progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                            </div>
+                        <%}%>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayEditorFor("Supervisor_Signee_Name__c")%>
+                        </div>
+                        <% if (progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <%=progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c")%>
+                            </div>
+                        <%}%>
+                        <% if (progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <%=progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                            </div>
+                        <%}%>
+                    </div>
+                <% }); %> 
+                
+             <%}%>
+             
+             <p style="margin-top: 2%;"><b class="cssForSignatureTitle">External Signatures</b></p>
+             
+             <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                    || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                    || DataBag.IsStatusCompleted == true) {%>
+                 <div id="ExternalSig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                 
+                <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Signee_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Role_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Relationship__c")%></b>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Signed_Date__c")%></b>
+                        </div>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                            <%=progressNoteObj.DisplayTextFor("External_Signee_Name__c")%>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                            <%=progressNoteObj.DisplayTextFor("External_Role_Name__c")%>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                            <%=progressNoteObj.DisplayTextFor("External_Relationship__c")%>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                            <%=progressNoteObj.DisplayTextFor("External_Signed_Date__c")%>
+                        </div>
+                    </div>
+                <% }); %> 
+                    
+             <%}else{%>
+                 <div id="ExternalSig"></div>
+                 <p style="clear: both;"><input type="button" id="clearExternal" value="Clear"/>
+                 <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                 
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Signee_Name__c")%></b>
+                        </div> 
+                        <% if (progressNoteObj.DisplayTextFor("External_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("External_Role_Name__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("External_Role_Name__c")%></b>
+                            </div>
+                        <%}%>
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Relationship__c")%></b>
+                        </div> 
+                        <% if (progressNoteObj.DisplayTextFor("External_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("External_Signed_Date__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("External_Signed_Date__c")%></b>
+                            </div>
+                        <%}%>
+                    </div>
+                    <div class="row"> 
+                       <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayEditorFor("External_Signee_Name__c")%>
+                       </div>
+                       <% if (progressNoteObj.DisplayTextFor("External_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("External_Role_Name__c") != null) {%> 
+                            <div class="col-xs-2 col-md-3">
+                                <%=progressNoteObj.DisplayTextFor("External_Role_Name__c")%>
+                            </div>
+                        <%}%>
+                       <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayEditorFor("External_Relationship__c")%>
+                       </div>
+                       <% if (progressNoteObj.DisplayTextFor("External_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("External_Signed_Date__c") != null) {%> 
+                           <div class="col-xs-2 col-md-3">
+                                <%=progressNoteObj.DisplayTextFor("External_Signed_Date__c")%>
+                           </div>
+                       <%}%>
+                    </div>
+                <% }); %> 
+                
+             <%}%>
+             
+         </div>
+         
+          <% if (((DataBag.IsProgressNoteRecordLocked == false && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) 
+                || (DataBag.IsProgressNoteRecordLockedForSupervisor == false && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) 
+                || (!CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) 
+                && !CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) && DataBag.IsStatusCompleted == false) {%>
+            <div class="row">
+                <div class="col-md-12" id="saveSignDiv" style="margin-left: 41.5%;margin-top: 2%;">
+            		<button id="saveSignId" type="button" class="btn backgroundForMainButton" onclick="getTheLocationOftheButton(this);setValueToSignTextField(this);__doPostBack('SaveSignature');"><span class="glyphicon glyphicon-save"></span>&nbsp;Save Signatures</button>
+            	</div>
+    	    </div><br/>
+    	 <%}%>   
+        </div>
+        <!-----------------------------End of Display Signature Sections of the Progress Note Record -------------------------------------------------------------->
+         
+        <br/>
+        <center>
+            <% if (((DataBag.IsProgressNoteRecordLocked == false && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) 
+                    || (DataBag.IsProgressNoteRecordLockedForSupervisor == false && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) 
+                    || (!CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) 
+                    && !CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))) && DataBag.IsStatusCompleted == false) {%>
+                
+                   <button type="button" id="saveAllPNInfoId" class="btn backgroundForMainButton" onclick="setValueForSignAndSave(this);showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save</button>
+                   <button type="button" id="saveCompletePNId" class="btn backgroundForMainButton" onclick="setValueForSignAndSaveCompletePNI(this);"><span class="glyphicon glyphicon-save"></span>&nbsp;Save and Complete</button>
+                
+            <%}%> 
+            
+            <!----------------------------------------------- Print button for Progress Note Interface -------------------------------------------------------------------------------------->
+            <button type="button" id="printPNI" class="btn backgroundForMainButton" onclick="doPrint(event);"><span class="glyphicon glyphicon-print"></span>&nbsp;Print Progress Note</button>
+            
+        </center>
+        
+        <%
+          Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+            <!-- Below hidden field contains the value of Family Signture to save Family Signture/Progress Note-->
+            <input type='hidden' id="SaveFamilySignId" name="FamilySignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("Family_Signature__c")%>">
+            <!-- Below hidden field contains the value of Staff signture to save Staff Signture/Progress Note-->
+            <input type='hidden' id="SaveStaffSignId" name="StaffSignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("Staff_Signature__c")%>"> 
+            <!-- Below hidden field contains the value of Supervisor signture to save Supervisor Signture/Progress Note-->
+            <input type='hidden' id="SaveSupervisorSignId" name="SupervisorSignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("Supervisor_Signature__c")%>">
+            <!-- Below hidden field contains the value of External signture to save External Signture/Progress Note-->
+            <input type='hidden' id="SaveExternalSignId" name="ExternalSignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("External_Signature__c")%>">
+                             
+        <% }); %> 
+        
+        <%}%>
+        <!-- End Of Sub Section of Progress Note-->
+        
+        <!-- Start of unlock modal popup-->
+        <div id="unLockProgressModal" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span><%:CustomLabels.ShowMessageOnUnlockPopup%></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" onclick="__doPostBack('unlockProgressNoteRecord');"><span class="glyphicon glyphicon glyphicon-ok">&nbsp;Yes</button>
+                         <button type="button" class="btn backgroundForButton" onclick="__doPostBack('unlockProgressNoteRecordForSupervisor');"><span class="glyphicon glyphicon glyphicon-remove">&nbsp;No</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        <!-- End of unlock modal popup-->
+        
+        <!-- Start of save and complete popup-->
+        <div id="saveAndCompleteModal" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span><%:CustomLabels.ShowMessageOnSaveAndCompletePoupForProgressNote%></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" onclick="__doPostBack('SaveAllInfoOnCompletePN',{validate:false});showValidationErrorPopup();showCustomValidationErrorPopup();"><span class="glyphicon glyphicon glyphicon-ok">&nbsp;Yes</button>
+                         <button type="button" class="btn backgroundForButton" data-dismiss="modal"><span class="glyphicon glyphicon glyphicon-remove">&nbsp;No</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        <!-- End of save and complete popup-->
+        
+        <!-- Start of success message popup-->
+        <div id="successMessgeForProgressNote" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span><%:CustomLabels.ShowSuccessMessageForProgressNote%></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" onclick="__doPostBack('redirectToServiceRecord');"><span class="glyphicon glyphicon glyphicon-ok">&nbsp;Ok</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        <!-- End of success message popup-->
+        
+        <!-- Below hidden field contains the value of Objective for saving the GoalData-->
+        <input type='hidden' id="GoalIdForSave" name="GoalIDforListofGoalDataToInsert" value="">
+        
+        <!-- Below hidden to store the id of the button on click -->
+        <input type='hidden' class="scrollBarClass" id="scrollBarId" name="scrollIdName" value="<%=DataBag.IdOfTheButton%>">
+        
+        <!-- Below hidden to store the id of the button on click -->
+        <input type='hidden' class="scrollBarClass" id="scrollPositionBarId" name="scrollPositionIdName" value="<%=DataBag.PositionOfTheButton%>">
+        
+        <!------Below hidden anchor tag is used to scroll to speific position --------->
+        <a  type='hidden' id="scrollPositionId" href="#<%=DataBag.IdOfTheButton%>">
+        
+        <!-- Below hidden to store the databag value when progress note get completed -->
+        <input type='hidden' id="successPNId" name="successPNIdName" value="<%=DataBag.IsSuccessProgressNote%>" />
+        
+        <!-----------------------------------------------Start DropDown----------------------------------------------------------------->
+        <!--- Below hidden to store the service id of progress note --->
+        <input type='hidden' id="ServiceId" value="<%=DataBag.strServiceId%>" />
+        <!-----------------------------------------------End DropDown------------------------------------------------------------------->
+        
+    <%}%>
+    
+    <script>
+        //Variable to set the position of the scroll bar
+        var scroll = 0;
+        //Assign the values of Date Time Values after loading the page
+        $('#m_0__Time_In__c').val($('#timeInValueID').val());
+        $('#m_0__Time_Out__c').val($('#timeOutValueID').val());
+        
+        ChangeTimeInAndTimeOutValues();
+        
+        //Method to change the TimeIn and Timeout values of Time Entries
+        function ChangeTimeInAndTimeOutValues() {
+            var RowCountOfTimeEntries = $("#RowCountId").val();
+            
+            for(var i = 0; i < RowCountOfTimeEntries; i++) {
+                $('#m_'+i+'__Time_Entries_Time_In__c').val($('#timeEntriesTimeInValueID'+i).val());
+                $('#m_'+i+'__Time_Entries_Time_Out__c').val($('#timeEntriesTimeOutValueID'+i).val());
+            }
+        }
+        
+        //Show the details of the Rich Text Area after complete load of the page
+        $( window ).load(function() {
+            // Run code
+            var htmlData=$('#ProgressNoteNarrativeValueID').val();
+            CKEDITOR.instances.m_0__Progress_Note_Narrative__c.setData(htmlData);
+        }); 
+        
+         //Fetch the data of the Rich Text Area (HTML Data) and assign it to the dynamic generated rich text area(hidden).
+        function set_ProgressNoteNarrativeValue(){
+          var PNN_Value=CKEDITOR.instances.m_0__Progress_Note_Narrative__c.getData();
+          $('#m_0__Progress_Note_Narrative__c').html(PNN_Value);
+        }
+        
+        //To hide empty Goal Data tables that lead to extra spacing on the page
+        $(".scrollBarCssForGoalData table:empty").each(function(){ console.log($(this).html());$(this).parent().hide() });
+        
+        /**************************Start Of Scroll Functionality******************************************/
+        //Variable to set the position of the scroll bar
+        var scroll = 0;
+        var boolElement = false;
+        
+        //Function to get the location of the scroll bar on click of the button
+        function getTheLocationOftheButton(currentElem){
+           scroll = $(window).scrollTop();
+           
+           if(currentElem.id === "AddMoreTimeEntriesbtn" || currentElem.id === "AddNewTimeBtnId"){
+               $('#scrollBarId').val("TimeEntriesButtonSectionId");  
+           }
+           else if(currentElem.id !== undefined){
+                //Store the Id of the Button Clicked
+                $('#scrollBarId').val(currentElem.id);  
+                
+           }else{
+               $('#scrollBarId').val(currentElem.attr('id'));  
+           }
+           
+           //Store the Positon of the Scroll Bar
+           $('#scrollPositionBarId').val(scroll);
+        }
+        
+        //Function to call the functiona on load and set the scroll bar position
+        scrollBarLocation();
+        
+        //Function to set scroll bar position on load
+        function scrollBarLocation (){
+            
+            //Get the Id of the Scroll Bar on which the button is clicked
+            var scrollVal= $('#scrollBarId').val();
+            
+            var isElementPresent = document.getElementById(scrollVal);
+            
+            //Check whether the id is present or not [If not then scroll according to the position]
+            if (isElementPresent === null) { 
+                scrollVal= $('#scrollPositionBarId').val();
+                window.scrollTo(0,scrollVal);
+                
+            }else{
+                //Scroll to the id where the button is present.
+                document.getElementById('scrollPositionId').click();
+                boolElement = true;
+            }
+        }
+        window.setTimeout(function() {
+            scrollUp();
+        }, 100);
+        
+        //Method use to scroll when the scroll is executed through href.
+        function scrollUp(){
+            if(boolElement === true){
+            
+                scroll = $(window).scrollTop();
+                window.scrollTo(0,scroll-250);
+            }
+              
+        }
+        /***********************End Of Scroll Functionality*********************************************/
+        
+        // Method to remove Error from Page while Hidden popup
+        $('#errorModal').on('hidden.bs.modal', function () {
+           if($("#errorModal .validation-summary-errors ul li").size()>0 ){
+                        
+                $("#errorModal .validation-summary-errors ul li").remove();
+            }
+        });
+        
+        // Method to remove custom popup when saving if there is no error while performing DML operation
+        $('#errorCustomModal').on('hidden.bs.modal', function () {
+           if($("#errorCustomModal .ServerExceptionCustomClass").size()>0 ){
+                        
+                $("#errorCustomModal .ServerExceptionCustomClass").remove();
+            }
+        });
+        
+        //Change width and apply class to the picklist field of progress note
+        $('#ProgressNoteObjectSectionID select').css('width','76%');
+        $('#ProgressNoteObjectSectionID select').addClass('form-control');
+        
+    </script>
+</body>
+</aspx:AspxPage>

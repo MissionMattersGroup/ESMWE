@@ -1,0 +1,23 @@
+<div class="active-template">
+<header>
+<script>  
+var ErrorMessageForProgressNoteToAddToBilling;
+var ErrorMessageForProgressNoteToPreviewBillingSummary;
+var ErrorMessageForProgressNoteToRemove;
+var ErrorMessageForProgressNoteToPreviewBillingSummaryIfRecordLocked;
+var ErrorMessageForMassEditProgressNotes;
+var ErrorMessageForMassSaveProgressNotes;
+intializeJsGlobalForConstant();
+
+//Method to set the global valriable of js with label value and current user role
+function intializeJsGlobalForConstant(){
+    //used custom label for store error meassage for Progress Note To Add To Billing 
+    ErrorMessageForProgressNoteToAddToBilling ='<%:CustomLabels.ShowErrorMessageToAddToBillingForBillingSummary%>';
+    ErrorMessageForProgressNoteToPreviewBillingSummary = '<%#CustomLabels.ShowErrorMessageForPreviewBillingSummary%>';
+    ErrorMessageForProgressNoteToRemove = '<%#CustomLabels.ShowErrorMessageToRemoveForBillingSummary%>';
+    ErrorMessageForProgressNoteToPreviewBillingSummaryIfRecordLocked  = '<%#CustomLabels.ShowErrorMessageForPreviewBillingSummaryWhenRecordLocked%>';
+    ErrorMessageForMassEditProgressNotes = '<%#CustomLabels.ShowErrorMessageToSelectRecordsForMassEditProgressNotes%>';
+    ErrorMessageForMassSaveProgressNotes = '<%#CustomLabels.ShowErrorMessageToSaveUnbilledProgressNotes%>';
+}
+</script>
+</div>

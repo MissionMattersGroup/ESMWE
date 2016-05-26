@@ -1,0 +1,123 @@
+<!-------------------------------------------------------------------------------------------------------- 
+    Page: Service Plan Setup Pagew for Text Area Page
+    Description: This page is used to display the Text Area record stored to display on Service Interface if any else
+                 save the text entered by the user to display on Service Interface Plan Page
+----------------------------------------------------------------------------------------------------------> 
+<aspx:AspxPage runat="server" Id="DynamicQueryId" title="Object Configuration">
+ <header>
+ <script>
+   //@Description: Function is called on Cancel Button
+    function Cancel(){
+            window.location = "https://eastersealsmidwest.magentrixcloud.com/aspx/ServicePlanSetupPage";
+    }  
+ </script>
+ </header>
+ 
+ <body>
+    <!-- Button to Save or Redirect according to the functionality -->
+    <aspx:ViewSection runat='server' title=''>
+        <aspx:SectionItem runat='server'>
+            <div class="row">
+                <div class="col-sm-3">
+                    <aspx:CommandButton runat='server' text='Previous' onClick='Cancel();' CssClass='btn btn-danger' />
+                </div>
+                <div class="col-sm-1"></div>
+                <div class="col-sm-3">
+                    <aspx:CommandButton runat='server' text='Save' action='SaveRichTextArea' CssClass='btn btn-danger' />
+                </div>
+                <div class="col-sm-3">
+                    <aspx:CommandButton runat='server' text='Cancel' onClick='Cancel();' CssClass='btn btn-danger'  /> 
+                </div>
+                
+            </div>
+        </aspx:SectionItem>
+    </aspx:ViewSection>
+    
+    <aspx:ViewPanel runat='server' title='TextArea For Service Plan Setup'>
+    <body>
+            <!-- Section For Client Rights and Responsibility -->
+            <aspx:ViewSection runat='server' title='Clients Rights and Consent' columns='1' labelPosition='top'>
+            <div>
+                <aspx:SectionItem runat='server'>
+                    <div>
+                    <item>
+                        <b>Client Rights and Consent Section Name: </b>
+                        <br/>
+                        <aspx:FieldText  runat='server' id='richTestForClientRightsTitle' Label='{!Model.Clients_Rights_and_Consent_Title__c.Label}' 
+                                         value='{!Model.Clients_Rights_and_Consent_Title__c}' Format='TextArea'
+                                          Width='99%'/>
+                                          
+                    </item>
+                    <br/>
+                    <item>
+                        <aspx:FieldRichText  runat='server' id='richTestForClientRights' value='{!Model.Clients_Rights_and_Consent__c}' rows='3'/>
+                    </item>
+                </aspx:SectionItem>
+            </div>
+            </aspx:ViewSection>
+            </div>
+             
+            <!-- Section For Clinical Therapy Program -->
+            <div>
+            <aspx:ViewSection runat='server' title='Clinical Therapy Service Agreement' columns='1' labelPosition='top'>
+               
+                <aspx:SectionItem runat='server'>
+                    <div>
+                    <item>
+                        <b>Clinical Therapy Service Agreement Section Name: </b>
+                        <aspx:FieldText  runat='server' id='richTestForClinicalTherapyTitle'  value='{!Model.Clinical_Therapy_Service_Agreement_Title__c}'
+                                        Format='TextArea' Width='99%'/>
+                    </item>
+                    <item>
+                        <aspx:FieldRichText  runat='server' id='richTestForClinicalTherapy' value='{!Model.Clinical_Therapy_Service_Agreement__c}' rows='3' />
+                    </item>
+                    <br/>
+                </aspx:SectionItem>
+                </div>
+             </aspx:ViewSection>
+              </div>
+             
+            <!-- Section For Responsibilities -->
+            <div>
+            <aspx:ViewSection runat='server' title='Client Responsibilities' columns='1' labelPosition='top'>
+                
+                <aspx:SectionItem runat='server'>
+                    <div>
+                    <item>
+                        <b>Client Responsibilities Section Name: </b>
+                        <aspx:FieldText  runat='server' id='richTestForClientReponsibiltyTitle' value='{!Model.Client_Responsibilities_Title__c}'
+                                     Format='TextArea' Width='99%'/>
+                    </item>
+                    <item>
+                        <aspx:FieldRichText  runat='server' id='richTestForClientReponsibilty' value='{!Model.Client_Responsibilities__c}' rows='3'/>
+                    </item>
+                    <br/>
+                    
+                </aspx:SectionItem>
+                </div>
+             </aspx:ViewSection>
+             </div>
+           
+        </body>
+    </aspx:ViewPanel>
+    
+    <!-- Button to Save or Redirect according to the functionality -->
+    <aspx:ViewSection runat='server' title=''>
+        <aspx:SectionItem runat='server'>
+            <div class="row">
+                <div class="col-sm-3">
+                    <aspx:CommandButton runat='server' text='Previous' onClick='Cancel();' CssClass='btn btn-danger' />
+                </div>
+                <div class="col-sm-1"></div>
+                <div class="col-sm-3">
+                    <aspx:CommandButton runat='server' text='Save' action='SaveRichTextArea' CssClass='btn btn-danger' />
+                </div>
+                <div class="col-sm-3">
+                    <aspx:CommandButton runat='server' text='Cancel' onClick='Cancel();' CssClass='btn btn-danger'  /> 
+                </div>
+                
+            </div>
+        </aspx:SectionItem>
+    </aspx:ViewSection>
+</body>
+</aspx:AspxPage>

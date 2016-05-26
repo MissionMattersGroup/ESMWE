@@ -1,0 +1,17 @@
+<div class="active-template">
+<header>
+<script>  
+var ErrorMessageForProgressNoteToApprove;
+var ErrorMessageForProgressNoteToAddToPending;
+var ErrorMessageForPreviewAccountBillingSummary;
+intializeJsGlobalForConstant();
+
+//Method to set the global valriable of js with label value and current user role
+function intializeJsGlobalForConstant(){
+    //used custom label for store error meassage for Progress Note To Approve
+    ErrorMessageForProgressNoteToApprove       ='<%:CustomLabels.ShowErrorMessageToApproveAccountBilling%>';
+    ErrorMessageForProgressNoteToAddToPending  ='<%:CustomLabels.ShowErrorMessageForPendingAccountBilling%>';
+    ErrorMessageForPreviewAccountBillingSummary = '<%:CustomLabels.ShowErrorMessageForPreviewAccountBillingSummary%>';
+}
+</script>
+</div>

@@ -1,0 +1,466 @@
+[SerializeViewData]
+public class AccountBillingSummaryInterfaceController : AspxController
+{
+    /*
+    * Description : This controller is used to display Billing Summary Interface
+    * Version               Author            Date (DD-MM-YYYY)             Change Log      Ticket No 
+    *  1.1                 Twinkle P          25/04/2016                   Initial Draft     ESMWE-540
+    *  1.2                 Twinkle P          26/04/2016                   Implemented the functionality to display the progress note with Billing Status "Pending Billing" [ESMWE-541]
+    *  1.3                 Twinkle P          27/04/2016                   Implemented the functionality to Approve the progress note with Billing Status "Approved"  on click of Approve [ESMWE-542]
+    *  1.4                 Twinkle P          28/04/2016                   Implemented the functionality to Add progress note records selected by the user to "Pending Billing"
+    *  1.5                 Anuradha N         28/4/2016                    Implemented 'Preview Billing Summary' functionality on Account Billing Summary Interface [ESMWE-545] 
+    */
+     
+    // This variable is used to store the value of Account Billing Summary id passed in URL
+    string strAccountBillingSummaryId;
+    
+    // This variable is used to store the value of Type View passed in URL
+    string strAccountBillingSummaryTypeView;
+    
+	public override ActionResponse Index()
+	{
+	     //Declaration and Intialization of the DataBag and String 
+	    init();
+	    
+        //check the page url contains typeView if not contains return error message to page
+	    // otherwise go forward to inside the code for fetch id 
+	    string strCurrentURL = Request.Url.AbsoluteUri;
+        bool bType= strCurrentURL.Contains("?typeView=");
+        
+	    //Check if the view type is present or not
+        if(bType==false){
+        	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+        	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryType;
+            return View(); 
+	    }
+	    else {
+	        // Stores the type of the page which is passed as a param in the URL
+            strAccountBillingSummaryTypeView = AspxPage.GetParameter("typeView");
+            
+            //if the TypeView is blank or empty then show the error message on page
+            if(string.IsNullOrEmpty(strAccountBillingSummaryTypeView)){
+               	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+               	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryType;
+               	return View();
+            }
+            else{ 
+                // if TypeView contains value
+                strAccountBillingSummaryTypeView =  strAccountBillingSummaryTypeView.ToLower();
+                
+                // Check if TypeView values are not equal to edit and detail show error message on page
+                if (!strAccountBillingSummaryTypeView.Equals("edit") &&
+                    !strAccountBillingSummaryTypeView.Equals("detail")) {
+                    AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);  
+                    DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryType;
+           	        return View();
+                }
+                else { 
+                    // if TypeView Contains correct values
+                    // if TypeView is equal to edit or detail then check for the Account Billing Summary id
+                    if (strAccountBillingSummaryTypeView.Equals("edit") || strAccountBillingSummaryTypeView.Equals("detail")) {
+                        DataBag.strAccountBillingSummaryTypeView = strAccountBillingSummaryTypeView;
+                        
+                        bool bId = strCurrentURL.Contains("id=");
+                        
+                        //Check if URL contains Id parameter if not then show the error message
+                        if(bId==false){
+                        	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+                        	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryId;
+                            return View(); 
+                	    }
+                	    else { // Url contains Id paramter
+                	        // Stores the type of the id which is passed as a param in the URL
+                            strAccountBillingSummaryId = AspxPage.GetParameter("id");
+                            
+                            //Check the Id is blank
+                            if(string.IsNullOrEmpty(strAccountBillingSummaryId)){
+                               	AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+                               	DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryId;
+                               	return View();
+                            }
+                            else {
+        	                    
+        	                    //Assign the dynamic query to the Billing Summary
+        		                List<Force__Billing_Summary__c> lstAccountBillingSummaryObj = new List<Force__Billing_Summary__c>();
+        		                lstAccountBillingSummaryObj = getAccountBillingSummary(strAccountBillingSummaryId);
+        		                
+        		                if(lstAccountBillingSummaryObj != null && lstAccountBillingSummaryObj.Count() > 0) {
+        		                    
+        		                    //If the list count is greater than zero display the Account Billing Interface
+        		                    DataBag.DisplayABSI = true;
+        		                    
+        		                    DataBag.lstAccountBillingSummaryObj = lstAccountBillingSummaryObj;
+        		                    
+        		                    DataBag.strAccountBillingSummaryId = strAccountBillingSummaryId;
+        		                    
+        		                    // Call this method to access records of Progress Note
+                                    getProgressNoteRecordsWithStatusPendingAndApproved();
+        		                    
+        		                }
+        		                else {
+        		                    AspxPage.AddMessage(CustomLabels.ErrorOnBillingSummaryType);
+        		                    DataBag.errorMessage = CustomLabels.ErrorOnBillingSummaryId;
+        		                    return View();
+        		                }
+                            }
+                	    }
+                    }
+                }
+            }
+	    }
+		return View();
+	}
+	/*
+	* Description: Method to intialize the DataBag and the string with appropriate value
+	*/
+	public void init(){
+	    
+	    //This databag variable is used to show the Account Billing Summary interface or hide it
+	    DataBag.DisplayABSI = false;
+	    
+	    //String for fields comma seperated values for Account Billing Summary 
+	    string strAccountBillingSummaryFields = "Billing_Summary_Funder__c,Billing_Summary_Billing_Date__c,Billing_Summary_Total_Units__c,Billing_Summary_Total_Amount__c";
+	    
+	    //This data bag is used to store the fields comma seperated values for Account Billing Summary to access in the query
+	    DataBag.strAccountBillingSummaryFields = strAccountBillingSummaryFields;
+	    
+	    //This databag contains the Account Billing Summary comma separated fields to access on the page and get/set the values from the page
+	    DataBag.lstAccountBillingSummaryFields = getTheCommaSeperatedValues(strAccountBillingSummaryFields);
+	    
+	    // This Databag is used to store the value of TypeView
+	    DataBag.strAccountBillingSummaryTypeView="";
+	    
+        
+        // This Databag list is used to store the value of Account  Billing Summary object
+	    DataBag.lstAccountBillingSummaryObj = new List<Force__Billing_Summary__c>();
+	    
+        // This Databag is used to store the value of Account Billing Summary Id
+	    DataBag.strAccountBillingSummaryId="";
+	    
+	    
+	    /********************************List of Progress Note and their Fields**************************/
+	    //DataBag for fields commaseprated values for Progress Note
+	    DataBag.strProgressNoteFields = "Client__c,Service__c,Client_DOB__c,Units_of_service__c,Progress_Amount__c,Billing_Code__c,Staff_Name__c,Billing_Status__c";
+	    
+	    //This databag contains the Progress Note comma separated fields
+	    DataBag.lstProgressNoteFields = getTheCommaSeperatedValues(DataBag.strProgressNoteFields);
+	    
+	    //This databag is used to store the data of existing Progress Note Records
+        //DataBag.lstExistingProgressNote = new List<WrapperForProgressNote>();
+        DataBag.lstProgressNoteWithStatusPendingAndApproved = new List<WrapperForProgressNote>();
+        
+        //This databag is used to store the Billing Status "Pending Billing"
+        DataBag.strBillingStatusPending = "Pending Billing";
+        
+        //This DataBag is used to store the Billing Status "Approved"
+        DataBag.strBillingStatusApproved = "Approved";
+        /********************************End of List of Progress Note and their Fields**************************/
+         
+        //This databag is used to show the preview of the Account Billing Summary interface
+        DataBag.IsPreviewAccountBillingSummary = false; 
+        
+        //This databag is used to store the list of progress note to preview
+        DataBag.lstPreviewApprovedProgressNotes = new List<Force__Progress_Note__c>();
+        
+        //This databag is used to check Approved Progress note record present or not
+        DataBag.IsApprovedProgressNotePresent = "false";
+	    
+	    //This Databag is used to store the error message
+	    DataBag.errorMessage = "";
+	    
+	    // This Databag is used to store the exception occured on page
+	    DataBag.Exception = ""; 
+	}
+	
+	/*
+    * Description: Method to to get Billing Summary Details which match the Billing Summary Id in the URL
+    * Input      : Id(string) of Billing Summary
+    * Output     : List of Billing Summary
+    */
+	public List<Force__Billing_Summary__c> getAccountBillingSummary(string strAccountBillingSummaryId) 
+	{
+    	//Start --Billing Summary Query Record Fetch and Create List of Fields to display 
+        string queryStr = "SELECT";
+        string fixFieldsAccountBillingSummary = " Id";
+        queryStr+= createQueryStringFields(fixFieldsAccountBillingSummary,DataBag.strAccountBillingSummaryFields,"Force__Billing_Summary__c");
+        queryStr+=" WHERE Id=\""+strAccountBillingSummaryId+"\"";
+        queryStr+=" LIMIT 1";
+        
+        //Assign the dynamic query to the Billing Summary
+        return  (List<Force__Billing_Summary__c>)Database.Query(queryStr);
+	}
+	/*
+    * Description: Method to save the Account Billing Summary with the updated values
+    * Input      : 
+    * Output     : Redirects to the Page with updated values Account Billing Summary Interface
+    */
+	[HttpPost]
+	public ActionResponse SaveAccountBillingSummary() {
+	    
+	    int count = 0;
+	    
+	    foreach (var accountBillingSummaryObj in DataBag.lstAccountBillingSummaryObj) 
+	    {
+	        foreach (var fields in DataBag.lstAccountBillingSummaryFields) 
+	        {
+	            string val = Request["m$" + count.ToString() + "$." +  fields];
+                accountBillingSummaryObj.Set(fields, val);
+	        }
+	        count++;
+	    }
+	    // On save check if Account Billing Summarry id is present then update the record otherwise create the new record of Account Billing Summary
+	     if(DataBag.lstAccountBillingSummaryObj.Count > 0 && DataBag.strAccountBillingSummaryTypeView == "edit") {
+	   
+	        
+	        if(string.IsNullOrEmpty(DataBag.lstAccountBillingSummaryObj[0].Id)) {
+	            try{
+	                Insert(DataBag.lstAccountBillingSummaryObj);
+	                //If the DML is successful then clear the value so that no expection is displayed
+	                DataBag.Exception = ""; 
+	            }
+	            catch(Exception e){
+	                DataBag.Exception = e.Message;
+                    return View();
+	            }
+	            DataBag.strAccountBillingSummaryId = DataBag.lstAccountBillingSummaryObj[0].Id;
+	        }
+	        else {
+	            try{
+	                Edit(DataBag.lstAccountBillingSummaryObj);
+	                 //If the DML is successful then clear the value so that no expection is displayed
+	                DataBag.Exception = ""; 
+	            }
+	            catch(Exception e){
+	                 DataBag.Exception = e.Message;
+                     return View();
+	            }
+	        }
+	    }
+	   return Redirect(ActivePages.AccountBillingSummaryInterface, new { typeView = "detail",id=DataBag.strAccountBillingSummaryId });
+	}
+	
+	/*
+    * Description: Method to get existing Progress Note  with the status "Pending Billing" OR "Approved" and related to Billing Summary Id in the URL
+    * Input      : 
+    * Output
+    */
+	public void getProgressNoteRecordsWithStatusPendingAndApproved() {
+	    
+	    //Intialize the DataBag to display the rerender values
+	    DataBag.lstProgressNoteWithStatusPendingAndApproved = new List<WrapperForProgressNote>();
+	    
+	    DataBag.IsApprovedProgressNotePresent = "false";
+	    
+		// Start --Progress Note Query Record Fetch and Create List of Fields to display 
+		string queryStrProgressNote  ="SELECT";
+		string fixFieldsProgressNote =" Id";
+		queryStrProgressNote+= createQueryStringFields(fixFieldsProgressNote,DataBag.strProgressNoteFields,"Force__Progress_Note__c");
+		queryStrProgressNote+=" WHERE Billing_Summary__c=\""+DataBag.strAccountBillingSummaryId+"\"";
+		queryStrProgressNote+=" AND ( Billing_Status__c=\""+ DataBag.strBillingStatusPending +"\"";
+		queryStrProgressNote+=" OR Billing_Status__c=\""+ DataBag.strBillingStatusApproved +"\""+")";
+		
+		SystemInfo.Debug("queryStrProgressNote-----------------------"+queryStrProgressNote);
+		//Assign the dynamic query to Progress Note
+		List<Force__Progress_Note__c> lstProgressNoteWithStatusPendingAndApproved = new List<Force__Progress_Note__c>();
+		
+		lstProgressNoteWithStatusPendingAndApproved = (List<Force__Progress_Note__c>)Database.Query(queryStrProgressNote);
+		
+		if(lstProgressNoteWithStatusPendingAndApproved != null && lstProgressNoteWithStatusPendingAndApproved.Count() > 0) {
+			
+			List<WrapperForProgressNote> lstProgressNoteInWrapper = new List<WrapperForProgressNote>();
+			
+			foreach(var objIteratorProgressNote in lstProgressNoteWithStatusPendingAndApproved) {
+			    
+			    List<Force__Progress_Note__c> lstProgressNoteInWrappersTemp = new List<Force__Progress_Note__c>();
+			    
+			    // Add  Progress Note to Wrapper list
+			    lstProgressNoteInWrappersTemp.Add(objIteratorProgressNote);
+			    
+			    WrapperForProgressNote wrapperInstance = new WrapperForProgressNote();
+			    wrapperInstance.isSelected = false;
+			    wrapperInstance.lstProgressNoteInWrapper = lstProgressNoteInWrappersTemp;
+			    
+			    // To check if list contains Approved Progress Notes
+			    if( wrapperInstance.lstProgressNoteInWrapper[0].Billing_Status__c == DataBag.strBillingStatusApproved) {
+			        DataBag.IsApprovedProgressNotePresent = "true";
+			    }
+			    
+			    lstProgressNoteInWrapper.Add(wrapperInstance);
+			}
+			
+			// Assign wrapper list to Existing Progress Note List
+			DataBag.lstProgressNoteWithStatusPendingAndApproved = lstProgressNoteInWrapper;
+		}
+	}
+	
+	/*
+    * Description: Method to Approve Progress Note Records  which are selected by the user.
+    * Type       : doPost Method [Call from the Javascript]
+    * Input      : 
+    * Output     : Approve Progress Note Records which are selected by the user
+    */
+    [HttpPost]
+    public ActionResponse ApproveProgressNoteRecordSelected(){
+        
+        int RowCount = 0;
+        
+        List<Force__Progress_Note__c> lstProgressNoteToApprove = new List<Force__Progress_Note__c>();
+        
+        foreach(var objProgressNoteForApprove in DataBag.lstProgressNoteWithStatusPendingAndApproved) {
+            
+            //Request the Name value of the CheckBox Field accessed on the Page
+            string valForProgressNoteCheckbox = Request["ProgressNoteCheckbox"+RowCount];
+            
+            if(string.Equals(valForProgressNoteCheckbox,"on")) {
+               objProgressNoteForApprove.lstProgressNoteInWrapper[0].Set("Billing_Status__c",DataBag.strBillingStatusApproved);
+               lstProgressNoteToApprove.Add(objProgressNoteForApprove.lstProgressNoteInWrapper[0]);
+            }
+            
+            RowCount=RowCount+1;
+        }
+        
+        try{
+           Edit(lstProgressNoteToApprove);
+           //If the DML is successful then clear the value so that no expection is displayed
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        //Called the Method to display updated list in the Section for "Progress Notes(Approved/Pending Billing)"
+        getProgressNoteRecordsWithStatusPendingAndApproved();
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to Add Progress Note Records  which are selected by the user to "Pending Billing" status.
+    * Type       : doPost Method [Call from the Javascript]
+    * Input      : 
+    * Output     : Add Progress Note Records which are selected by the user to "Pending Billing" status.
+    */
+    [HttpPost]
+    public ActionResponse PendingProgressNoteRecordSelected(){
+        
+        int RowCount = 0;
+        
+        List<Force__Progress_Note__c> lstProgressNoteToAddToPending  = new List<Force__Progress_Note__c>();
+        
+        foreach(var objProgressNoteForPending in DataBag.lstProgressNoteWithStatusPendingAndApproved) {
+            
+            //Request the Name value of the CheckBox Field accessed on the Page
+            string valForProgressNoteCheckbox = Request["ProgressNoteCheckbox"+RowCount];
+            
+            if(string.Equals(valForProgressNoteCheckbox,"on")) {
+               objProgressNoteForPending.lstProgressNoteInWrapper[0].Set("Billing_Status__c", DataBag.strBillingStatusPending );
+               lstProgressNoteToAddToPending.Add(objProgressNoteForPending.lstProgressNoteInWrapper[0]);
+            }
+            
+            RowCount=RowCount+1;
+        }
+        
+        try{
+           Edit(lstProgressNoteToAddToPending);
+           //If the DML is successful then clear the value so that no expection is displayed
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        
+        //Called the Method to display updated list in the Section for "Progress Notes(Approved/Pending Billing)"
+        getProgressNoteRecordsWithStatusPendingAndApproved();
+        
+        return View();
+    }
+    
+    
+    /*
+	* Description: Method to form the Query
+	* Input      : strOfQueryFields : The fields in comma seperated format
+	* Input      : fixFields : Fixed fields such as Id
+    * Output     : strQuery: returns a query of string which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public string createQueryStringFields(string fixFields, string strOfQueryFields, string ObjectName){
+	    
+	    string strQuery = "";
+	    
+	    if(string.IsNullOrEmpty(fixFields) ){
+	        
+	        strQuery = strOfQueryFields;
+	    }
+	    else{
+	      strQuery = fixFields+", "+strOfQueryFields; 
+	    }
+	    strQuery = strQuery + " FROM "+ ObjectName;
+	    
+	    return strQuery;      
+	}
+	/*
+	* Description: Method to get the list of fields in comma seperated double quote to be accessed by the DataBag
+	* Input      : strOfFields : The fields in comma seperated format
+    * Output     : lstOfFieldForTheObj: returns a list of fields which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public List<string> getTheCommaSeperatedValues(string strOfFields){
+	    
+	    List<string> lstOfFieldForTheObj = new List<string>();
+	    if(strOfFields != null){
+	        var tempConfig = (string)strOfFields;
+            string[] separators = {","};
+            lstOfFieldForTheObj = tempConfig.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();
+	    }
+	    return lstOfFieldForTheObj;      
+	}
+	
+	/*
+    * Description: Method to get all Approved Progress Note To preview for Account Billing Summary
+    * Type       : doPost Method [Call from the Javascript]
+    * Input      : 
+    * Output     : DataBag List of Approved Progress Note To preview for Account Billing Summary
+    */
+    [HttpPost]
+	public ActionResponse getProgressNoteRecordsToPreviewAccountBillingSummary() { 
+	    
+	    //Intialize the DataBag to display the rerender values
+	    DataBag.lstPreviewApprovedProgressNotes = new List<Force__Progress_Note__c>();
+	    
+	    List<Force__Progress_Note__c> lstApprovedProgressNote = new List<Force__Progress_Note__c>();
+	    
+	    foreach(var objProgressNote in DataBag.lstProgressNoteWithStatusPendingAndApproved) {
+	        if(objProgressNote.lstProgressNoteInWrapper[0].Billing_Status__c == DataBag.strBillingStatusApproved) {
+	            lstApprovedProgressNote.Add(objProgressNote.lstProgressNoteInWrapper[0]);
+	        }
+	    }
+	    
+		DataBag.lstPreviewApprovedProgressNotes = lstApprovedProgressNote;
+		
+		if(DataBag.lstPreviewApprovedProgressNotes.Count > 0) {
+	        DataBag.IsPreviewAccountBillingSummary = true;
+	    }
+	    else {
+	        DataBag.IsPreviewAccountBillingSummary = false;
+	    }
+		
+	    return View();
+	}
+	
+	/*
+    * Description: Method to redirect to the main page
+    * Input      : 
+    * Output     : redirect to the main page
+    */
+    [HttpPost]
+	public ActionResponse redirectToMainPage() {
+	    DataBag.IsPreviewAccountBillingSummary = false;
+	    return View();
+	}
+	
+	//Wrapper Class for Progress Note
+    public class WrapperForProgressNote{
+        public bool isSelected {get;set;}
+        public List<Force__Progress_Note__c> lstProgressNoteInWrapper{get; set;}
+    }
+    
+}

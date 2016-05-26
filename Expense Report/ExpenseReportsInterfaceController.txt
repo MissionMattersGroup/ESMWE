@@ -1,0 +1,1802 @@
+[SerializeViewData]
+public class ExpenseReportsInterfaceController : AspxController
+{
+    /*
+     * Description : This controller is used to display Expense, Mileage and Expense Report
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     
+     * 1.1                  Anuradha N          18/1/2016                 Initial Draft
+     * 1.2                  Anuradha N                                    Template for displaying Expense Report
+     * 1.3                  Anuradha N          16/2/2016                 Create Detail view for Expense Report
+     * 1.4                  Anuradha N          17/2/2016                 Create Edit view for Expense Report
+     * 1.5                  Anuradha N          17/2/2016                 Add Save functionality for Expense Report
+     * 1.6                  Anuradha N          19/2/2016                 Show all Expenses on page
+     * 1.7                  Anuradha N          21/2/2016                 Show all Mileages on page
+     * 1.8                  Anuradha N          22/2/2016                 Add functionality to Add and Remove Rows for Expenses and Mileages
+     * 1.6                  Anuradha N          23/2/2016                 Add Save functionality for multiple Expenses
+     * 1.7                  Anuradha N          13/4/2106                 Implement the functionality of multiple receipt upload
+     * 1.8                  Anuradha N          19/4/2016                 Implement the functionality to Add 3 Signature Sections on expense report[ESMWE-505]
+     * 1.9                  Anuradha N          20/4/2016                 Implement the functionality of Mass approval of Expenses and Mileages [ESMWE-506]
+     * 1.10                 Anuradha N          3/5/2016                  Change Title of Expense Report Page [ESMWE-555]
+     * 1.11                 Anuradha N          18/5/2016                 Implemented the functionality to Provide ability to remove uploaded receipts [ESMWE-634]
+     */
+     
+     
+    // This variable is used to store the value of Expense Report id passed in URL
+    string strExpenseReportId;
+    // This variable is used to store the value of Type View passed in URL
+    string strExpenseReportTypeView;
+    // This variable is used to check the status for Expense Report for value as 'Submitted'
+    string strExpenseReportStatusSubmitted = "Submitted";
+    
+	public override ActionResponse Index()
+	{   
+	    //Holds Expense's Id
+	    DataBag.ExpenseIdForEdit = "";
+	    
+	    //Holds Expense's Id
+	    DataBag.MileageIdForEdit = "";
+	    
+	    //Holds Attachment's Id
+	    DataBag.AttachmentId = "";
+	    
+	    // This Databag is used to store the exception occured on page
+	    DataBag.Exception = ""; 
+	    
+	    //This databag variable is used to show/hide the Add Expense button
+	    DataBag.IsActiveButtonOfExpense = false;
+	    
+	    //This databag variable is used to show/hide the Add Mileage button
+	    DataBag.IsActiveButtonOfMileage = false;
+	    
+	    // This Databag list is used to store the value of Expense Report object
+	    DataBag.lstExpenseReportObj = new List<Force__Expense_Report__c>();
+	    
+	    //This Databag is used to store the error message
+	    DataBag.errorMessage = "";
+	    
+	    // This Databag is used to store the value of Expense Report Id
+	    DataBag.strExpenseReportId="";
+	    
+	    // This Databag is used to store the value of TypeView
+	    DataBag.strExpenseReportTypeView="";
+	    
+	    //check the page url contains typeView if not contains return error message to page
+	    // otherwise go forward to inside the code for fetch id 
+	    string CurrentURL = Request.Url.AbsoluteUri;
+        bool bType=CurrentURL.Contains("?typeView=");
+        
+        //This databag variable is used to show the Expense Report interface or hide it
+	    DataBag.DisplayERI = false;
+	    
+	    //string for fields commaseprated values for Expense Report
+	    string strExpenseReportFields = "Staff_Member_Employee__c,Start_Date__c,End_Date__c,Total_from_Expenses__c,Total_Mileage__c,Status__c";
+	    
+	    //This data bag is used to store the fields commaseprated values for Expense Report
+	    DataBag.strExpenseReportFields = strExpenseReportFields;
+	    
+	    //This databag contains the Expense Report comma separated fields
+	    DataBag.lstExpenseReportFields = getTheCommaSeperatedValues(strExpenseReportFields);
+	    
+	    //This databag is used to store the id of the Button Clicked
+	    DataBag.IdOfTheButton = "";
+        
+        //This databag is used to store the data of existing mileage
+        DataBag.lstExistingMileage = new List<WrapperForMileage>();
+        
+        //This databag is used to store the data of existing Expense
+        DataBag.lstExistingExpense = new List<WrapperForExpenses>();
+        
+        // This Databag is used to set the boolean as true when status is In Progress
+	    DataBag.IsStatusInProgress = false;
+        
+        /******************List and Comma separated fields for Expense and Mileage************************/
+	    
+	    //string for fields commaseprated values for Expense Report
+	    string strExpenseFields = "Expense_GL_Account__c,Expense_Locations__c,Expense_Activities__c,Expense_Funders__c,Name,Date__c,Expense_Amount__c";
+	    
+	    //This databag contains the Expense Report comma separated fields
+	    DataBag.lstExpenseFields = getTheCommaSeperatedValues(strExpenseFields);
+	    
+	    // This list is used to insert new Expenses to Expense Report
+	    DataBag.lstExpense = new List<Force__Expense__c>();
+	    
+	    //string for fields commaseprated values for Expense Report
+	    string strMileageFields = "Mileage_GL_Account__c,Mileage_Locations__c,Mileage_Activities__c,Mileage_Funders__c,Name,Location_From__c,Location_To__c,Odometer_Start__c,Odometer_End__c,Total_Miles__c,Mileage_Date__c";
+	    
+	    //This databag contains the Expense Report comma separated fields
+	    DataBag.lstMileageFields = getTheCommaSeperatedValues(strMileageFields);
+	    
+	    //string for fields commaseprated values for Attachment
+	    DataBag.strAttachmentFields = "Name";
+	    
+	    //This databag contains the Attachment comma separated fields
+	    DataBag.lstAttachmentFields = getTheCommaSeperatedValues(DataBag.strAttachmentFields);
+	    
+	    // This list is used to insert new Mileage to Expense Report
+	    DataBag.lstMileage = new List<Force__Mileage__c>();
+	    
+	    // This Databag is used to set the boolean as true when status is 'Submitted'
+	    DataBag.IsStatusSubmitted = false;
+	    
+	    //This databag is used to create new upload input
+	    DataBag.lstNewUploadReceipt = new List<Force__Attachment>();
+	    
+	    //This databag is used to store the data of attachment related to expense report
+	    DataBag.lstAttachmentObj = new List<Force__Attachment>();
+	    
+	    //This databag is used to show the success meassage on popup
+	    DataBag.IsSuccessMultipleReceiptUpload = "false";
+	    
+	    // This Databag is used to store the value of contact id (Magentrix user contact id)
+	    DataBag.strUserContactName = "";
+	    
+	    // This Databag is used to store the value of Staff Member/Employee (Contact Name)
+	    DataBag.strStaffMemberEmployeeContactName = "";
+	    
+	    //This Databag is used to throw the exception when multiple methods calls at onces
+	    DataBag.IsMultipleMethodThrowException = false;
+	    
+	    /****************** End of List and Comma separated fields for Expense and Mileage************************/
+        
+        if(bType==false){
+        	AspxPage.AddMessage(CustomLabels.ErrorOnExpenseReportType);
+        	DataBag.errorMessage = CustomLabels.ErrorOnExpenseReportType;
+            return View(); 
+	    }
+	    else {
+	        // Stores the type of the page which is passed as a param in the URL
+            strExpenseReportTypeView = AspxPage.GetParameter("typeView");
+            
+            //if the TypeView is blank or empty then show the error message on page
+            if(string.IsNullOrEmpty(strExpenseReportTypeView)){
+               	
+               	AspxPage.AddMessage(CustomLabels.ErrorOnExpenseReportType);
+               	DataBag.errorMessage = CustomLabels.ErrorOnExpenseReportType;
+               	return View();
+            }
+            else{ // if TypeView contains value
+                strExpenseReportTypeView =  strExpenseReportTypeView.ToLower();
+                // Check if TypeView values are not equal to edit and detail show error message on page
+                if (!strExpenseReportTypeView.Equals("edit") &&
+                    !strExpenseReportTypeView.Equals("detail")) {
+                    AspxPage.AddMessage(CustomLabels.ErrorOnExpenseReportType);  
+                    DataBag.errorMessage = CustomLabels.ErrorOnExpenseReportType;
+           	        return View();
+                }
+                else { // if TypeView Contains correct values
+                    // if TypeView is equal to edit or detail then check for the Expense Report id
+                    if (strExpenseReportTypeView.Equals("edit") || strExpenseReportTypeView.Equals("detail")) {
+                        DataBag.strExpenseReportTypeView = strExpenseReportTypeView;
+                        bool bId = CurrentURL.Contains("id=");
+                        //Check if URL contains Id parameter if not then show the error message
+                        if(bId==false){
+                        	AspxPage.AddMessage(CustomLabels.ErrorOnExpenseReportType);
+                        	DataBag.errorMessage = CustomLabels.ErrorOnExpenseReportId;
+                            return View(); 
+                	    }
+                	    else { // Url contains Id paramter
+                	        // Stores the type of the id which is passed as a param in the URL
+                            strExpenseReportId = AspxPage.GetParameter("id");
+                            
+                            //Check the Id is blank
+                            if(string.IsNullOrEmpty(strExpenseReportId)){
+                               	AspxPage.AddMessage(CustomLabels.ErrorOnExpenseReportType);
+                               	DataBag.errorMessage = CustomLabels.ErrorOnExpenseReportId;
+                               	return View();
+                            }
+                            else {
+        	                    
+        	                    //Assign the dynamic query to the Expense Report
+        		                List<Force__Expense_Report__c> lstExpenseReportObj = new List<Force__Expense_Report__c>();
+        		                lstExpenseReportObj = getExpenseReport(strExpenseReportId);
+        		                
+        		                if(lstExpenseReportObj != null && lstExpenseReportObj.Count() > 0) {
+        		                    
+        		                    DataBag.DisplayERI = true;
+        		                    
+        		                    //This code snippet will set the value of the Scroll Position on Save Button on all the rows
+            		                bool bScrollView = CurrentURL.Contains("scrollToOnLoad=");
+            		                if(bScrollView == true){
+            		                    DataBag.IdOfTheButton =  AspxPage.GetParameter("scrollToOnLoad");
+            		                }
+        		              
+        		                    DataBag.lstExpenseReportObj = lstExpenseReportObj;
+        		                    
+        		                    DataBag.strExpenseReportId = strExpenseReportId;
+        		                    
+        		                    // Call this method to access records of Expenses
+                                    getExpenseRecords(strExpenseFields);
+									
+									// Call this method to access records of Mileages
+        		                    getMileageRecords(strMileageFields);
+        		                    
+        		                    // Call this method to access records of Attachment related to expense report
+        		                    DataBag.lstAttachmentObj = getAttachments(DataBag.strAttachmentFields);
+        		                    
+        		                    // Check if Expense Report's status is 'Submitted'
+        		                    CheckStatusSubmitted(lstExpenseReportObj);
+        		                    
+        		                    // Check if Expense Report's status is 'In Progress'
+        		                    CheckStatusInPogress(DataBag.lstExpenseReportObj);
+        		                    
+        		                    ShowReceiptUploadRow(DataBag.lstNewUploadReceipt);
+        		                    
+        		                    //to get current staff member user to initialize DataBag.strStaffContactId
+                                    getStaffContactId();
+        		                    
+        		                    //to get current Staff Member/Employee contact name
+        		                    getStaffMemberEmployeeContactName();
+        		                    
+        		                    //To set the view as detail when status is submitted
+        		                    showInDetailViewWhenRecordLocked();
+        		                }
+        		                else {
+        		                    AspxPage.AddMessage(CustomLabels.ErrorOnExpenseReportType);
+        		                    DataBag.errorMessage = CustomLabels.ErrorOnExpenseReportId;
+        		                    return View();
+        		                }
+                            }
+                	    }
+                    }
+                }
+            }
+	    }
+        return View();
+	}
+		
+	/*
+	* Description: Method to get the list of fields in comma seperated double quote to be accessed by the DataBag
+	* Input      : strOfFields : The fields in comma seperated format
+    * Output     : lstOfFieldForTheObj: returns a list of fields which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public List<string> getTheCommaSeperatedValues(string strOfFields){
+	    
+	    List<string> lstOfFieldForTheObj = new List<string>();
+	    if(strOfFields != null){
+	        var tempConfig = (string)strOfFields;
+            string[] separators = {","};
+            lstOfFieldForTheObj = tempConfig.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();
+	    }
+	    return lstOfFieldForTheObj;      
+	}
+	
+	/*
+	* Description: Method to form the Query
+	* Input      : strOfQueryFields : The fields in comma seperated format
+	* Input      : fixFields : Fixed fields such as Id
+    * Output     : strQuery: returns a query of string which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public string createQueryStringFields(string fixFields, string strOfQueryFields, string ObjectName){
+	    
+	    string strQuery = "";
+	    
+	    if(string.IsNullOrEmpty(fixFields) ){
+	        
+	        strQuery = strOfQueryFields;
+	    }
+	    else{
+	      strQuery = fixFields+", "+strOfQueryFields; 
+	    }
+	    strQuery = strQuery + " FROM "+ ObjectName;
+	    
+	    return strQuery;      
+	}
+	
+	/*
+    * Description: Method to to get Expense report
+    * Input      : Id(string) of Expense Report Fields
+    * Output     : List of Expense Report
+    */
+	public List<Force__Expense_Report__c> getExpenseReport(string strExpenseReportId) 
+	{
+    	//Start --Expense Report Query Record Fetch and Create List of Fields to display 
+        string queryStr = "SELECT";
+        string fixFieldsExpenseReport = " Id,Staff_Member_Employee__c,Status__c,Director_Signed_Date__c,Director_Signee_Name__c,Staff_Signed_Date__c,";
+        fixFieldsExpenseReport += "Staff_Signee_Name__c,Supervisor_Signed_Date__c,Supervisor_Signee_Name__c";
+        queryStr+= createQueryStringFields(fixFieldsExpenseReport,DataBag.strExpenseReportFields,"Force__Expense_Report__c");
+        queryStr+=" WHERE Id=\""+strExpenseReportId+"\"";
+        queryStr+=" LIMIT 1";
+        
+        //Assign the dynamic query to the Expense Report
+        return  (List<Force__Expense_Report__c>)Database.Query(queryStr);
+	}
+	
+	/*
+    * Description: Method to save the Expense Report with the updated values
+    * Input      : lstExpenseReport : lst of Expense Report which have the updated values
+    * Output     : Redirects to the Page with updated values
+    */
+	[HttpPost]
+	public ActionResponse SaveExpenseReport(List<Force__Expense_Report__c> lstExpenseReportObj) {
+	    
+	    // On save check if Expense Report id is present then update the record otherwise create the new record of Expense Report
+	    if(lstExpenseReportObj.Count > 0 && DataBag.strExpenseReportTypeView == "edit") {
+	        
+	        int count = 0;
+    	    foreach (var ExpenseReportObj in lstExpenseReportObj) 
+    	    {
+    	        foreach (var fields in DataBag.lstExpenseReportFields) 
+    	        {
+    	            string val = Request["m$" + count.ToString() + "$." +  fields];
+                    ExpenseReportObj.Set(fields, val);
+    	        }
+    	        count++;
+    	    }
+	        
+	        if(string.IsNullOrEmpty(lstExpenseReportObj[0].Id)) {
+	            try{
+	                Insert(lstExpenseReportObj);
+	                DataBag.Exception = "";
+	            }
+	            catch(Exception e){
+	                DataBag.Exception = e.Message;
+	                if(DataBag.IsMultipleMethodThrowException == true){
+	                     throw e;
+	                }
+                    return View();
+	            }
+	            DataBag.strExpenseReportId = lstExpenseReportObj[0].Id;
+	       }
+	       else {
+	            try{
+	                Edit(lstExpenseReportObj);
+	                DataBag.Exception = "";
+	            }
+	            catch(Exception e){
+	                 DataBag.Exception = e.Message;
+	                 if(DataBag.IsMultipleMethodThrowException == true){
+	                     DataBag.IsMultipleMethodThrowException = false;
+	                     throw e;
+	                 }
+                     return View();
+	            }
+	        }
+	    }
+	    return Redirect(ActivePages.ExpenseReportsInterface, new { typeView = "detail",id=DataBag.strExpenseReportId });
+	}
+	
+	/*
+     * Description: Method to check if the status is Inprogress or not
+     * Input      : lstExpenseReportObj: list of Expense Report from the page
+     * Output     : Rerenders the page and displays edit button when status is In Progress of Expense Report
+     */
+	public void CheckStatusInPogress(List<Force__Expense_Report__c> lstExpenseReportObj){
+	    foreach (var expenseReportObj in lstExpenseReportObj) {
+	        if (expenseReportObj.Status__c == "In Progress") {
+	            DataBag.IsStatusInProgress = true;
+	        }
+        }
+	}
+	/****************************************************************************************************************************************/
+	                                    /* Methods for Adding new Expenses to Expense Report*/
+	/****************************************************************************************************************************************/
+	/*
+    * Description: Method add Expense to existing Expense Report
+    * Input      : lstExpense : lst of Expense which have the values to be saved
+    * Output     : Redirects to the Page with updated values
+    */
+	[HttpPost]
+	public ActionResponse addExpense(List<Force__Expense__c> lstExpense) {
+	    //Clear the exception if any caused by other methods to revert the changes on Expense and display the row in edit
+        DataBag.Exception ="";
+        
+	    DataBag.IsActiveButtonOfExpense = true;
+	    Force__Expense__c ExpenseObj = new Force__Expense__c();
+	    lstExpense.Add(ExpenseObj);
+	    DataBag.lstExpense = lstExpense;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        SetExpenseRecordAsNonEditable(lstExpense);
+        
+		return View();
+	}
+	
+	/*
+    * Description: Method to Add Row for Expense
+    * Input      : lstExpense : list of Expense
+    * Output     : Add more rows for Expense
+    */
+	[HttpPost]
+	public ActionResponse AddMoreExpense(List<Force__Expense__c> lstExpense) {   
+	   
+	   //Clear the exception if any caused by other methods to revert the changes on Expense and display the row in edit
+        DataBag.Exception ="";
+        
+	   int count = 0;
+	   // For loop to add new rows for Expense
+       foreach (var ObjExpense in lstExpense)
+        {
+            // For loop to add new rows for Expense with specific fields
+            foreach (var field in DataBag.lstExpenseFields)
+            {
+                string val = Request["Expense__c$m$" + count.ToString() + "$." +  field];
+                
+                ObjExpense.Set(field, val);
+                
+            }
+            count++;
+        }
+	    
+	    Force__Expense__c  ObjExpenseNew = new Force__Expense__c();
+	    //Add new instance to the Expense list
+		lstExpense.Add(ObjExpenseNew);
+	    
+	    DataBag.lstExpense = lstExpense;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return View();
+	} 
+	
+	/*
+    * Description: Method to Remove Row for Expense
+    * Input      : lstExpense : list of Expense
+    * Output     : Remove the rows for Expense
+    */
+	[HttpPost]
+	public ActionResponse RemoveExpense(List<Force__Expense__c> lstExpense) {   
+	    //Clear the exception if any caused by other methods to revert the changes on Expense and display the row in edit
+        DataBag.Exception ="";
+	    if(lstExpense.Count>0){
+	        lstExpense.RemoveAt(lstExpense.Count-1);
+	    }
+	    
+	    if(lstExpense.Count==0){
+	       DataBag.IsActiveButtonOfExpense = false;
+	    }
+	    
+	    DataBag.lstExpense = lstExpense;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	     
+	}
+	
+	/*
+    * Description: Method to Save new Expense to existing Expense Report
+    * Input      : lstExpense : list of Expense
+    * Output     : Saves Expense to existing Expense Report
+    */
+	[HttpPost]
+	public ActionResponse SaveNewExpense(List<Force__Expense__c> lstExpense) {   
+	    
+	    int count = 0;
+	    
+	    foreach (var newExpenseObj in lstExpense)
+        {
+            foreach (var field in DataBag.lstExpenseFields)
+            {
+                string val = Request["Expense__c$m$" + count.ToString() + "$." +  field];
+                newExpenseObj.Set(field, val);
+            }
+             count++;
+        }
+        
+        foreach (var ExpenseObj in lstExpense) {
+           ExpenseObj.Expense_Report__c = DataBag.strExpenseReportId;
+        }
+        
+        try {
+            Insert(lstExpense);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        
+        DataBag.IsActiveButtonOfExpense = false;
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+       
+       return Redirect(ActivePages.ExpenseReportsInterface, new {typeView = "detail",id=DataBag.strExpenseReportId, scrollToOnLoad = DataBag.IdOfTheButton });
+	
+	}
+	
+	/*
+    * Description: Method to get existing Expense related to current existing Expense Report
+    * Input      : strExpenseFields : String of comma separated fields of Expense
+    */
+	public void getExpenseRecords(String strExpenseFields) {
+		// Start --Expenses Query Record Fetch and Create List of Fields to display 
+		string queryStrExpenses="SELECT";
+		string fixFieldsExpenses=" Id";
+		queryStrExpenses+= createQueryStringFields(fixFieldsExpenses,strExpenseFields,"Force__Expense__c");
+		queryStrExpenses+=" WHERE Expense_Report__c=\""+strExpenseReportId+"\"";
+		
+		//Assign the dynamic query to Expenses
+		List<Force__Expense__c> lstExistingExpense = new List<Force__Expense__c>();
+		lstExistingExpense = (List<Force__Expense__c>)Database.Query(queryStrExpenses);
+		
+		if(lstExistingExpense != null && lstExistingExpense.Count() > 0) {
+			
+			List<WrapperForExpenses> lstExpenseInWrapper = new List<WrapperForExpenses>();
+			
+			foreach(var iteratorExpense in lstExistingExpense) {
+			    
+			    List<Force__Expense__c> lstExpenseInWrappersTemp = new List<Force__Expense__c>();
+			    
+			    // Add  expenses to Wrapper list
+			    lstExpenseInWrappersTemp.Add(iteratorExpense);
+			    
+			    WrapperForExpenses wrapperInstance = new WrapperForExpenses();
+			    wrapperInstance.isEditable = false;
+			    wrapperInstance.isSelected = false;
+			    wrapperInstance.lstExpenseInWrapper = lstExpenseInWrappersTemp;
+			    
+			    lstExpenseInWrapper.Add(wrapperInstance);
+			}
+			
+			// Assign wrapper list to Existing Expense List
+			DataBag.lstExistingExpense = lstExpenseInWrapper;
+		}
+	}
+	
+    /*
+     * Description: Method to to open single row of Expense in Ediatble mode
+     * Input      : lstExpense: list of Expenses
+     * Output     : Rerenders the page and displays Expense row in editable format
+     */
+    [HttpPost]
+    public ActionResponse EditExpenseRecordRow(List<WrapperForExpenses> lstExistingExpense) {
+        
+        //Clear the exception if any caused by other methods to revert the changes on Expense and display the row in edit
+        DataBag.Exception ="";
+        
+        // Get Id of current editable row 
+        string valForExpense = Request["rowNumberOfCurrentRecord"];
+        
+        DataBag.ExpenseIdForEdit = valForExpense;
+        
+        foreach(var expenseForEdit in DataBag.lstExistingExpense) {
+            
+            if(valForExpense == expenseForEdit.lstExpenseInWrapper[0].Id) {
+                
+                // Assign Editable value true to open that row in editable mode
+	            expenseForEdit.isEditable = true;
+	        }else{
+	            expenseForEdit.isEditable = false;
+	        }
+        }
+        // Call this method to Reinitialise expense Section when 'Edit' link is click
+        ReinitialiseNewExpenseSection(DataBag.lstExistingExpense);
+        
+        getScrollValue();
+        
+        return View();
+    }
+    
+    /*
+     * Description: Method to save the Expense record for a selected row
+     * Input      : lstExpense : list of expense
+     * Output     : Rerenders the page and displays Expense row in non-editable format and saves the record
+     */
+    [HttpPost]
+	public ActionResponse SaveExistingExpenseAfterEditRow(List<WrapperForExpenses> lstExistingExpense){
+	    int count = 0;  
+	    // Get Id of current editable row 
+	    string valForExpense = Request["rowNumberOfCurrentRecord"];
+	      
+	    //Fetch the Expense record with the Expense Id retrived from the page
+	   	Force__Expense__c expenseObj = Database.Query<Force__Expense__c>()
+                                               .Where(f=>(f.Id == valForExpense))
+                                               .First();
+        
+        //Iterate on the list of Expense and check for the Id. If Id is present then update the record                                     
+        foreach(var expenseForEdit in DataBag.lstExistingExpense) {
+            
+            if(valForExpense == expenseForEdit.lstExpenseInWrapper[0].Id) {
+                
+                foreach(var expenseField in DataBag.lstExpenseFields) {
+                    
+                    string val = Request["Expense__c$m$" + count.ToString() + "$." +  expenseField];
+                    
+                    expenseObj.Set(expenseField, val);
+                    // To show the updated Expense record on page 
+                    expenseForEdit.lstExpenseInWrapper[0].Set(expenseField, val);
+                    
+                }
+            } 
+        }
+        try {
+            Edit(expenseObj);
+            DataBag.Exception = "";
+            foreach(var expenseForEdit in DataBag.lstExistingExpense) {
+            
+                if(valForExpense == expenseForEdit.lstExpenseInWrapper[0].Id) {
+                    
+                    //Set the expense row on the page in non-editable format
+    	            expenseForEdit.isEditable = false;
+                } 
+            }
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+           
+        return View();
+	      
+	}
+	
+	 /*
+     * Description: Method to Cancel the Expense record for a selected row
+     * Input      : 
+     * Output     : Rerenders the page and displays Expense row in non-editable format
+     */
+    [HttpPost]
+	public ActionResponse CancelExistingExpenseAfterEditRow(List<WrapperForExpenses> lstExistingExpense) {
+	    
+	    //Clear the exception if any caused by other methods to revert the changes on Expense
+	    DataBag.Exception =""; 
+	    
+	    // Get Id of current editable row 
+	    string valForExpense = Request["rowNumberOfCurrentRecord"];
+	    
+	    DataBag.ExpenseIdForEdit = "";
+	    
+	    //Set the Expense row in non-editable format whose Id is fetched from the page
+	    foreach(var expenseRecord in DataBag.lstExistingExpense){
+	        
+	        if(valForExpense == expenseRecord.lstExpenseInWrapper[0].Id){
+	           
+	            expenseRecord.isEditable = false;
+	        }
+	    }
+	    getScrollValue();
+	    
+        return View();
+	}
+	
+	/*
+     * Description: Method to Reinitialise Expense Section when 'Edit' link is click
+     * Input      : lstExpense : list of Expense
+     * Output     : 
+     */
+	[HttpPost]
+    public void ReinitialiseNewExpenseSection(List<WrapperForExpenses> lstExistingExpense) {
+        
+        DataBag.lstExpense = new List<Force__Expense__c>();
+        
+        DataBag.IsActiveButtonOfExpense = false;
+        
+    }
+    
+    /*
+     * Description: Method to set all records in non-ediatable mode when 'Add Expense' button is clicked
+     * Input      : lstExpense : list of Expense
+     * Output     : 
+     */
+    [HttpPost]
+    public void SetExpenseRecordAsNonEditable(List<Force__Expense__c> lstExpense) {
+        
+        foreach(var expenseRecord in DataBag.lstExistingExpense) {
+        
+            expenseRecord.isEditable = false;
+        }
+    }
+	/******************************************End of Methods for Adding new Expense to Expense Report*******************************************/
+	
+	
+	/*******************************************************************************************************************************************/
+	                                        /* Methods for Adding new Mileage to Expense Report*/
+	/*******************************************************************************************************************************************/
+	/*
+    * Description: Method add Mileage to existing Expense Report
+    * Input      : lstMileage : lst of Mileage which have the values to be saved
+    * Output     : Redirects to the Page with updated values
+    */
+	[HttpPost]
+	public ActionResponse addMileage(List<Force__Mileage__c> lstMileage)
+	{
+	    //Clear the exception if any caused by other methods to revert the changes on Expense
+	    DataBag.Exception =""; 
+	    
+	    DataBag.IsActiveButtonOfMileage = true;
+	    Force__Mileage__c MileageObj = new Force__Mileage__c();
+	    lstMileage.Add(MileageObj);
+	    DataBag.lstMileage = lstMileage;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        SetMileageRecordAsNonEditable(lstMileage);
+        
+		return View();
+	}
+	
+	/*
+    * Description: Method to Add Row for Mileage
+    * Input      : lstMileage : list of Mileage
+    * Output     : Add more rows for Mileage
+    */
+	[HttpPost]
+	public ActionResponse AddMoreMileage(List<Force__Mileage__c> lstMileage)
+	{   
+	   //Clear the exception if any caused by other methods to revert the changes on Expense
+	    DataBag.Exception =""; 
+	    
+	   int count = 0;
+	   // For loop to add new rows for Mileage
+       foreach (var ObjMileage in lstMileage)
+        {
+            // For loop to add new rows for Mileage with specific fields
+            foreach (var field in DataBag.lstMileageFields) {
+                
+                string val = Request["Mileage__c$m$" + count.ToString() + "$." +  field];
+                
+                ObjMileage.Set(field, val);
+                
+            }
+            count++;
+        }
+	    
+	    Force__Mileage__c  ObjMileageNew = new Force__Mileage__c();
+	    //Add new instance to the Mileage list
+		lstMileage.Add(ObjMileageNew);
+	    
+	    DataBag.lstMileage = lstMileage;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	} 
+	
+	/*
+    * Description: Method to Remove Row for Mileage
+    * Input      : lstMileage : list of Mileage
+    * Output     : Remove the rows for Expense
+    */
+	[HttpPost]
+	public ActionResponse RemoveMileage(List<Force__Mileage__c> lstMileage)
+	{   
+	    //Clear the exception if any caused by other methods to revert the changes on Expense
+	    DataBag.Exception =""; 
+	    
+	    if(lstMileage.Count>0){
+	        lstMileage.RemoveAt(lstMileage.Count-1);
+	    }
+	    
+	    if(lstMileage.Count==0){
+	        DataBag.IsActiveButtonOfMileage = false;
+	    }
+	    
+	    DataBag.lstMileage = lstMileage;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	     
+	}
+	
+	/*
+    * Description: Method to Save new Mileage to existing Expense Report
+    * Input      : lstMileage : list of Mileage
+    * Output     : Saves Mileage to existing Expense Report
+    */
+	[HttpPost]
+	public ActionResponse SaveNewMileage(List<Force__Mileage__c> lstMileage)
+	{   
+	    int count = 0;
+	    foreach (var newMileageObj in lstMileage)
+        {
+            foreach (var field in DataBag.lstMileageFields)
+            {
+                string val = Request["Mileage__c$m$" + count.ToString() + "$." +  field];
+                newMileageObj.Set(field, val);
+                   
+            }
+             count++;
+        }
+        
+        foreach (var MileageObj in lstMileage) {
+           MileageObj.Expense_Report__c = DataBag.strExpenseReportId;
+        }
+        
+        try {
+            Insert(lstMileage);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        DataBag.IsActiveButtonOfMileage = false;
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        return Redirect(ActivePages.ExpenseReportsInterface, new {typeView = "detail",id=DataBag.strExpenseReportId, scrollToOnLoad = DataBag.IdOfTheButton });
+	}
+	
+	/*
+    * Description: Method to get existing Mileage related to current existing Expense Report
+    * Input      : strMileageFields : String of comma separated fields of Mileage
+    */
+	public void getMileageRecords(String strMileageFields){
+		// Start --Mileage Query Record Fetch and Create List of Fields to display 
+		string queryStrMileages="SELECT";
+		string fixFieldsMileage=" Id";
+		queryStrMileages+= createQueryStringFields(fixFieldsMileage,strMileageFields,"Force__Mileage__c");
+		queryStrMileages+=" WHERE Expense_Report__c=\""+strExpenseReportId+"\"";
+		
+		List<Force__Mileage__c> lstExistingMileage = new List<Force__Mileage__c>();
+        
+        //Assign the dynamic query to Mileage
+		lstExistingMileage = (List<Force__Mileage__c>)Database.Query(queryStrMileages);
+		
+		if(lstExistingMileage != null && lstExistingMileage.Count() > 0) {
+			
+			List<WrapperForMileage> lstMileageInWrapper = new List<WrapperForMileage>();
+			
+			foreach(var iteratorMileage in lstExistingMileage) {
+			    
+			    List<Force__Mileage__c> lstWrapperMileageTemp = new List<Force__Mileage__c>();
+			    
+			    // Add  mileage to Wrapper list
+			    lstWrapperMileageTemp.Add(iteratorMileage);
+			    
+			    WrapperForMileage wrapperInstance = new WrapperForMileage();
+			    wrapperInstance.isEditable = false;
+			    wrapperInstance.isSelected = false;
+			    wrapperInstance.lstMileageInWrapper = lstWrapperMileageTemp;
+			    
+			    lstMileageInWrapper.Add(wrapperInstance);
+			}
+			// Assign wrapper list to Existing Mileage List
+			DataBag.lstExistingMileage = lstMileageInWrapper;
+		}
+	}
+	
+	/*
+     * Description: Method to to open single row of Mileage in Ediatble mode
+     * Input      : lstMileage: list of Mileage
+     * Output     : Rerenders the page and displays Mileage row in editable format
+     */
+	[HttpPost]
+    public ActionResponse EditMileageRecordRow(List<WrapperForMileage> lstExistingMileage) {
+       
+        //Clear the exception if any caused by other methods to revert the changes on Mileage and display the row in edit
+        DataBag.Exception ="";
+        
+        // Get Id of current editable row 
+        string valForMileage = Request["rowNumberOfCurrentMileageRecord"];
+        
+        DataBag.MileageIdForEdit = valForMileage;
+        
+        foreach(var mileageForEdit in DataBag.lstExistingMileage) {
+            
+            if(valForMileage == mileageForEdit.lstMileageInWrapper[0].Id) {
+                
+                // Assign Editable value true to open that row in editable mode
+	            mileageForEdit.isEditable = true;
+	        }else{
+	            mileageForEdit.isEditable = false;
+	        }
+        }
+        // Call this method to Reinitialise Mileage Section when 'Edit' link is click 
+        ReinitialiseNewMileageSection(DataBag.lstExistingMileage);
+        
+        getScrollValue();
+
+        return View();
+    }
+    
+    /*
+     * Description: Method to save the Mileage record for a selected row
+     * Input      : lstMileage : list of Mileage
+     * Output     : Rerenders the page and displays Mileage row in non-editable format and saves the record
+     */
+    [HttpPost]
+	public ActionResponse SaveExistingMileageAfterEditRow(List<WrapperForMileage> lstExistingMileage){
+	    int count = 0;  
+	    
+	    // Get Id of current editable row 
+	    string valForMileage = Request["rowNumberOfCurrentMileageRecord"];
+	      
+	    //Fetch the Expense record with the Expense Id retrived from the page
+	   	Force__Mileage__c mileageObj = Database.Query<Force__Mileage__c>()
+                                               .Where(f=>(f.Id == valForMileage))
+                                               .First();
+        
+        //Iterate on the list of Expense and check for the Id. If Id is present then update the record                                     
+        foreach(var mileageForEdit in DataBag.lstExistingMileage) {
+            
+            if(valForMileage == mileageForEdit.lstMileageInWrapper[0].Id) {
+                
+                foreach(var mileageField in DataBag.lstMileageFields) {
+                    
+                    string val = Request["Mileage__c$m$" + count.ToString() + "$." +  mileageField];
+                    
+                    mileageObj.Set(mileageField, val);
+                    // To show the updated Expense record on page 
+                    mileageForEdit.lstMileageInWrapper[0].Set(mileageField, val);
+                    
+                }
+            } 
+        }
+        try {
+            Edit(mileageObj);
+            DataBag.Exception = "";
+            foreach(var mileageForEdit in DataBag.lstExistingMileage) {
+            
+                if(valForMileage == mileageForEdit.lstMileageInWrapper[0].Id) {
+                    
+                    //Set the expense row on the page in non-editable format
+    	            mileageForEdit.isEditable = false;
+                } 
+            }
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+            
+        return View();
+	}
+	
+	/*
+     * Description: Method to Cancel the Mileage record for a selected row
+     * Input      : 
+     * Output     : Rerenders the page and displays Mileage row in non-editable format
+     */
+    [HttpPost]
+	public ActionResponse CancelExistingMileageAfterEditRow(List<WrapperForMileage> lstExistingMileage) {
+	    
+	     //Clear the exception if any caused by other methods to revert the changes on Mileage 
+        DataBag.Exception ="";
+        
+	    // Get Id of current editable row
+	    string valForMileage = Request["rowNumberOfCurrentMileageRecord"];
+	    
+	    DataBag.MileageIdForEdit = "";
+	    
+	    //Set the Expense row in non-editable format whose Id is fetched from the page
+	    foreach(var mileageRecord in DataBag.lstExistingMileage){
+	        
+	        if(valForMileage == mileageRecord.lstMileageInWrapper[0].Id){
+	            mileageRecord.isEditable = false;
+	        }
+	    }
+	    getScrollValue();
+	    
+        return View();
+	}
+	
+	/*
+     * Description: Method to Reinitialise Mileage Section when 'Edit' link is click
+     * Input      : lstMileage : list of Mileage
+     * Output     : 
+     */
+	[HttpPost]
+    public void ReinitialiseNewMileageSection(List<WrapperForMileage> lstExistingMileage) {
+        
+        DataBag.lstMileage = new List<Force__Mileage__c>();
+        
+        DataBag.IsActiveButtonOfMileage = false;
+        
+    }
+    
+    /*
+     * Description: Method to set all records in non-ediatable mode when 'Add Mileage' button is clicked
+     * Input      : lstExpense : list of Mileage
+     * Output     : Rerenders the page and displays Mileage row in non-editable format
+     */
+    [HttpPost]
+    public void SetMileageRecordAsNonEditable(List<Force__Mileage__c> lstMileage) {
+        
+        foreach(var mileageRecord in DataBag.lstExistingMileage) {
+        
+            mileageRecord.isEditable = false;
+        }
+    }
+	/******************************************End of Methods for Adding new Mileage to Expense Report*******************************************/
+	
+	/*
+    * Description: Method to get the scroll position
+    * Output     : Stores the scroll value
+    */
+	[HttpPost]
+	public ActionResponse getScrollValue()
+	{   
+	    DataBag.IdOfTheButton = Request["scrollIdName"];
+	    return View();
+	}
+	
+	/*
+     * Description: Method to check if the status is not 'Submitted'
+     * Input      : lstExpenseReportObj: list of Expense Report from the page
+     * Output     : Rerenders the page and displays Edit and other buttons when status is other than 'Submitted'
+     */
+	public void CheckStatusSubmitted( List<Force__Expense_Report__c> lstExpenseReportObj){
+	    foreach (var expenseReportObj in lstExpenseReportObj) {
+	        if(string.Equals(expenseReportObj.Status__c, strExpenseReportStatusSubmitted,  StringComparison.OrdinalIgnoreCase)){
+	            DataBag.IsStatusSubmitted = true;
+	        }
+        }
+	}
+	
+	/*
+     * Description: Method to save the Expense Report, Expenses and Mileages
+     * Input      : lstExpenseReportObj : list of Expense Report which have the updated values, lstExpense : list of Expense, lstMileage : list of Mileage
+     * Output     : Redirects to Expense Report tab
+     */
+	[HttpPost]
+	public ActionResponse SaveERWithExpensesAndMileages(List<Force__Expense_Report__c> lstExpenseReportObj, 
+	                                                    List<Force__Expense__c> lstExpense, List<WrapperForMileage> lstExistingMileage,
+	                                                    List<Force__Mileage__c> lstMileage, List<WrapperForExpenses> lstExistingExpense) {
+	    
+	    try{
+	        
+	        DataBag.IsMultipleMethodThrowException = true;
+	        SaveExpenseReport(lstExpenseReportObj);
+	        lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+    	    
+    	    SaveNewExpense(lstExpense);
+    	    SaveExistingExpenseAfterEditRow(DataBag.lstExistingExpense);
+    	    
+    	    SaveNewMileage(lstMileage);
+    	    SaveExistingMileageAfterEditRow(DataBag.lstExistingMileage);
+    	    
+    	    SaveSupervisorSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            SaveDirectorSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            SaveStaffSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            DataBag.IsMultipleMethodThrowException = false;
+            
+        }
+	    catch(Exception e){
+	        DataBag.Exception = e.Message;
+            return View();
+	    }
+	    
+	    return Redirect("/Force/Force__Expense_Report__c/index");
+	}
+	
+	/*
+     * Description: Method to save the Expense Report, Expenses and Mileages
+     * Input      : lstExpenseReportObj : lst of Expense Report which have the updated values, lstExpense : list of Expense, lstMileage : list of Mileage
+     * Output     : Redirects to Expense Report tab
+     */
+	[HttpPost]
+	public ActionResponse SaveERCompleteWithExpensesAndMileages(List<Force__Expense_Report__c> lstExpenseReportObj, 
+	                                                            List<Force__Expense__c> lstExpense, List<WrapperForMileage> lstExistingMileage,
+	                                                            List<Force__Mileage__c> lstMileage, List<WrapperForExpenses> lstExistingExpense) {
+	    
+	    try{
+	        DataBag.IsMultipleMethodThrowException = true;
+	        
+	        SaveExpenseReport(lstExpenseReportObj);
+    	    lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+    	    
+    	    SaveNewExpense(lstExpense);
+    	    SaveExistingExpenseAfterEditRow(DataBag.lstExistingExpense);
+    	    SaveNewMileage(lstMileage);
+    	    SaveExistingMileageAfterEditRow(DataBag.lstExistingMileage);
+    	    
+    	    lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+    	    SaveSupervisorSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            SaveDirectorSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            SaveStaffSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            UpdateStatusToCompleteForExpenseReport(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            
+            DataBag.IsMultipleMethodThrowException = false;
+            
+            if(DataBag.Exception == ""){
+                return Redirect(ActivePages.ExpenseReportsInterface, new {typeView = "detail",id=DataBag.strExpenseReportId});
+            }
+            else{
+                return View();
+            }
+	    }
+	    catch(Exception e){
+	        DataBag.Exception = e.Message;
+            return View();
+	    }
+	    return View();
+	}
+	
+	/*
+    * Description: Method to update status as 'Submitted' for Expense Report 
+    * Input      : lstExpenseReportObj : lst of Expense Report which have the updated values
+    * Output     : Redirects to same page
+    */
+	[HttpPost]
+	public ActionResponse UpdateStatusToCompleteForExpenseReport(List<Force__Expense_Report__c> lstExpenseReportObj) {
+	    
+	    if(lstExpenseReportObj.Count > 0) {
+	        
+	        lstExpenseReportObj[0].Status__c = strExpenseReportStatusSubmitted;
+
+	        if(string.IsNullOrEmpty(lstExpenseReportObj[0].Id)) {
+	            try{
+	                Insert(lstExpenseReportObj);
+	                DataBag.Exception = "";
+	            }
+	            catch(Exception e){
+	                DataBag.Exception = e.Message;
+	                if(DataBag.IsMultipleMethodThrowException == true){
+                        throw e;
+                    }
+                    return View();
+	            }
+	            DataBag.strExpenseReportId = lstExpenseReportObj[0].Id;
+	        }
+	        else {
+	            if(DataBag.strExpenseReportTypeView == "detail"){
+	                string queryStr = "SELECT Id, Staff_Member_Employee__c,Start_Date__c,End_Date__c,Total_from_Expenses__c,Total_Mileage__c,Status__c From Force__Expense_Report__c WHERE Id=\""+lstExpenseReportObj[0].Id+"\" LIMIT 1";
+	                lstExpenseReportObj = (List<Force__Expense_Report__c>)Database.Query(queryStr);
+	                lstExpenseReportObj[0].Set("Status__c",strExpenseReportStatusSubmitted);
+	               
+	            }
+	            try{
+	                Edit(lstExpenseReportObj);
+	                DataBag.Exception = "";
+	            }
+	            catch(Exception e){
+	                DataBag.Exception = e.Message;
+	                if(DataBag.IsMultipleMethodThrowException == true){
+	                    DataBag.IsMultipleMethodThrowException = false;
+                        throw e;
+                    }
+                     return View();
+	            }
+	        }
+	    }
+	    return View();
+	}
+	
+	/*
+    * Description: Method to show single Row for receipt upload
+    * Input      : lstNewUploadReceipt : list of file uplaod attachment
+    * Output     : show the single row for receipt upload
+    */
+	[HttpPost]
+	public ActionResponse ShowReceiptUploadRow(List<Force__Attachment> lstNewUploadReceipt)
+	{   
+        Force__Attachment ObjNewFileUpload = new Force__Attachment();
+        
+	    //Add new instance to the file upload list
+		lstNewUploadReceipt.Add(ObjNewFileUpload);
+	    
+		DataBag.lstNewUploadReceipt = lstNewUploadReceipt;
+		
+        return View();
+	}
+	
+	/*
+    * Description: Method to save uploaded receipt
+    * Input      : lstNewUploadReceipt : list of file uplaod attachment
+    * Output     : save uploaded receipt
+    */
+	[HttpPost]
+	public ActionResponse SaveUploadedReceipt()
+	{   
+	    List<Force__Attachment> lstNewUploadReceipt =new List<Force__Attachment>();
+	    
+	    for (int i = 0; i < Request.Files.Count; i++)
+        {
+            HttpPostedFile uploadedFile = Request.Files[i];
+           // if (uploadedFile.ContentLength > 0)
+            {
+                Force__Attachment objAttachment = new Force__Attachment();
+        		objAttachment.Name =   uploadedFile.FileName;
+                objAttachment.Body = Convert.ToBase64String(uploadedFile.FileBytes());
+                objAttachment.ParentId = DataBag.strExpenseReportId;
+                objAttachment.ContentType = uploadedFile.ContentType;
+                lstNewUploadReceipt.Add(objAttachment);
+            }
+        }
+        
+        if(lstNewUploadReceipt.Count > 0) {
+            try{
+               Insert(lstNewUploadReceipt);
+               DataBag.Exception = "";
+            }
+            catch(Exception e){
+                 DataBag.Exception = e.Message;
+                 // Call this method to access records of Attachment related to expense report, to show the records that got uploaded
+        		 DataBag.lstAttachmentObj = getAttachments(DataBag.strAttachmentFields);
+                 return View();
+            }
+        }
+	    
+	    DataBag.IsSuccessMultipleReceiptUpload = "true";
+	    
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+       
+        return View();
+	}
+	
+	/*
+    * Description: Method to Redirect to same page
+    */
+	[HttpPost]
+	public ActionResponse RedirectToExpenseReport() {
+	    return Redirect(ActivePages.ExpenseReportsInterface, new {typeView = "detail",id=DataBag.strExpenseReportId });
+	}
+	
+	/*
+    * Description: Method to to get all Attachment related to Expense report
+    * Input      : Id(string) of Attachment Fields
+    * Output     : List of Attachment
+    */
+	public List<Force__Attachment> getAttachments(string strAttachmentFields) 
+	{
+    	//Start --Attachment Query Record Fetch and Create List of Fields to display 
+        string queryStr="SELECT";
+        string fixFieldsAttachment=" Id";
+        queryStr+= createQueryStringFields(fixFieldsAttachment,strAttachmentFields,"Force__Attachment");
+        queryStr+=" WHERE ParentId=\""+DataBag.strExpenseReportId+"\"";
+        
+        //Assign the dynamic query to the Attachment
+        List<Force__Attachment> lstAttachmentobj = new List<Force__Attachment>();
+        lstAttachmentobj = (List<Force__Attachment>)Database.Query(queryStr);
+        return lstAttachmentobj;
+	}
+	
+	//Wrapper Class for Expenses
+    public class WrapperForExpenses{
+        public bool isEditable {get;set;}
+        public bool isSelected {get;set;}
+        public List<Force__Expense__c> lstExpenseInWrapper{get; set;}
+    }
+    
+    //Wrapper Class for Mileage
+    public class WrapperForMileage{
+        public bool isEditable {get;set;}
+        public bool isSelected {get;set;}
+        public List<Force__Mileage__c> lstMileageInWrapper{get; set;}
+    }
+    
+    /*
+    * Description: Method to get Contact Id of current magentrix login User
+    * Output : Id(String) of Contact
+    */
+	public void getStaffContactId() 
+	{
+	    List<User> lstUser = new List<User>();
+	    List<Force__Contact> lstContact = new List<Force__Contact>();
+	    var CurrentUserId = Database.Retrieve(SystemInfo.UserId).Id;
+	    string queryStr="SELECT Id, ContactId From User Where Id =\""+CurrentUserId+"\"";
+	    lstUser = (List<User>)Database.Query(queryStr);
+	    
+	    if (lstUser.Count >0) {
+	        if(!string.IsNullOrEmpty(lstUser[0].ContactId)) {
+	            string queryContactStr = "SELECT Id, Name From Force__Contact Where Id =\""+lstUser[0].ContactId+"\"";
+	            lstContact = (List<Force__Contact>)Database.Query(queryContactStr);
+	            if (lstContact.Count >0 && !string.IsNullOrEmpty(lstContact[0].Name)){
+	                DataBag.strUserContactName = lstContact[0].Name;
+	            }
+	        }
+	    }
+	}
+	
+	/*
+    * Description: Method to get the contact name of the Staff Member Employee
+    */
+	public void getStaffMemberEmployeeContactName() 
+	{
+	    List<Force__Contact> lstContact = new List<Force__Contact>();
+	    string StrStaffMemberEmployee = DataBag.lstExpenseReportObj[0].Staff_Member_Employee__c;
+	    if(!string.IsNullOrEmpty(StrStaffMemberEmployee)) {
+            
+            lstContact = Database.Query<Force__Contact>(a => a.Id == StrStaffMemberEmployee).Select(f => new { f.Id, f.Name })
+                                                         .ToListAsAdmin();
+                                                         
+            if (lstContact.Count >0 && !string.IsNullOrEmpty(lstContact[0].Name)){
+                DataBag.strStaffMemberEmployeeContactName = lstContact[0].Name;
+            }
+	    }
+	}
+    
+    /*
+    * Description: Method to save the signature on Expense Report object
+    * Input      : lstExpenseReportObj : list of Expense report which have the updated values
+    * Output     : save the signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveDirectorSignature(List<Force__Expense_Report__c> lstExpenseReportObj){
+        
+        foreach (var expenseReportSignObj in lstExpenseReportObj)
+        {
+            //Stored the value of Director signature
+            string DirectorSignval = Request["DirectorSignToUpdateExpenseReport"];
+            
+            //Check whether the Director Signature is Blank or Not
+            bool checkDirectorSignatureVal = checkTheSignatureValue(DirectorSignval);
+            
+            if(CustomLabels.ISP_RoleForDirectorSignatures.Equals(UserInfo.Role.Name)) {
+                if(checkDirectorSignatureVal == false){
+                    expenseReportSignObj.Set("Director_Signature__c","");
+                    expenseReportSignObj.Set("Director_Signed_Date__c", "");
+                    expenseReportSignObj.Set("Director_Signee_Name__c", "");
+                }
+                else{
+                    // To check if the existing and new signatures are not same then change the date and signed by
+                    if(expenseReportSignObj.Director_Signature__c != DirectorSignval) {
+                        expenseReportSignObj.Set("Director_Signed_Date__c", DateTime.Today);
+                        expenseReportSignObj.Set("Director_Signee_Name__c", DataBag.strUserContactName);   
+                    }
+                    expenseReportSignObj.Set("Director_Signature__c", DirectorSignval);
+                }
+            }
+        }
+        
+        try {
+            Edit(lstExpenseReportObj);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        
+	    return Redirect(ActivePages.ExpenseReportsInterface, new { typeView = "detail",id=DataBag.strExpenseReportId });
+	}
+	
+	/*
+    * Description: Method to save the signature on Expense Report object
+    * Input      : lstExpenseReportObj : list of Expense report which have the updated values
+    * Output     : save the signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveSupervisorSignature(List<Force__Expense_Report__c> lstExpenseReportObj){
+        
+        foreach (var expenseReportSignObj in lstExpenseReportObj)
+        {
+            //Stored the value of Supervisor signature
+            string SupervisorSignval = Request["SupervisorSignToUpdateExpenseReport"];
+            
+            //Check whether the Supervisor Signature is Blank or Not
+            bool checkSupervisorSignatureVal = checkTheSignatureValue(SupervisorSignval);
+            
+            if(CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)
+                || CustomLabels.ISP_RoleForDirectorSignatures.Equals(UserInfo.Role.Name)) {
+                if(checkSupervisorSignatureVal == false){
+                    expenseReportSignObj.Set("Supervisor_Signature__c","");
+                    expenseReportSignObj.Set("Supervisor_Signed_Date__c", "");
+                    expenseReportSignObj.Set("Supervisor_Signee_Name__c", "");
+                }
+                else{
+                    // To check if the existing and new signatures are not same then change the date and signed by
+                    if(expenseReportSignObj.Supervisor_Signature__c != SupervisorSignval) {
+                        expenseReportSignObj.Set("Supervisor_Signed_Date__c", DateTime.Today);
+                        expenseReportSignObj.Set("Supervisor_Signee_Name__c", DataBag.strUserContactName);   
+                    }
+                    expenseReportSignObj.Set("Supervisor_Signature__c", SupervisorSignval);
+                }
+            }
+        }
+        
+        try {
+            Edit(lstExpenseReportObj);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        
+	    return Redirect(ActivePages.ExpenseReportsInterface, new { typeView = "detail",id=DataBag.strExpenseReportId });
+	}
+	
+	/*
+    * Description: Method to save the Staff signature on Expense Report object
+    * Input      : lstExpenseReportObj : list of Expense report which have the updated values
+    * Output     : save the Staff signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveStaffSignature(List<Force__Expense_Report__c> lstExpenseReportObj){
+        
+        foreach (var expenseReportSignObj in lstExpenseReportObj)
+        {
+            //Stored the value of Staff signature
+            string StaffSignval    = Request["StaffSignToUpdateExpenseReport"];
+            
+            //Check whether the Staff Signature is Blank or Not
+            bool checkStaffSignatureVal = checkTheSignatureValue(StaffSignval);
+            
+            if (CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)
+                || CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)
+                || CustomLabels.ISP_RoleForDirectorSignatures.Equals(UserInfo.Role.Name)) {
+                if(checkStaffSignatureVal == false){
+                    expenseReportSignObj.Set("Staff_Signature__c", "");
+                    expenseReportSignObj.Set("Staff_Signed_Date__c","");
+                    expenseReportSignObj.Set("Staff_Signee_Name__c", "");
+                }
+                else{
+                    // To check if the existing and new signatures are not same then change the date and signed by when logged as different profiles
+                    if(expenseReportSignObj.Staff_Signature__c != StaffSignval) {
+                        expenseReportSignObj.Set("Staff_Signed_Date__c", DateTime.Today);
+                        expenseReportSignObj.Set("Staff_Signee_Name__c", DataBag.strUserContactName);
+                    }
+                    expenseReportSignObj.Set("Staff_Signature__c", StaffSignval);
+                }
+            }
+            
+        }
+        try {
+            Edit(lstExpenseReportObj);
+            DataBag.Exception = "";
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            
+            //set the blank if signature contain error while saving 
+            List<Force__Expense_Report__c> lstOfExpenseReport = new List<Force__Expense_Report__c>();
+            lstOfExpenseReport = getExpenseReport(DataBag.strExpenseReportId);
+            foreach (var expenseReportObj in lstOfExpenseReport)
+            {
+                DataBag.lstExpenseReportObj[0].Set("Staff_Signature__c",expenseReportObj.Get("Staff_Signature__c"));
+            }    
+            
+            if(DataBag.IsMultipleMethodThrowException == true){
+                DataBag.IsMultipleMethodThrowException = false;
+                throw e;
+            }
+            return View();
+        }
+        
+	    return Redirect(ActivePages.ExpenseReportsInterface, new { typeView = "detail",id=DataBag.strExpenseReportId });
+	}
+	
+	/*
+    * Description: Method to save the all signature on Expense Report object by director profile
+    * Input      : lstExpenseReportObj : list of Expense report which have the updated values
+    * Output     : save the all signature on Expense Report object by director profile
+    */
+    [HttpPost]
+    public ActionResponse SaveSignatureSectionByDirector(List<Force__Expense_Report__c> lstExpenseReportObj){
+        try{
+            DataBag.IsMultipleMethodThrowException = true;
+            
+            SaveStaffSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            SaveSupervisorSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            SaveDirectorSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            
+            DataBag.lstExpenseReportObj=lstExpenseReportObj;
+            
+            DataBag.IsMultipleMethodThrowException = false;
+        }
+        catch(Exception e){
+	        DataBag.Exception = e.Message;
+            return View();
+	    }
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to save the all staff and supervisor signature on Expense Report object by supervisor profile
+    * Input      : lstExpenseReportObj : list of Expense report which have the updated values
+    * Output     : save the all staff and supervisor signature on Expense Report object by supervisor profile
+    */
+    [HttpPost]
+    public ActionResponse SaveSignatureSectionBySupervisor(List<Force__Expense_Report__c> lstExpenseReportObj){
+        try{
+            DataBag.IsMultipleMethodThrowException = true;
+            
+            SaveStaffSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            SaveSupervisorSignature(lstExpenseReportObj);
+            lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+            
+            DataBag.lstExpenseReportObj=lstExpenseReportObj;
+            
+            DataBag.IsMultipleMethodThrowException = false;
+        }
+        catch(Exception e){
+	        DataBag.Exception = e.Message;
+            return View();
+	    }
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to save the supervisor signature and save expense and mileage both
+    * Input      : lstExpenseReportObj : list of Expense report which have the updated values
+    * Output     : Method to save the supervisor signature and save expense and mileage both
+    */
+    [HttpPost]
+    public ActionResponse SaveAndApproveAlongWithSupervisorSignature(List<Force__Expense_Report__c> lstExpenseReportObj,
+                                                                     List<WrapperForMileage> lstExistingMileage,List<WrapperForExpenses> lstExistingExpense){
+        SaveSupervisorSignature(lstExpenseReportObj);
+        lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+        SaveAndApproveExpenseAndMileage(lstExistingMileage,lstExistingExpense,lstExpenseReportObj);
+        lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+        
+        DataBag.lstExpenseReportObj=lstExpenseReportObj;
+        
+        //if there are no errors reload the page completely else return the same view
+        if(DataBag.Exception == ""){
+            return Redirect(ActivePages.ExpenseReportsInterface, new {typeView = "detail",id=DataBag.strExpenseReportId });
+        }
+        else{
+            return View();
+        }
+    }
+    
+	/*
+    * Description: Method to check the value of the signature is blank or not
+    * Input      : signatureVal: The signature for which the value needs to be checked
+    * Output     : boolean true: if it the signature is blank and false: if not
+    */
+    public bool checkTheSignatureValue(string signatureVal){
+        int firstIndexValues         = signatureVal.IndexOf('[');
+        int lastIndexValues          = signatureVal.LastIndexOf(']');
+        int lengthOfStrSupervisorSig = lastIndexValues - firstIndexValues + 1;
+    
+        string subStringOfSignVal = signatureVal.Substring(firstIndexValues+1,lengthOfStrSupervisorSig-2);
+        if(!string.IsNullOrEmpty(subStringOfSignVal)){
+            return true;
+        }
+        return false;
+    }
+    
+    /*
+    * Description: Method to Approve Expenses
+    * Input      : lstExistingExpense : list of Expense report which have the updated values
+    * Output     : Approve Expenses
+    */
+    [HttpPost]
+    public ActionResponse ApproveExpenses(List<WrapperForExpenses> lstExistingExpense){
+        
+        int RowCount = 0;
+        
+        List<Force__Expense__c> lstExpenseToApprove = new List<Force__Expense__c>();
+        foreach(var expenseForApprove in DataBag.lstExistingExpense) {
+            
+            string valForExpenseCheckbox = Request["ExpenseCheckbox"+RowCount];
+            
+            if(string.Equals(valForExpenseCheckbox,"on")) {
+               expenseForApprove.lstExpenseInWrapper[0].Set("Expense_Status__c", "Approved");
+               lstExpenseToApprove.Add(expenseForApprove.lstExpenseInWrapper[0]);
+            }
+            RowCount=RowCount+1;
+        }
+        
+        try{
+           Edit(lstExpenseToApprove);
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        return View();
+    }
+    
+    /*
+    * Description: Method to Reject Expenses
+    * Input      : lstExistingExpense : list of Expense report which have the updated values
+    * Output     : Reject Expenses
+    */
+    [HttpPost]
+    public ActionResponse RejectExpenses(List<WrapperForExpenses> lstExistingExpense){
+        
+        int RowCount = 0;
+        
+        List<Force__Expense__c> lstExpenseToReject = new List<Force__Expense__c>();
+        foreach(var expenseForReject in DataBag.lstExistingExpense) {
+            
+            string valForExpenseCheckbox = Request["ExpenseCheckbox"+RowCount];
+            
+            if(string.Equals(valForExpenseCheckbox,"on")) {
+               expenseForReject.lstExpenseInWrapper[0].Set("Expense_Status__c", "Rejected");
+               lstExpenseToReject.Add(expenseForReject.lstExpenseInWrapper[0]);
+            }
+            RowCount=RowCount+1;
+        }
+        
+        try{
+           Edit(lstExpenseToReject);
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        return View();
+    }
+    
+    /*
+    * Description: Method to Approve Mileage
+    * Input      : lstExistingMileage : list of Mileage report which have the updated values
+    * Output     : Approve Mileage
+    */
+    [HttpPost]
+    public ActionResponse ApproveMileage(List<WrapperForMileage> lstExistingMileage){
+        
+        int RowCountForMileage = 0;
+        
+        List<Force__Mileage__c> lstMileageToApprove = new List<Force__Mileage__c>();
+        foreach(var mileageForApprove in DataBag.lstExistingMileage) {
+            
+            string valForMileageCheckbox = Request["MileageCheckbox"+RowCountForMileage];
+            
+            if(string.Equals(valForMileageCheckbox,"on")) {
+               mileageForApprove.lstMileageInWrapper[0].Set("Mileage_Status__c", "Approved");
+               lstMileageToApprove.Add(mileageForApprove.lstMileageInWrapper[0]);
+            }
+            RowCountForMileage=RowCountForMileage+1;
+        }
+        
+        try{
+           Edit(lstMileageToApprove);
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        return View();
+    }
+    
+    /*
+    * Description: Method to Reject Mileage
+    * Input      : lstExistingMileage : list of Mileage report which have the updated values
+    * Output     : Reject Mileage
+    */
+    [HttpPost]
+    public ActionResponse RejectMileage(List<WrapperForMileage> lstExistingMileage){
+        
+        int RowCountForMileage = 0;
+        
+        List<Force__Mileage__c> lstMileageToApprove = new List<Force__Mileage__c>();
+        foreach(var mileageForApprove in DataBag.lstExistingMileage) {
+            
+            string valForMileageCheckbox = Request["MileageCheckbox"+RowCountForMileage];
+            
+            if(string.Equals(valForMileageCheckbox,"on")) {
+               mileageForApprove.lstMileageInWrapper[0].Set("Mileage_Status__c", "Rejected");
+               lstMileageToApprove.Add(mileageForApprove.lstMileageInWrapper[0]);
+            }
+            RowCountForMileage=RowCountForMileage+1;
+        }
+        
+        try{
+           Edit(lstMileageToApprove);
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        return View();
+    }
+    
+    /*
+    * Description: Method to Reject Mileage
+    * Input      : lstExistingMileage : list of Mileage report which have the updated values
+    * Output     : Reject Mileage
+    */
+    [HttpPost]
+    public ActionResponse SaveAndApproveExpenseAndMileage(List<WrapperForMileage> lstExistingMileage,List<WrapperForExpenses> lstExistingExpense,
+                                                          List<Force__Expense_Report__c> lstExpenseReportObj){
+        
+        List<Force__Mileage__c> lstMileageStatusToInsert = new List<Force__Mileage__c>();
+        List<Force__Expense__c> lstExpenseStatusToInsert = new List<Force__Expense__c>();
+        
+        foreach(var mileageForApprove in DataBag.lstExistingMileage) {
+            mileageForApprove.lstMileageInWrapper[0].Set("Mileage_Status__c", "Approved");
+            lstMileageStatusToInsert.Add(mileageForApprove.lstMileageInWrapper[0]);
+        }
+        try{
+           Edit(lstMileageStatusToInsert);
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        
+        foreach(var expenseForApprove in DataBag.lstExistingExpense) {
+            expenseForApprove.lstExpenseInWrapper[0].Set("Expense_Status__c", "Approved");
+            lstExpenseStatusToInsert.Add(expenseForApprove.lstExpenseInWrapper[0]);
+        }
+        try{
+           Edit(lstExpenseStatusToInsert);
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        
+        foreach(var expenseReportForApprove in lstExpenseReportObj) {
+            expenseReportForApprove.Set("Status__c", "Approved");
+        }
+        try{
+           Edit(lstExpenseReportObj);
+           DataBag.Exception = "";
+        }
+        catch(Exception e){
+             DataBag.lstExpenseReportObj = getExpenseReport(DataBag.strExpenseReportId);
+             DataBag.Exception = e.Message;
+             return View();
+        }
+        return View();
+    }
+    
+    /*
+     * Description: Method to check if the status is 'Submitted' then set as detail view
+     * Input      : 
+     * Output     : Rerenders the page and displays detail view if Status 'Submitted'
+    */
+	public void showInDetailViewWhenRecordLocked(){
+	    if(DataBag.IsStatusSubmitted == true){
+	        DataBag.strExpenseReportTypeView = "detail";
+	    }
+	}
+	
+	/*
+     * Description: Method to delete upload receipt
+     * Output     : delete upload receipt
+     */
+    [HttpPost]
+	public ActionResponse DeleteSelectedUploadedReceipts(){
+	    
+	    List<Force__Attachment> lstAttachmentToDelete = new List<Force__Attachment> ();
+	    
+	    string valForAttachment = Request["AttachmentIDforAttachToRemove"];
+	    
+	    //Set the databag with the Attachment id fetched from the hidden field
+	    DataBag.AttachmentId = valForAttachment;
+	    
+	    //Iterate on the Attachment list
+	    foreach(var objAttachment in DataBag.lstAttachmentObj){
+	        
+	        if(valForAttachment == objAttachment.Id){
+	            lstAttachmentToDelete.Add(objAttachment);
+	        }
+	    }
+	    
+	    if(lstAttachmentToDelete.Count > 0) {
+	       Delete(lstAttachmentToDelete); 
+	    }
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    
+        return Redirect(ActivePages.ExpenseReportsInterface, new {typeView = "detail",id=DataBag.strExpenseReportId, scrollToOnLoad = DataBag.IdOfTheButton });
+    }
+	
+}

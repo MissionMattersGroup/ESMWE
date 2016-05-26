@@ -1,0 +1,120 @@
+<aspx:AspxPage runat="server" Id="DocumentId" title="Document Upload">
+    <header>
+        <aspx:IncludeStyleSheet runat="server" url='<%# Url.Asset("Css/DocumentUploadStyle.css")%>'/>
+        <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/UploadDocument.js")%>'/>
+    </header>
+    <body>
+    <aspx:ViewMessages runat="server" /> 
+        <!--- Section Of Documnet Upload------------------>
+        <div class="spaceClass col-sm-12">
+            
+            <div>
+                <b><span style="display:none;margin-left: 19.5%;" class="field-validation-error errorMsg checkErrorPreventClass"  data-valmsg-replace="true">Error: You must enter a value for required fields.</span></b> 
+            </div><br/>
+            <div class="col-sm-12">
+                <!-----------Display the  Document Type Section----------------->
+                <div class="spaceClass col-sm-12">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-2"><b>Document Types:</b></div>
+                    <div class="col-sm-8">
+                        <aspx:InputField runat="server"  value="{!Model.Document_Type__c}" Required='true' />
+                    </div>
+                </div>
+                <!-----------Display the  File Name Section----------------->
+                <div id= "FileNameId" class="spaceClass col-sm-12">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-2"><b>File Name:</b></div>
+                    <div class="col-sm-8">
+                        <aspx:InputField runat="server"  value="{!Model.File_Name__c}" Required='true'/>
+                    </div>
+                </div>
+            
+                <!-----------Display the  Expiration Date Section----------------->
+                <div class="spaceClass col-sm-12">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-2"><b>Expiration Date:</b></div>
+                    <div class="col-sm-8">
+                        <aspx:InputField runat="server"  value="{!Model.Expiration_Date__c}" Required='true'/> 
+                    </div>
+                </div>
+                
+                <!-----------Display the Description Section----------------->
+                <div class="spaceClass col-sm-12">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-2"><b>Description:</b></div>
+                    <div class="col-sm-8">
+                        <aspx:InputField runat="server"  value="{!Model.Document_Description__c}"/> 
+                    </div>
+                </div>
+            
+                <!-----------Display the  File Upload Section----------------->
+                <div class="spaceClass col-sm-12">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-2"><b>File Upload:</b></div>
+                    <div class="col-sm-8">
+                        <aspx:FieldFileUpload runat='server' id='attchId' Required='true'/>
+                    </div>
+                </div>
+            
+                <!-----------Display the Command Button Section----------------->
+                <div class="col-sm-12">
+                    <div class="col-sm-3"></div>
+                    <div class="col-sm-2">
+                        <button type="button" class="btn backgroundForButton increaseHeight" style="margin-left: 61%;" onclick="validateNullFields();">Save</button>
+                    </div>  
+                    <div class="col-sm-2">
+                        <aspx:CommandButton CssClass='btn backgroundForButton increaseHeight' runat='server' text='Cancel' action='CancelChanges' CausesValidation='false'/>
+                    </div>  
+                </div>
+                
+                 <!-----------Store the value of the databag true: process sucessful and false if process failed----------------->
+                <div class="spaceClass col-sm-12">
+                    <input type="hidden"  id="sucesssId" value="<%=DataBag.IsSuccessful%>"/>
+                    <input type="hidden"  id="uploadSucesssId" value="<%=DataBag.IsUploadSuccessful%>"/>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Start of upload popup-->
+        
+        <div id="uploadModal" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span><%:CustomLabels.ShowTextOnUploadPopup%></span></p><br/>
+                         <aspx:CommandButton CssClass='btn backgroundForButton' runat='server' text='Yes' action='updateExistingFile'/>
+                         <aspx:CommandButton CssClass='btn backgroundForButton' runat='server' text='No' action='uploadNewVersionOfFile'/>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        
+        <!-- End of upload popup-->
+        
+        <!-- Start of successful upload popup-->
+        
+        <div id="successUploadModal" class="modal fade" role="dialog" data-backdrop="static">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+                  <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                     <center>
+                         <p><span><%:CustomLabels.ShowMessageOnSuccessfulUploadPoup%></span></p><br/>
+                         <button type="button" class="btn backgroundForButton" onclick="doRedirectToConatct();">Ok</button>
+                     </center>
+                  </div>
+            </div>
+        
+          </div>
+        </div>
+        
+        <!-- End of successful upload popup-->
+    </body>
+    
+</aspx:AspxPage>

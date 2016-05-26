@@ -1,0 +1,101 @@
+public class CreateProgressNoteForEventsTriggerHandler {
+    
+    /*
+     * Description : This controller is used to create progress note when event get created
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Anuradha N            25/3/2016                 Initial Draft
+     * 1.2                  Anuradha N            29/3/2016         Implement the functionality to related newly created progress note to the event.
+    */
+    
+    //Static variable which consist of Status picklist value
+	public static string STR_STATUS_SCH = "Scheduled";
+	    
+    /*
+    * Description: Method to get the service related to the Event
+    * Input: setServiceIds:  List of service Ids related to event
+    * Output: mapOfServiceId_Service: map of the serviceId and service object that exist for the event
+    */
+    public static Dictionary<string,Force__Service__c> getServiceRecordsRelatedToEvent(List<string> setServiceIds){
+        
+        Dictionary<string,Force__Service__c> mapOfServiceId_Service = new Dictionary<string,Force__Service__c>();
+        
+        if (setServiceIds != null) {
+            //Query to Fetch the service exist for the particular Event list
+            List<Force__Service__c> lstServiceObj = Database.Query<Force__Service__c>(s => setServiceIds.Contains(s.Id)).ToList();
+            
+            foreach (var objService in lstServiceObj) {
+                mapOfServiceId_Service.Add(objService.Id,objService);
+            }
+            
+        }
+        
+        return mapOfServiceId_Service;
+    }
+    
+    /*
+    * Description: Method to get the contact Id related to the User
+    * Input: setUserIds:  List of user Ids related to event
+    * Output: mapOfUserId_ContactId: map of the user that exist for the event
+    */
+    public static Dictionary<string,string> getUserRecordsRelatedToEvent(List<string> setUserIds){
+        
+        Dictionary<string,string> mapOfUserId_ContactId = new Dictionary<string,string>();
+        
+        if (setUserIds != null) {
+            //Query to Fetch the user exist for the particular Event list
+            List<User> lstUserObj = Database.Query<User>(u => setUserIds.Contains(u.Id)).ToList();
+            
+            foreach (var objUser in lstUserObj) {
+                mapOfUserId_ContactId.Add(objUser.Id,objUser.ContactId);
+            }
+            
+        }
+        
+        return mapOfUserId_ContactId;
+    }
+    
+    /*
+    * Description: Method to create progress note related to the Event
+    * Input: lstOfService:  List of service Ids related to event
+    * Output: listOfProgressNoteToInsert: List of the progress note created for that event
+    */
+    public static Dictionary<string,Force__Progress_Note__c> createProgressNoteRelatedToEvent(Dictionary<string,Force__Service__c> mapOfServiceId_Service, List<Event> lstOfNewEvent,Dictionary<string,string> mapOfUserId_ContactId){
+        
+        List<Force__Progress_Note__c> listOfProgressNoteToInsert = new List<Force__Progress_Note__c>();
+        
+        Dictionary<string,Force__Progress_Note__c> mapOfEventId_ProgressNote = new Dictionary<string,Force__Progress_Note__c>();
+        
+        if (mapOfServiceId_Service != null && lstOfNewEvent != null) {
+            foreach (var objEvent in lstOfNewEvent)
+            {
+                if(mapOfServiceId_Service.ContainsKey(objEvent.Service__c)) {
+                      
+                    Force__Progress_Note__c objProgressNote = new Force__Progress_Note__c();
+                    
+                    Force__Service__c objService = mapOfServiceId_Service[objEvent.Service__c];
+                    
+                    objProgressNote.Service__c = objService.Id;
+                    
+                    if (mapOfUserId_ContactId != null) {
+                        
+                        if(mapOfUserId_ContactId.ContainsKey(objEvent.OwnerId)) {
+                            string strContactId = mapOfUserId_ContactId[objEvent.OwnerId];
+                            objProgressNote.Staff_Name__c = strContactId;
+                        }
+                    }
+                    
+                    objProgressNote.Client__c = objService.Client__c;
+                    objProgressNote.Progress_Funder__c = objService.Funder__c; 
+                    objProgressNote.Billing_Code__c = objService.Billing_Code__c;
+                    objProgressNote.Status__c = STR_STATUS_SCH;
+                    objProgressNote.Scheduled_Date__c = objEvent.StartDate;
+                    listOfProgressNoteToInsert.Add(objProgressNote);
+                    
+                    mapOfEventId_ProgressNote.Add(objEvent.Id,objProgressNote);
+                }
+            }
+        }
+     
+        return mapOfEventId_ProgressNote;
+    }
+}

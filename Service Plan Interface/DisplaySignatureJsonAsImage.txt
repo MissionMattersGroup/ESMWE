@@ -1,0 +1,28 @@
+<!-- @Descripton: Active Template to show signature as image for Signature Object-->
+<div class="active-template">
+<header>
+<script>
+<aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignaturemin.js")%>'/>
+<aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignature.js")%>'/>
+<aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/excanvas.js")%>'/>
+<aspx:IncludeStyleSheet runat="server" url='<%# Url.ToAbsoluteUrl(Url.Asset("Css/signature.css"))%>'/>
+</script>
+
+<style>
+    .kbw-signature { width: 350px; height: 200px; margin-top: -8%;}
+</style>
+
+<script>
+
+    $('#SignDisplayID').signature();
+    
+    var SignatureVal = $('#SignDataDivID').html();
+    
+    if (SignatureVal != '') {
+        $('#SignDisplayID').signature('draw', SignatureVal);
+    }
+    $('#SignDataDivID').hide();
+
+</script>
+</header>
+</div>

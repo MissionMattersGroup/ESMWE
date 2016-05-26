@@ -1,0 +1,85 @@
+public class ErrorForEditButtonOnEventController : AspxController
+{
+	/*
+     * Description : This controller is used to fetch all the details for the particular object and fields 
+                     insert and update it Object Configuration.
+     * Version               Author            Date (DD-MM-YYYY)             Intial Draft      Ticket No
+     * 1.0                 Twinkle P           06/04/2016                                      ESMWE-485
+    */
+    CustomEvent model = new  CustomEvent(); 
+    
+   
+	public override ActionResponse Index()
+	{
+	    //Hide the div of Error Message By default
+	    model.showDiv=false;
+	    //Id of the Event retrieved from the URL
+	    string strEventId           = AspxPage.GetParameter("id");
+	    //Assign the Event Id to DataBag to access on the page level
+	    DataBag.strEventId          = strEventId;     
+	    
+	    
+	    //Role Name of the User Logged In
+	    string strRoleName          = UserInfo.Role.Name;
+	    
+	    //Boolean Value returned from the method 
+	    bool checkDisplayEditButton =   displayEditButton(strEventId);
+	    
+	    //If false and not an Admin or Supervisor then return error message
+	    if(checkDisplayEditButton==false && (!strRoleName.Equals(CustomLabels.ISP_RoleForAdminSignatures) &&
+	                                !strRoleName.Equals(CustomLabels.ISP_RoleForSupervisorSignatures) ) ){
+	       
+	        return View(model);
+	        //return RedirectToAction("Detail","Event", new { Id=strEventId , check="true"});
+	    }
+		else{
+		     return RedirectToAction("Edit","Event", new { Id=strEventId , m="p", check="true"});
+		}
+		//return(model);
+		
+	}
+	/*
+    * Description: Method to check whether the user has edit access depending on the end date 
+    * Input      : The Event Id for which edit event has been clicked
+    * Output     : Return true if the End Date is greater than Today else false.
+    */
+   
+	public  bool displayEditButton(string strEventId){
+	    
+	    //Query get all the details related to the event clicked on
+	    string queryStr="SELECT";
+	    queryStr+=" Id ";
+	    queryStr+=" FROM Event";
+	    queryStr+=" WHERE Id=\""+strEventId+"\"";
+	    queryStr+=" LIMIT 1";
+	   
+	    //Assign the dynamic query to the Event
+        List<Event> lstOfEvent = new List<Event>();
+        lstOfEvent = (List<Event>)Database.Query(queryStr);
+        
+        //Check if the list is not blank for the Id and End Date for that event has a value.
+        if(lstOfEvent.Count > 0 ){
+            
+            if(lstOfEvent[0].EndDate!= null && (lstOfEvent[0].EndDate < DateTime.Now.Date)){
+                // shows an error message at the top of the page if the user does not have edit permission.
+                AspxPage.AddError("You do not have permission to edit this Event Record");
+                model.showDiv=true;
+                return false;
+            } 
+            
+        }
+        
+        return true;
+                                 
+	}
+	/*
+	 * This Model is declare to access user information
+     * for the specific ids passed
+	 * @param : None
+	 * @ActionResponse - It returns the section as per condition
+	 */ 
+    public class CustomEvent:Event{
+         public Boolean showDiv {get; set;}
+        
+    }
+}

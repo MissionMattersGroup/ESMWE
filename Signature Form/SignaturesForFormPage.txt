@@ -1,0 +1,243 @@
+<aspx:AspxPage runat="server" Id="SignatureForFormId" title="Signature For Form">
+<header>
+    <aspx:IncludeStyleSheet runat="server" url='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css'/> 
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignaturemin.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignature.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/excanvas.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/SignatureForm.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.Asset("Css/SignatureForm.css")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.ToAbsoluteUrl(Url.Asset("Css/signature.css"))%>'/>
+</header>
+<body>      
+            <!--Display the error messages if any issue on the Page-->
+            <%if(DataBag.DisplaySI==false){%>
+                <div class="tabMessages container-fluid">
+                    <div class="messageContainer row Message">
+                         <table class="messageTable">
+                              <tbody>
+                                   <tr style="vertical-align:top;">
+                                        <td align="center" valign="top">
+                                              <img src="/_assets/images/s.gif" class="msgIcon" alt="Message" title="Message">
+                                         </td>
+                                         <td class="singleMsg messageCell">
+                                                <div class="messageText"><h4>Information</h4>
+                                                     <span><%=DataBag.errorMessage%></span>
+                                                </div>
+                                         </td>
+                                    </tr>
+                                </tbody>
+                         </table>
+                    </div>
+                </div>
+            <%}%>
+         
+            <%if(DataBag.DisplaySI==true){%>
+                <%
+                Html.Repeat(DataBag.lstFormObj as IList, formObj => { %>
+                
+                <!-------------Start of Individual Signature ------------------->
+                
+                    <table class="signClass" style="table-layout: fixed">
+                        <colgroup>
+                            <col width="50px">
+                            <col width="20px">
+                            <col width="30px">
+                            <col width="30px">
+                        </colgroup>
+                        <tr>
+                            <td class="classWidthForSign">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <div  id="individualSign" style="background: white;" ></div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="button" class="classForBtn" id="clearIndividual" value="Clear"/>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="classWidthForDate">
+                                <div class="classForBtn">
+                                    <% if (formObj.DisplayTextFor("Date_Of_Individual__c") != "" && formObj.DisplayTextFor("Date_Of_Individual__c") != null) {%> 
+                                                <%=formObj.DisplayTextFor("Date_Of_Individual__c")%>
+                                    <%}%>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="classForBtn">
+                                        <%=formObj.DisplayEditorFor("Signee_For_Individual__c")%>
+                                </div>
+                            </td>
+                            <td class="classWidthForDate">
+                                <div class="classForBtn">
+                                        <%=formObj.DisplayTextFor("Title_For_Supervisor__c")%>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="classWidthForSign">
+                                <label>
+                                     <%=formObj.LabelFor("Signature_Of_Individual__c")%>
+                                 </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Date_Of_Individual__c")%></b>
+                                </label>
+                            </td>
+                            <td  class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Signee_For_Individual__c")%></b>
+                                </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Title_For_Supervisor__c")%></b>
+                                </label>
+                            </td>
+                        </tr>
+                     </table>
+                 <!-------------Start of Parent/Guardian Signature ------------------->
+                      <table class="signClass" style="table-layout: fixed">
+                        <colgroup>
+                            <col width="50px">
+                            <col width="20px">
+                            <col width="30px">
+                            <col width="30px">
+                        </colgroup>
+                        <tr>
+                            <td class="classWidthForSign">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <div  id="parentGuardianSign" style="background: white;" ></div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="button" class="classForBtn" id="clearParentGuardian" value="Clear"/>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="classWidthForDate">
+                                <div class="classForBtn">
+                                    <% if (formObj.DisplayTextFor("Date_Of_Parent_Legal_Guardian__c") != "" && formObj.DisplayTextFor("Date_Of_Parent_Legal_Guardian__c") != null) {%> 
+                                                <%=formObj.DisplayTextFor("Date_Of_Parent_Legal_Guardian__c")%>
+                                    <%}%>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="classForBtn">
+                                        <%=formObj.DisplayEditorFor("Signee_For_Parent_Legal_Guardian__c")%>
+                                </div>
+                            </td>
+                            <td >
+                                <div class="classForBtn">
+                                        <%=formObj.DisplayEditorFor("Relationship_Type__c")%>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="classWidthForSign">
+                                <label>
+                                     <%=formObj.LabelFor("Signature_Of_Parent_Legal_Guardian__c")%>
+                                 </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Date_Of_Parent_Legal_Guardian__c")%></b>
+                                </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Signee_For_Parent_Legal_Guardian__c")%></b>
+                                </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Relationship_Type__c")%></b>
+                                </label>
+                            </td>
+                        </tr>
+                     </table>
+                <!-------------End of Parent/Guardian Signature ------------------->
+                
+                <!-------------Start of Witness Signature ------------------->
+                     <table class="signClass" style="table-layout: fixed">
+                        <colgroup>
+                            <col width="50px">
+                            <col width="20px">
+                            <col width="30px">
+                            <col width="30px">
+                        </colgroup>
+                        <tr>
+                            <td class="classWidthForSign">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <div  id="witnessSign" style="background: white;" ></div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="button" class="classForBtn" id="clearWitnessGuardian" value="Clear"/>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="classWidthForDate">
+                                <div class="classForBtn">
+                                    <% if (formObj.DisplayTextFor("Date_Of_Witness__c") != "" && formObj.DisplayTextFor("Date_Of_Witness__c") != null) {%> 
+                                        <%=formObj.DisplayTextFor("Date_Of_Witness__c")%>
+                                    <%}%>
+                                </div>    
+                            </td>
+                            <td>
+                                <div class="classForBtn">
+                                        <%=formObj.DisplayEditorFor("Signee_For_Witness__c")%>
+                                </div>
+                            </td>
+                            <td class="classWidthForDate"> 
+                                <div class="classForBtn">
+                                        <%=formObj.DisplayTextFor("Title_For_Staff__c")%>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="classWidthForSign">
+                                <label>
+                                     <%=formObj.LabelFor("Signature_Of_Witness__c")%>
+                                 </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Date_Of_Witness__c")%></b>
+                                </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Signee_For_Witness__c")%></b>
+                                </label>
+                            </td>
+                            <td class="classWidthForDate">
+                                <label>
+                                    <b><%=formObj.LabelFor("Title_For_Staff__c")%></b>
+                                </label>
+                            </td>
+                        </tr>
+                     </table>
+                <!-------------End of Witness Signature ------------------->
+                
+                <!--- Start Of Save Signature Button ------------------------->
+                <center>
+                    <div class="row">
+                        <div class="col-md-12" id="saveSignDiv" >
+                    		<button id="saveSignId" type="button" class="btn backgroundForMainButton" onclick="setValueToSignTextField();__doPostBack('SaveSignature');"><span class="glyphicon glyphicon-save"></span>&nbsp;Save Signatures</button>
+                    	</div>
+            	    </div><br/>
+        	    </center>
+        	     <!--- End Of Save Signature Button ------------------------->
+        	     
+                <!-- Below hidden field contains the value of Individual to save Individual Signature-->
+                <input type='hidden' id="SaveIndividualSignId" name="SaveIndividualSignToUpdate" value="<%=formObj.DisplayTextFor("Signature_Of_Individual__c")%>">
+                <input type='hidden' id="SaveParentSignId" name="SaveParentGuardianSignToUpdate" value="<%=formObj.DisplayTextFor("Signature_Of_Parent_Legal_Guardian__c")%>"> 
+                <input type='hidden' id="SaveWitnessSignId" name="SaveWitnessSignToUpdate" value="<%=formObj.DisplayTextFor("Signature_Of_Witness__c")%>"> 
+                <% }); %> 
+            <%}%>
+            <script>
+                //$('#m_0__Relationship_Type__c').css({"width":"75px"});
+            </script>
+</body>
+</aspx:AspxPage>

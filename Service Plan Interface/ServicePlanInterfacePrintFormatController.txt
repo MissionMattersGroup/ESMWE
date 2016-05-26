@@ -1,0 +1,2110 @@
+[SerializeViewData]
+public class ServicePlanInterfacePrintFormatController : AspxController
+{ 
+    /*
+     * Description : This controller is used to display the service, Goals and objectives related to service plan
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Anuradha N          24/12/2015                 Initial Draft
+     * 1.2                  Twinkle P           30/12/2015                 Show the Service Plan Record Dynamically
+     * 1.3                  Twinkle P           31/12/2015                 Display the Service Plan Fields Dynamically
+     *                                                                     and show the rich text area section
+     * 1.4                  Anuradha N          5/1/2016                   show popup on click of Add Goals
+     * 1.5                  Anuradha N          6/1/2016                   Add rows and cancel functionality
+     * 1.6                  Anuradha N          8/1/2016                   Save Goal Functionality
+     * 1.7                  Geeta  K            8/1/2016                   Functionality to show the sections for Service Plan
+     * 1.8                  Twinkle P           11/1/2016                  Added functionality to Save the Service Plan with updated records
+     * 1.9                  Geeta K             12/1/2016                  Added the functionality to remove the fields from the list which already exists
+     * 1.10                 Anuradha N          11/1/2016                  Added the functionality of print to print entire serviceplan page
+     * 1.11                 Anuradha N          12/1/2016                  Implement save signature functionality
+     * 1.12                 Anyradha N          15/2/2016                  Added the functionality to show the Risk Assessment Section configured from t
+     * 1.13                 Geeta  K            18/2/2016                  Added CreateRiskAssesmentRecord to display dummy record on page, updated the SaveRiskAssessment
+     *                                                                     method to insert new Risk Assessment record or update the existing one, updated Index method 
+     *                                                                     by adding object configuration setup into databag, changed variable names in 
+     *                                                                     getRiskAssessmentRelatedToServicePlan method
+     * 1.14                 Anuradha N          17/2/2016                  Multile Signature Capture for Service Plan Interface    
+     * 1.15                 Anuradha N          4/3/2016                   Update print functionality according to the new enchacement
+     * 1.16                 Anuradha N          6/5/2016                   Implement the functionality If we choose N/A for a section in the risk assessment, 
+     *                                                                     it just print the N/A check box in the section not the other fields
+     * 1.17                 Anuradha N          16/05/2016                 Implemented the functionality to save and display title for client/family, staff and supervisor signatures [ESMWE-571]
+    */
+    
+    //
+    //Stores the object configuration record inserted through setup
+    Force__Object_Configuration__c objConfig ;
+    
+    //List of the Service Plan Object which matches the id fetched through the parameter url
+    List<Force__Service_Plan__c> lstspobj;
+    
+    //List of Risk Assesment Object which is related to the Service Plan Object
+    List<Force__Risk_Assessment__c> lstRiskAssessmentObj;
+    
+    //Stores the list of the Service Plan and Risk Assesment Fields stored through object config object
+    List<Force__Service_Plan_Section__c> lstOfServicePlanSection;
+    List<Force__Service_Plan_Section__c> lstOfRiskAssessmentSection;
+    
+    //Stores the list of the Service Agreement Section stored through object config object
+    List<Force__Service_Plan_Section__c> lstOfServicePlanAgreementSection;
+    
+    //Stores the id of the  Service Plan fetched from the URL.
+    string strServicePlanId;
+    
+    //Stores the id of the  Client fetched from the URL.
+    string strClientId; 
+    
+    
+    /*
+    * Description: Method to show the details related to Service Plan on load
+    */
+	public override ActionResponse Index()
+	{
+	    /********************************Intialize the DataBag**************************************/ 
+	    //string for fields commaseprated values for Service plan(for CLIENT INFORMED CONSENT Section)
+	    string strServicePlanClientConsentFields ="Terms_And_Conditions__c,Client_Guardian_Phone__c";
+	    
+	    //This databag contains the service plan comma separated fields
+	    DataBag.lstServicePlanClientConsentFields = getTheCommaSeperatedValues(strServicePlanClientConsentFields);
+	    
+	    DataBag.lstSectionsFieldsDataBag = new List<string>(); 
+	    DataBag.lstSectionsFieldsDataBagForRiskAssesment = new List<string>(); 
+	    
+	    //List that stores the Service Plan and Risk Assesment Section values retrieved through Service Plan Setup Object
+	    DataBag.lstOfServicePlanSection = new List<Force__Service_Plan_Section__c>();
+	    DataBag.lstOfRiskAssessmentSection = new List<Force__Service_Plan_Section__c>();
+	    
+	     //List that stores the Service Agreement Section values retrieved through Service Plan Setup Object
+	    DataBag.lstOfServicePlanAgreementSection = new List<Force__Service_Plan_Section__c>();
+	    
+	    //List that stores the Service Plan and Risk Assesment Record Values
+	    DataBag.lstRiskAssessmentObj = new List<Force__Risk_Assessment__c>();
+	    DataBag.lstServicePlanObj = new List<Force__Service_Plan__c>();
+	    
+	    //List that stores the Signature Record Values
+	    DataBag.lstSignatureObj = new List<Force__Signatures__c>();
+	    
+	    //DataBag that is set true or false depending on the click of Edit Button on the respective section
+	    DataBag.isEditable=false;
+	    DataBag.isEditableForRiskAssesment=false;
+	    
+	    //DataBags store the client and service plan id.
+	    DataBag.strClientId="";
+	    DataBag.strServicePlanId="";
+	    
+	    //DataBags store the Fields to be displayed for Service, Goals and Objective
+	    DataBag.ServiceFields = new List<string>(); 
+	    DataBag.GoalFields = new List<string>(); 
+	    //DataBag.ObjectiveFields = new List<string>(); 
+	    
+        DataBag.BlankSpace = "";
+        
+        // This Databag is used to store the value of Staff contact id (Magentrix user contact id)
+	    DataBag.strStaffCompletingISPContactId = "";
+	    
+	    // This Databag is used to store the value of signature picklist for client
+	    DataBag.strClientSignature = "Client/Family Signature";
+	    
+	    // This Databag is used to store the value of signature picklist for Staff
+	    DataBag.strStaffSignature = "Staff Signature";
+	    
+	    //This databag is used to create new staff signature div
+	    DataBag.lstNewStaffSignature = new List<Force__Signatures__c>();
+	    
+	    //This databag is used to create new Family signature div
+	    DataBag.lstNewFamilySignature = new List<Force__Signatures__c>();
+	    
+	    //This databag is used store Family signature
+	    DataBag.lstFamilySignature = new List<Force__Signatures__c>();
+	    
+	    //This databag is used store Staff signature
+	    DataBag.lstStaffSignature = new List<Force__Signatures__c>();
+	    
+	    //This databag is used to create new Goal
+	    DataBag.lstNewGoal = new List<Force__Goals__c>();
+	    
+	    // This Databag is used to store the exception occured on page
+	    DataBag.Exception = "";
+	    
+	    // This Databag is used to set the boolean as true when status is In Progress
+	    DataBag.IsStatusInProgress = false;
+	    
+	    //This databag is used to store the id of the Button Clicked
+	    DataBag.IdOfTheButton = "";
+	    
+	 
+	    
+	    //This databag is used to store the positon of the Button Clicked
+	    DataBag.PositionOfTheButton = "";
+	    
+	    var Model = new ServicePlanModel();
+	    
+	    //This lists store the records data related to Service Plan and Risk Assessment.
+	    lstspobj  = new List<Force__Service_Plan__c> ();
+	    lstRiskAssessmentObj = new List<Force__Risk_Assessment__c>();
+	    
+	    //This will store the list Service Plan and Risk Assessment related records from the configuration.
+	    lstOfServicePlanSection  = new  List<Force__Service_Plan_Section__c>();	
+	    lstOfRiskAssessmentSection =  new  List<Force__Service_Plan_Section__c>();	
+	    
+	    //This will store the records data related to Service Agreement Section 
+	    lstOfServicePlanAgreementSection =  new  List<Force__Service_Plan_Section__c>();	 
+	    
+	    //check the page url contains Id if not contains return error message to page
+	    // otherwise go forward to inside the code for fetch id 
+	    string CurrentURL = Request.Url.AbsoluteUri;
+        bool b=CurrentURL.Contains("?id=");
+	    DataBag.DisplayISP=false;
+	    
+	    //Holds Service's Id
+	    DataBag.ServiceId = "";
+	    
+	    //Holds Goal's Id		
+	    DataBag.GoalId = "";
+	    
+	    //This databag is used to show the success meassage on popup
+	    DataBag.IsSuccessISP = "false";
+	    
+	    //This databag is used to hide the buttons
+	    DataBag.IsStatusCompleted = false;
+	    
+	    //This databag is used to store the read only field of service plan
+	    DataBag.ReadOnlyField = new List<string>();
+	    
+	    //This databag is used to store the help text for readonly fields
+	    DataBag.HelpText = new List<string>();
+	    
+	    //This databag contains fields that are mandatory for creating new 'Service'
+	    DataBag.ServiceFieldsWhileCreate = new List<string>();
+	    
+	    //This databag contain list of New Service to be created on 'Add Services'
+	    DataBag.LstNewService= new List<Force__Service__c>();
+	    
+	    /****************Start of Variable declaration for filter on Services*****************/
+	    
+	    // List of Funder Wrapper to store Funder Id and Name
+        DataBag.lstFunderOption = new List<FunderOptionWrapper>();
+        
+        // List Funder Ids 
+        DataBag.lstFunderId = new List<string>();
+        
+        // String to store picklist values(Funder Name)
+        DataBag.strFunderName = "All";
+        
+        
+        DataBag.filteredBy = "";
+        
+        
+        bool isFilteredByExist = CurrentURL.Contains("&filteredByFunder=");
+        
+        if(isFilteredByExist == true) {
+            DataBag.filteredBy = AspxPage.GetParameter("filteredByFunder");
+        }
+        SystemInfo.Debug("DataBag.filteredBy========="+DataBag.filteredBy);
+                
+        /****************End of Variable declaration for filter on Services*****************/
+        
+        //This databag contains the value of service plan client name
+        DataBag.strServicePlanClientName = "";
+	    
+	    //Check the id parameter present or not
+	    if(b==false){
+	        	AspxPage.AddMessage(CustomLabels.ErrorOnServicePlanId);
+                return View(); 
+	    }
+	    else{
+        	    // Stores the id of the Service plan which is passed as a param in the URL
+                strServicePlanId = AspxPage.GetParameter("id");
+                
+                //Check the Id is blank
+                if(string.IsNullOrEmpty(strServicePlanId)){
+                   	AspxPage.AddMessage(CustomLabels.ErrorOnServicePlanId);
+                   	return View(Model);
+                }
+                else{
+                    
+                        //check if the url contains scrollId [Note: handle for Save RiskAssesment Section]
+                        bool isScrollIdParamExist = CurrentURL.Contains("&scrollId=");
+                        if(isScrollIdParamExist == true){
+                             //Set the DataBag when clicked on risk assesment when the user clicks on save such that it redirects to parent div 
+                             DataBag.IdOfTheButton = AspxPage.GetParameter("scrollId");
+                        }
+                	    
+                    
+                    //Method to get the Object Configuration Data (Fields to Display)
+                    getObjectConfigInfo();
+                    
+            	    //Assign the dynamic query to the Service Plan
+            		lstspobj = getServicePlanSection();
+            		
+            		//Assign the dynamic query to the Risk Assessment , It returns list of Risk Assessment records related to Service plan 
+            		lstRiskAssessmentObj = getRiskAssessmentRelatedToServicePlan();
+            		
+            		//Return the list of Service Plan with the Service Agreement Sub-Section and details 
+            		lstOfServicePlanAgreementSection = getServiceAgreementRelatedToServicePlan();
+            		
+            		if(lstspobj != null && lstspobj.Count() > 0 ){
+            		    
+            		    DataBag.DisplayISP=true;
+            		    //Assigned  the DataBag for Blank Space
+            		    DataBag.BlankSpace="BlankSpace";
+            		    
+            		    if (lstRiskAssessmentObj != null && lstRiskAssessmentObj.Count > 0) {
+            		        
+                            //DataBag to store the fields for different section for Risk Assessment
+                            DataBag.lstSectionsFieldsDataBagForRiskAssesment = getSectionFields(lstOfRiskAssessmentSection);
+                            
+                            // Databage contain list sections title AddTo
+                            DataBag.lstOfRiskAssessmentSection = lstOfRiskAssessmentSection;
+            		        
+            		        DataBag.lstRiskAssessmentObj = lstRiskAssessmentObj;
+            		        
+            		        
+            		    }
+        		        // Databag contain list sections for Service Agreement Section
+                        DataBag.lstOfServicePlanAgreementSection = lstOfServicePlanAgreementSection;
+                        //DataBag to store the fields for different section for Service Plan
+                        DataBag.lstSectionsFieldsDataBag= getSectionFields(lstOfServicePlanSection);
+                        
+                        // Databage contain list sections title AddTo
+                        DataBag.lstOfServicePlanSection=lstOfServicePlanSection;
+                        
+                        //Add the Object Configuration and Service Plan List
+                		Model.objConfigSetup    = objConfig;
+                		
+                		//Used to create Risk Assesment record in create method
+                	    DataBag.objConfigSetup    = objConfig;
+                		
+                		DataBag.lstServicePlanObj=lstspobj;
+                		//DataBag.CopyOflstServicePlanObj=lstspobj;
+                		DataBag.isEditable=false;
+                	
+                		Model.strContactID = getContactId(strServicePlanId); // Get Contact Id
+        	           
+        	            // Stored the contactId in databag to access it through out the code
+        	             DataBag.strClientId=Model.strContactID;
+        	            
+        	            // Stored the ServicePlanId in databag to access it through out the code
+        	            DataBag.strServicePlanId=strServicePlanId;
+        	            
+        	            Model.lstServiceModel = getServices(Model.strContactID); // Get Services related to contact
+        	            List<string> setOfServivesId = new List<string>();
+        	            // Store all Services Ids into List
+        	            foreach (ServiceModel instServiceModel in Model.lstServiceModel) {
+        	                setOfServivesId.Add(instServiceModel.lstService[0].Id);
+        	            }
+        	   
+        	            Model.lstGoalModel = getGoals(strServicePlanId,Model.strContactID,setOfServivesId); // Get Goals related to services
+        	            List<string> setOfGoalId = new List<string>();
+        	            // Strore Goal's Ids into List
+        	            foreach (GoalModel instGoalModel in  Model.lstGoalModel) {
+        	                setOfGoalId.Add(instGoalModel.lstGoals[0].Id);
+        	            }
+        		
+        		        // Getting all fields of 'Services' dynamically form 'Object Configuration' Object
+                        DataBag.ServiceFields =  getTheCommaSeperatedValues(objConfig.Service_Fields__c);
+               
+        	            // Getting all fields of 'Goals' dynamically form 'Object Configuration' Object
+        	            DataBag.GoalFields = getTheCommaSeperatedValues(objConfig.Goals_Fields__c);
+                       
+                        DataBag.lstSignatureObj = getServicePlanSignature(DataBag.strServicePlanId);
+                        
+                		if (CustomLabels.ISP_RoleForClientSignatures.Equals(UserInfo.Role.Name)) {
+                		    AddFamilySignatureRowToList(DataBag.lstNewFamilySignature);
+                		}
+                		
+                		setScrollPosition(CurrentURL);
+                		
+                		CheckStatusInPogress(DataBag.lstServicePlanObj);
+                		
+                		checkStatusCompleted(DataBag.lstServicePlanObj);
+                		
+                		fetchReadOnlyFieldHelpText();
+                		
+                		getStaffCompletingISPContactId();
+                		
+                		eliminateFieldsForRiskAssessmentSection();
+                		
+                		return View(Model);
+            		}
+            		else{
+            		    AspxPage.AddMessage(CustomLabels.ErrorOnServicePlanId);
+            		    return View(Model);
+            		}    
+                }
+	    }    
+        return View();
+	}
+	
+	/*
+	* Description: Method to get the list of fields in comma seperated double quote to be accessed by the DataBag
+	* Input      : strOfFields : The fields in comma seperated format
+    * Output     : lstOfFieldForTheObj: returns a list of fields which are comma seperated and accessable by DataBag [Ex: format for DataBag {"aa","bb"}]
+	*/
+	public List<string> getTheCommaSeperatedValues(string strOfFields){
+	    
+	    List<string> lstOfFieldForTheObj = new List<string>();
+	    if(strOfFields != null){
+	        var tempConfig = (string)strOfFields;
+            string[] separators = {","};
+            lstOfFieldForTheObj = tempConfig.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();
+	    }
+	    return lstOfFieldForTheObj;      
+	}
+	
+	/*
+    * Description: Method to check if NA is true remove other fields(consider Na must be a first fields) for risk Assessment section
+    * Output     : check if NA is true remove other fields
+    */
+    public void eliminateFieldsForRiskAssessmentSection(){
+	    
+	    //Itrate for risk assessment section list
+        foreach (var lstfield in DataBag.lstSectionsFieldsDataBagForRiskAssesment){
+                
+            if(lstfield.Count>0 && DataBag.lstRiskAssessmentObj.Count>0){
+                //extract first field of each sections Consider: First Foeld must be NA field
+                string firstSubSectionField = lstfield[0];
+                //Risk Assesment Record conatin in DataBag List at 0 location 
+                if(DataBag.lstRiskAssessmentObj[0].Get(firstSubSectionField).ToString().ToLower()=="true"){
+                    lstfield.Clear();
+                    lstfield.Add(firstSubSectionField);
+                }
+              
+            }
+        }
+	}
+	
+    /*
+    * Description: Method to edit the service plan in the editable format
+    * Input      : ""
+    * Output     : Rerenders the page with input fields
+    */
+    [HttpPost]
+	public ActionResponse EditServicePlan(){
+        DataBag.isEditable=true;
+        return View();
+    }
+    
+    /*
+    * Description: Method to save the service plan with the updated values
+    * Input      : lstServicePlanObj : Model of Service Plan which have the updated values
+    * Output     : Redirects to the Page with updated values
+    */
+    [HttpPost]
+	public ActionResponse SaveServicePlan(List<Force__Service_Plan__c> lstServicePlanObj){
+	    
+        List<string> lstOfServicePlanFields  = new List<string>();
+        int count = 0;
+        foreach (var servicePlanObj in lstServicePlanObj)
+        {
+            foreach (var lstfield in DataBag.lstSectionsFieldsDataBag){
+                foreach (var field in lstfield)
+                {
+                    if (DataBag.IsEditable == true) {
+                        if(field != DataBag.BlankSpace && field != "Status__c"){    
+                            if(!lstOfServicePlanFields.Contains(field)){
+                                string val = Request["m$" + count.ToString() + "$." +  field];
+                                servicePlanObj.Set(field, val);
+                            }
+                        }
+                    }
+                    if(field == "Status__c"){
+                        servicePlanObj.Set("Status__c", "In Progress");  
+                    }
+                    lstOfServicePlanFields.Add(field);
+                }
+            }
+            count++;
+        }
+        DataBag.isEditable=false;
+        if(lstServicePlanObj.Count>0){
+            lstServicePlanObj[0].Id = DataBag.strServicePlanId;
+            try {
+                Edit(lstServicePlanObj);
+            }
+            catch (Exception e) {
+                DataBag.isEditable=true;
+                DataBag.Exception = e.Message;
+                return View();
+            }
+        }
+        
+        // Update ISp with a checkbox value
+        updateISP(DataBag.lstServicePlanObj);
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId });
+    }
+     
+     
+    /*
+    * Description: Method to edit the risk assesment in the editable format
+    * Input      : ""
+    * Output     : Rerenders the page with input fields for Risk Assesment Section
+    */
+    
+    [HttpPost]
+	public ActionResponse EditRiskAssesment(){
+        DataBag.isEditableForRiskAssesment=true;
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        return View();
+    }
+    
+    /*
+    * Description: Method to save the risk assesment with the updated values
+    * Input      : lstRiskAssessmentObj : Model of Risk Assesment which have the updated values
+    * Output     : Redirects to the Page with updated values
+    */
+    [HttpPost]
+	public ActionResponse SaveRiskAssessment(List<Force__Risk_Assessment__c> lstRiskAssessmentObj){
+	    
+        List<string> lstOfRiskAssesmentFields  = new List<string>();
+        int count = 0;
+        foreach (var riskAssesmentObj in lstRiskAssessmentObj)
+        {
+            foreach (var lstfield in DataBag.lstSectionsFieldsDataBagForRiskAssesment){
+                foreach (var field in lstfield)
+                {
+                     if(field != DataBag.BlankSpace){    
+                       if(!lstOfRiskAssesmentFields.Contains(field)){
+                        string val = Request["m$" + count.ToString() + "$." +  field];
+                        riskAssesmentObj.Set(field, val);
+                        lstOfRiskAssesmentFields.Add(field);
+                       }
+                     }
+                }
+            }
+            count++;
+        }
+        DataBag.isEditableForRiskAssesment=false;
+        if(lstRiskAssessmentObj.Count>0){
+            lstRiskAssessmentObj[0].Client_ISP__c = DataBag.strServicePlanId;
+             //Check if Risk Assessment's record is associated to Service Plan, if true then update the record else create a new record
+            if(lstRiskAssessmentObj[0].Id  != null) {
+                
+                try {
+                    Edit(lstRiskAssessmentObj);
+                }
+                catch (Exception e) {
+                    DataBag.isEditableForRiskAssesment=true;
+                    DataBag.Exception = e.Message;
+                    return View();
+                }
+            }
+            else{
+                
+                try {
+                    Insert(lstRiskAssessmentObj);
+                }
+                catch (Exception e) {
+                    DataBag.isEditableForRiskAssesment=true;
+                    DataBag.Exception = e.Message;
+                    return View();
+                }
+            }
+        }
+        
+        // Update ISp with a checkbox value
+        updateISP(DataBag.lstServicePlanObj);
+        
+        getScrollValue();
+        
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId ,scrollToOnLoad = DataBag.PositionOfTheButton ,scrollId = DataBag.IdOfTheButton});
+    }
+     
+	/*
+    * Description: Fetch the details from the Object Configuration Record.
+    */
+	public void getObjectConfigInfo() {
+	    objConfig = Database.Query<Force__Object_Configuration__c>().First();
+	}
+   
+    /*
+    * Description: Method to to get Contact Id of current Service plan record
+    * Input      : Id(string) of current service plan
+    * Output     : Id(String) of Contact
+    */
+	public string getContactId(string strServicePlanId) 
+	{
+	    string strQueryCon;
+	    strClientId = "";
+	    strQueryCon = "SELECT";
+    	strQueryCon = strQueryCon + "ID, Client__c";
+	   	strQueryCon = strQueryCon + " FROM Force__Service_Plan__c";
+	    strQueryCon = strQueryCon + " WHERE Id =\""+strServicePlanId+"\"";
+	    strQueryCon = strQueryCon + " LIMIT 1";
+	    
+	    List<Force__Service_Plan__c> lstSerplan = (List<Force__Service_Plan__c>) Database.Query(strQueryCon);
+	    if(lstSerplan.Count>0 && !string.IsNullOrEmpty(lstSerplan[0].Client__c)) {
+	        Force__Service_Plan__c servicePlanInstance = lstSerplan[0];
+	        if(!string.IsNullOrEmpty(servicePlanInstance.Client__c)){
+	            strClientId = servicePlanInstance.Client__c ;    
+	        }
+	        
+	    }
+	    
+	    //Query the name of the contact record
+	    List<Force__Contact> lstContact = new List<Force__Contact>();
+	    
+        lstContact = Database.Query<Force__Contact>(a => a.Id == strClientId).Select(f => new { f.Id, f.Name })
+                                                         .ToListAsAdmin();
+                                                         
+        if (lstContact.Count >0 && !string.IsNullOrEmpty(lstContact[0].Name)){
+            DataBag.strServicePlanClientName = lstContact[0].Name;
+        }
+        
+	    return strClientId;
+	}
+	
+	/*
+    * Description: Method to to get all services related to contact
+    * Input      : Id(string) of Contact
+    * Output     : List of Services
+    */
+    public List<ServiceModel> getServices(string strContactId) 
+    {
+    	string strQueryConForService = "SELECT";
+    	if(objConfig.Service_Fields__c != "") {
+    		strQueryConForService = strQueryConForService + "Id,Funder__c,Funder__r.Name," + objConfig.Service_Fields__c;
+    	}
+    	else {
+    		strQueryConForService= strQueryConForService + "Id,Funder__c,Funder__r.Name";
+    	}
+    		
+    	strQueryConForService = strQueryConForService + " FROM Force__Service__c";
+    	strQueryConForService = strQueryConForService + " WHERE Client__c = \"" + strContactId + "\"  Order By CreatedOn";
+    	
+    	List<Force__Service__c> lstServices = (List<Force__Service__c>) Database.Query(strQueryConForService);
+    	
+    
+    	// List to store Funder Ids of Services
+        List<string> lstFunderId = new List<string>(); 
+    	
+    	List<ServiceModel> lstServiceModel = new List<ServiceModel>();
+    	foreach(Force__Service__c objService in lstServices){
+    	    ServiceModel instServiceModel = new ServiceModel();
+    	    instServiceModel.isEditable = false;
+    	    instServiceModel.lstService = new List<Force__Service__c>{objService};
+    	    lstServiceModel.Add(instServiceModel);
+    	    
+    	    if(!String.IsNullOrWhiteSpace(objService.Funder__c)){
+    	        
+    	        // Adding Funder Ids to list
+    	        lstFunderId.Add(objService.Funder__c);
+    	    }
+    	}
+        
+        DataBag.lstFunderId = lstFunderId;
+        
+       	getListFunderOption(DataBag.lstFunderId);
+       	
+       	return lstServiceModel;
+    }
+	
+	/*
+    * Description: Method to to get all Goals related to Services
+    * Input      : Id(string) of Contact,Id(string) of current Service Plan, List of ServiceIds 
+    * Output     : List of Goals
+    */
+	public List<GoalModel> getGoals(string strServicePlanId,string strContactId, List<string> setOfServivesId) 
+	{
+    	string queryStr="SELECT";
+    	if(objConfig.Goals_Fields__c!=""){
+            queryStr+=" Id, Service__c,"+objConfig.Goals_Fields__c;  
+    	}
+    	else{
+    	    queryStr+=" Id, Service__c";  
+    	}
+    	
+    	queryStr = queryStr+" FROM Force__Goals__c where Service_Plan__c=\""+strServicePlanId+"\"";
+    	queryStr = queryStr+" And Client__c=\""+strContactId+"\" ";
+    	    
+    	List<Force__Goals__c> listGoals = (List<Force__Goals__c>)Database.Query(queryStr);
+    	
+    	List<GoalModel> lstGoalModel = new List<GoalModel>();
+    	
+    	foreach (Force__Goals__c objGoals in listGoals) {
+    	    
+	        if(setOfServivesId.Contains(objGoals.Service__c)) {
+	            GoalModel instGoalModel = new GoalModel();
+	            instGoalModel.isEditable = false;
+    	        instGoalModel.lstGoals = new List<Force__Goals__c>{objGoals};
+	            lstGoalModel.Add(instGoalModel);
+	           
+	        }
+	    }
+    	return lstGoalModel;
+	}
+
+	/*
+    * Description: Method to single Row for Goal
+    * Input      : lstNewGoal : list of Goal
+    * Output     : Add the single row for Goal
+    */
+	[HttpPost]
+	public ActionResponse AddGoalRowToList(List<Force__Goals__c> lstNewGoal,ServicePlanModel Model)
+	{   
+	    lstNewGoal.Clear();
+	    DataBag.lstNewGoal = lstNewGoal;
+	   
+	    DataBag.serviceIdForNewGoal = Request["ServiceIDforListofGoalToInsert"];
+	   
+	    Force__Goals__c objNewGoal = new Force__Goals__c();
+	    //Add new instance to the Goal list
+		lstNewGoal.Add(objNewGoal);
+	    
+		DataBag.lstNewGoal = lstNewGoal;
+		
+		SetGoalRecordAsNonEditable(lstNewGoal,Model.lstGoalModel);
+		
+		//Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+		return View();
+	}
+	
+	/*
+    * Description: Method to Add Row for Goal
+    * Input      : lstNewGoal : list of Goal
+    * Output     : Add more rows for Goal
+    */
+	[HttpPost]
+	public ActionResponse AddMoreGoalsRowToList(List<Force__Goals__c> lstNewGoal)
+	{   
+	   int count = 0;
+	   // For loop to add new rows for Goals
+       foreach (var objGoals in lstNewGoal)
+        {
+            // For loop to add new rows for Goals with specific fields
+            foreach (var field in DataBag.GoalFields)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                
+                objGoals.Set(field, val);
+                
+            }
+            count++;
+        }
+	    
+	    Force__Goals__c  objNewGoals = new Force__Goals__c();
+	    //Add new instance to the Goal list
+		lstNewGoal.Add(objNewGoals);
+	    
+	    DataBag.lstNewGoal = lstNewGoal;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	} 
+	
+	/*
+    * Description: Method to Remove Row for Goals
+    * Input      : lstNewGoal : list of Goal
+    * Output     : Remove the rows for Goal
+    */
+	[HttpPost]
+	public ActionResponse RemoveGoalRowToList(List<Force__Goals__c> lstNewGoal)
+	{   
+	    if(lstNewGoal.Count>0){
+	        lstNewGoal.RemoveAt(lstNewGoal.Count-1);
+	    }
+	    
+	    if(lstNewGoal.Count==0){
+	       DataBag.serviceIdForNewGoal =""; 
+	    }
+	    
+	    DataBag.lstNewGoal = lstNewGoal;
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    return View();
+	     
+	}
+	
+    /*
+    * Description: Method to Save Goal Data
+    * Input      : List of Goals
+    */
+    [HttpPost]
+    public ActionResponse SaveGoals(List<Force__Goals__c> lstNewGoal) {
+       
+        int count = 0;
+        foreach (var goal in lstNewGoal)
+        {
+            foreach (var field in DataBag.GoalFields)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                goal.Set(field, val);
+            }
+            count++;
+        }
+        foreach (var goalobj in lstNewGoal) {
+           goalobj.Client__c = DataBag.strClientId;
+           goalobj.Service_Plan__c = DataBag.strServicePlanId;
+           goalobj.Service__c = DataBag.serviceIdForNewGoal;
+        }
+        
+        try {
+            Insert(lstNewGoal);
+        }
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+        // Update ISp with a checkbox value
+        updateISP(DataBag.lstServicePlanObj);
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId , scrollToOnLoad = DataBag.PositionOfTheButton});
+    }
+    
+    
+    /*
+    * Description: Method to get Contact Id of current magentrix login User
+    * Output : Id(String) of Contact
+    */
+	public void getStaffCompletingISPContactId() 
+	{
+	    List<User> lstUser = new List<User>();
+	    var CurrentUserId = Database.Retrieve(SystemInfo.UserId).Id;
+	    string queryStr="SELECT Id, ContactId From User Where Id =\""+CurrentUserId+"\"";
+	    lstUser = (List<User>)Database.Query(queryStr);
+	    if (lstUser.Count >0) {
+	        if(!string.IsNullOrEmpty(lstUser[0].ContactId)) {
+	            DataBag.strStaffCompletingISPContactId = lstUser[0].ContactId;
+	        }
+	    }
+	}
+	
+    /*
+    * Description: Method to get the signature from signature object
+    * Input      : lstSignatureObj : list of Signature which have the updated values
+    * Output     : get the signatures
+    */
+    [HttpPost]
+    public List<Force__Signatures__c> getServicePlanSignature(string strServicePlanId){
+        
+        List<Force__Signatures__c> lstSignature = new List<Force__Signatures__c>();
+        
+	    if(!string.IsNullOrEmpty(strServicePlanId)) {
+	    
+    	    string queryStr="SELECT Id, Contact__c,Service_Plan__c,Types_of_Signature__c,Signature__c";
+    	           queryStr+=" From Force__Signatures__c Where Service_Plan__c =\""+DataBag.strServicePlanId+"\"";
+    	    
+    	    lstSignature = (List<Force__Signatures__c>)Database.Query(queryStr);
+    	    
+    	    if (lstSignature.Count > 0) {
+    	        
+    	        foreach(var signatureObj in lstSignature) {
+    	            
+    	            if (signatureObj.Types_of_Signature__c == DataBag.strClientSignature) {
+    	                
+    	                DataBag.lstFamilySignature.Add(signatureObj);
+    	                
+    	            }
+    	            if (signatureObj.Types_of_Signature__c == DataBag.strStaffSignature) {
+    	                
+    	                DataBag.lstStaffSignature.Add(signatureObj);
+    	                
+    	            }
+    	        }
+    	    }
+	    }
+	    return lstSignature;
+	}
+	
+	/*
+    * Description: Method to save the signature on Signature object
+    * Input      : lstSignatureObj : list of signature which have the updated values
+    * Output     : save the signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveSignature(){
+        
+        if (CustomLabels.ISP_RoleForClientSignatures.Equals(UserInfo.Role.Name) 
+            || CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)
+            || CustomLabels.ISP_RoleForAdminSignatures.Equals(UserInfo.Role.Name)
+            || CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) {
+            SaveFamilySignature(DataBag.lstNewFamilySignature);
+        }
+        if (CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) {
+            SaveStaffSignature(DataBag.lstNewStaffSignature);
+        }
+        if (CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) {
+            SaveSupervisorSignature(DataBag.lstServicePlanObj);
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId, scrollToOnLoad = DataBag.PositionOfTheButton});
+	}
+	
+	/*
+    * Description: Method to check the value of the signature is blank or not
+    * Input      : signatureVal: The signature for which the value needs to be checked
+    * Output     : boolean true: if it the signature is blank and false: if not
+    */
+    
+    public bool checkTheSignatureValue(string signatureVal){
+        int firstIndexValues         = signatureVal.IndexOf('[');
+        int lastIndexValues          = signatureVal.LastIndexOf(']');
+        int lengthOfStrSupervisorSig = lastIndexValues - firstIndexValues + 1;
+    
+        string subStringOfSignVal = signatureVal.Substring(firstIndexValues+1,lengthOfStrSupervisorSig-2);
+        if(!string.IsNullOrEmpty(subStringOfSignVal)){
+            return true;
+        }
+            return false;
+    }
+	
+	/*
+    * Description: Method to save the signature and all the information related to service plan with status and completeion date
+    * Input      : ServicePlanModel : Model of service plan with updated values
+    * Output     : save the all information on service plan status and completeion date
+    */
+    [HttpPost]
+    public ActionResponse SaveCompleteISP(ServicePlanModel Model){
+        
+        SaveAllInfoOnISP (Model);
+        SaveISPWithCompletionDate(DataBag.lstServicePlanObj);
+        
+        DataBag.IsSuccessISP = "true";
+        
+        if(!string.IsNullOrEmpty(DataBag.Exception)){
+            return View(); 
+        }
+            
+        return View();
+    }
+    
+    /*
+    * Description: Method to save the signature and all the information related to service plan
+    * Input      : ServicePlanModel : Model of service plan with updated values
+    * Output     : save the all information on service plan
+    */
+    [HttpPost]
+    public ActionResponse SaveAllInfoOnISP(ServicePlanModel Model){
+        
+        SaveServicePlan(DataBag.lstServicePlanObj);
+        
+        if(DataBag.isEditableForRiskAssesment == true) {
+            SaveRiskAssessment(DataBag.lstRiskAssessmentObj);
+        }
+        SaveSignature() ;
+        if (CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name)) {
+            saveClientConsentInformation(DataBag.lstServicePlanObj);
+        }
+        
+        if (DataBag.lstNewGoal.Count > 0) {
+            SaveGoals(DataBag.lstNewGoal) ;
+        }
+        //Method to save a Service record
+        SaveServiceRecordRow(Model);
+        
+        //Method to save a Goal record
+        SaveGoalRecordRow(Model);
+        
+        //Method to save newly added Service
+        SaveNewService();
+        
+        if(!string.IsNullOrEmpty(DataBag.Exception)){
+            return View(); 
+        }
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId });
+    }
+    	
+	/*
+    * Description: Method to save service plan with Completion date
+    * Input      : lstServicePlanObj : list of service plan 
+    * Output     : save the service plan with completion date
+    */
+    [HttpPost]
+    public ActionResponse SaveISPWithCompletionDate(List<Force__Service_Plan__c> lstServicePlanObj){
+        
+        foreach (var servicePlanDateObj in lstServicePlanObj)
+        {
+            servicePlanDateObj.Set("Completion_Date__c", DateTime.Today);
+            servicePlanDateObj.Set("Status__c", "Completed");
+        }
+        if(lstServicePlanObj.Count>0){
+            lstServicePlanObj[0].Id = DataBag.strServicePlanId;
+            Edit(lstServicePlanObj);
+        }
+        
+        if (CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) && lstServicePlanObj[0].Status__c == "Completed") {
+		    AutoPopulateStaffMemberCompletingISP(DataBag.lstServicePlanObj);
+		}
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId });
+    }
+    
+	/*
+    * Description: Method to save the supervisor signature on Service Plan object
+    * Input      : lstServicePlanObj: list of signature which have the updated values
+    * Output     : save the supervisor signatures
+    */
+	[HttpPost]
+    public ActionResponse SaveSupervisorSignature(List<Force__Service_Plan__c> lstServicePlanObj){
+        
+        foreach (var servicePlanObj in lstServicePlanObj)
+        {
+            //Store the value of Supervisor signature
+            string SupervisorSignval = Request["SupervisorToUpdateServicePlan"];
+            
+            //Check whether the Supervisor  Signature is Blank or Not
+            bool checkSupervisorSignatureVal = checkTheSignatureValue(SupervisorSignval);
+            
+            if (checkSupervisorSignatureVal == true) {
+                
+                //Store the value of Supervisor signee name
+                string SupervisorSigneeName = Request["m$0$.Supervisor_Signee_Name__c"];
+                
+                //Stored the value of Supervisor signature
+                servicePlanObj.Set("Supervisor_Signature__c", SupervisorSignval);
+                servicePlanObj.Set("Supervisor_Signed_Date__c", DateTime.Today);
+                servicePlanObj.Set("Supervisor_Signee_Name__c", SupervisorSigneeName);
+            }
+            else{
+                 //Stored the value of Supervisor signature
+                servicePlanObj.Set("Supervisor_Signature__c", "");
+                servicePlanObj.Set("Supervisor_Signed_Date__c", "");
+                servicePlanObj.Set("Supervisor_Signee_Name__c", "");
+            }
+        }
+        try{
+            lstServicePlanObj[0].Id = DataBag.strServicePlanId;
+            Edit(lstServicePlanObj);  
+        } 
+        catch(Exception e){
+            
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId });
+	}
+	
+	/*
+    * Description: Method to save family 
+    * Input      : lstNewStaffSignature : list of family signature with new signatures
+    * Output     : save the family signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveFamilySignature(List<Force__Signatures__c> lstNewFamilySignature){
+        
+        List<Force__Signatures__c> lstfamilySignatureToInsert = new List<Force__Signatures__c>();
+        int familySignatureCount = 0;
+        if(lstNewFamilySignature.Count > 0) {
+            
+            foreach (var familySignatureObj in lstNewFamilySignature)
+            {
+                //Stored the value of Family signature
+                string FamilySignval = Request["FamilySignToSave"+familySignatureCount];
+                //Check whether the Family Signature is Blank or Not
+                bool checkFamilySignatureVal = checkTheSignatureValue(FamilySignval);
+                
+                if (checkFamilySignatureVal == true) {
+                    // stored the value of family signee name
+                    string FamilySigneeName = Request["m$"+familySignatureCount+"$.Signee_Name__c"];
+                    
+                    // stored the value of Relationship for Which the user signed
+                    string RelationshipType = Request["m$"+familySignatureCount+"$.Relationship_Type__c"];
+                    
+                    familySignatureObj.Types_of_Signature__c = DataBag.strClientSignature;
+                    familySignatureObj.Set("Signature__c", FamilySignval);
+                    familySignatureObj.Name = UserInfo.Name + "-" + DataBag.strClientSignature;
+                    familySignatureObj.Service_Plan__c = DataBag.strServicePlanId;
+                    familySignatureObj.Signee_Name__c = FamilySigneeName;
+                    familySignatureObj.Relationship_Type__c = RelationshipType;
+                    familySignatureObj.Signed_Date__c = DateTime.Today;
+                    lstfamilySignatureToInsert.Add(familySignatureObj);
+                }
+                familySignatureCount= familySignatureCount+1;
+            }
+            if (lstfamilySignatureToInsert.Count > 0) {
+                try {
+                    Insert(lstfamilySignatureToInsert);
+                } 
+                catch (Exception e) {
+                    DataBag.Exception = e.Message;
+                    return View();
+                }
+            }
+        }
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId });
+    }
+    
+    /*
+    * Description: Method to save family 
+    * Input      : lstNewStaffSignature : list of family signature with new signatures
+    * Output     : save the family signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveStaffSignature(List<Force__Signatures__c> lstNewStaffSignature){
+        
+        List<Force__Signatures__c> lstSatffSignatureToInsert = new List<Force__Signatures__c>();
+        
+        int staffSignatureCount = 0;
+        if(lstNewStaffSignature.Count > 0) {
+            
+            foreach (var staffSignatureObj in lstNewStaffSignature)
+            {
+                //Stored the value of staff signature
+                string staffSignval = Request["StaffSignToSave"+staffSignatureCount];
+                
+                //Check whether the Family Signature is Blank or Not
+                bool checkStaffSignatureVal = checkTheSignatureValue(staffSignval);
+                
+                if (checkStaffSignatureVal == true) {
+                    // stored the value of staff signee name
+                    string StaffSigneeName = Request["staff$m$"+staffSignatureCount+"$.Signee_Name__c"];
+                    
+                    staffSignatureObj.Types_of_Signature__c = DataBag.strStaffSignature;
+                    staffSignatureObj.Set("Signature__c", staffSignval);
+                    staffSignatureObj.Name = UserInfo.Name + "-" + DataBag.strStaffSignature;
+                    staffSignatureObj.Service_Plan__c = DataBag.strServicePlanId;
+                    staffSignatureObj.Signee_Name__c = StaffSigneeName;
+                    staffSignatureObj.Signed_Date__c = DateTime.Today;
+                    lstSatffSignatureToInsert.Add(staffSignatureObj);
+                }
+                staffSignatureCount= staffSignatureCount+1;
+            }
+            if (lstSatffSignatureToInsert.Count > 0) {
+                try {
+                    Insert(lstSatffSignatureToInsert);
+                } 
+                catch (Exception e) {
+                    DataBag.Exception = e.Message;
+                    return View();
+                }
+            }
+        }
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId });
+    }
+    
+    /*
+    * Description: Method to single Row for staff signature
+    * Input      : lstNewStaffSignature : list of Signature
+    * Output     : Add the single row for staff signature
+    */
+	[HttpPost]
+	public ActionResponse AddStaffSignatureRowToList(List<Force__Signatures__c> lstNewStaffSignature)
+	{   
+	    DataBag.lstNewStaffSignature = lstNewStaffSignature;
+	    int staffSignatureCount = 0;
+	    
+	    if(lstNewStaffSignature.Count > 0) {
+            
+            foreach (var staffSignatureObj in lstNewStaffSignature)
+            {
+                //Stored the value of Family signature
+                string staffSignval = Request["StaffSignToSave"+staffSignatureCount];
+                // stored the value of staff signee name
+                string StaffSigneeName = Request["staff$m$"+staffSignatureCount+"$.Signee_Name__c"];
+                
+                staffSignatureObj.Types_of_Signature__c = DataBag.strStaffSignature;
+                staffSignatureObj.Set("Signature__c", staffSignval);
+                staffSignatureObj.Name = UserInfo.Name + "-" + DataBag.strStaffSignature;
+                staffSignatureObj.Service_Plan__c = DataBag.strServicePlanId;
+                staffSignatureObj.Signee_Name__c = StaffSigneeName;
+                staffSignatureCount= staffSignatureCount+1;
+            }
+        }
+        
+	    Force__Signatures__c ObjNewStaffSignature = new Force__Signatures__c();
+	    //Add new instance to the signature list
+		lstNewStaffSignature.Add(ObjNewStaffSignature);
+	    
+		DataBag.lstNewStaffSignature = lstNewStaffSignature;
+		
+		//Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+		return View();
+	}
+	
+	/*
+    * Description: Method to single Row for Family signature
+    * Input      : lstNewFamilySignature : list of Family Signature
+    * Output     : Add the single row for Family signature
+    */
+	[HttpPost]
+	public ActionResponse AddFamilySignatureRowToList(List<Force__Signatures__c> lstNewFamilySignature)
+	{   
+	    DataBag.lstNewFamilySignature = lstNewFamilySignature;
+	    int familySignatureCount = 0;
+	    
+	    if(lstNewFamilySignature.Count > 0) {
+            
+            foreach (var familySignatureObj in lstNewFamilySignature)
+            {
+                //Stored the value of Family signature
+                string FamilySignval = Request["FamilySignToSave"+familySignatureCount];
+                // stored the value of family signee name
+                string FamilySigneeName = Request["m$"+familySignatureCount+"$.Signee_Name__c"];
+               
+                familySignatureObj.Types_of_Signature__c = DataBag.strClientSignature;
+                familySignatureObj.Set("Signature__c", FamilySignval);
+                familySignatureObj.Name = UserInfo.Name + "-" + DataBag.strClientSignature;
+                familySignatureObj.Service_Plan__c = DataBag.strServicePlanId;
+                familySignatureObj.Signee_Name__c = FamilySigneeName;
+                familySignatureCount= familySignatureCount+1;
+            }
+        }
+       
+	    Force__Signatures__c ObjNewFamilySignature = new Force__Signatures__c();
+	    //Add new instance to the signature list
+		lstNewFamilySignature.Add(ObjNewFamilySignature);
+	    
+		DataBag.lstNewFamilySignature = lstNewFamilySignature;
+		
+		//This method should not be called when logged in as a family role beacause that time scroll method not get called
+		if(!CustomLabels.ISP_RoleForClientSignatures.Equals(UserInfo.Role.Name) || DataBag.lstNewFamilySignature.Count != 1) {
+    		//Method called to set the DataBag with the Scroll Position
+            getScrollValue();
+		}
+        
+		return View();
+	}
+	
+	/*
+    * Description: Method to Remove Row for Family signature
+    * Input      : lstNewFamilySignature : list of Family signature
+    * Output     : Remove the rows for Family signature
+    */
+	[HttpPost]
+	public ActionResponse RemoveFamilySignatureRowToList(List<Force__Signatures__c> lstNewFamilySignature)
+	{   
+	    if(lstNewFamilySignature.Count>0){
+	        lstNewFamilySignature.RemoveAt(lstNewFamilySignature.Count-1);
+	    }
+	    
+	    DataBag.lstNewFamilySignature = lstNewFamilySignature;
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return View();
+	     
+	}
+	
+	/*
+    * Description: Method to Remove Row for Staff signature
+    * Input      : lstNewFamilySignature : list of Staff signature
+    * Output     : Remove the rows for Staff signature
+    */
+	[HttpPost]
+	public ActionResponse RemoveStaffSignatureRowToList(List<Force__Signatures__c> lstNewStaffSignature)
+	{   
+	    if(lstNewStaffSignature.Count>0){
+	        lstNewStaffSignature.RemoveAt(lstNewStaffSignature.Count-1);
+	    }
+	    
+	    DataBag.lstNewStaffSignature = lstNewStaffSignature;
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return View();
+	     
+	}
+	
+    /*
+    * Description: Method to get the service plan information with sections
+    * Output     : list of service plan with service plan section
+    */
+    [HttpPost]
+    public List<Force__Service_Plan__c> getServicePlanSection(){
+        
+        List<Force__Service_Plan__c> lstServicePlanSection = new List<Force__Service_Plan__c>();
+        
+        // strPicklistForServicePlan : Assigned the Custom label which consist of the Service Plan (Picklist Value)
+	    string strPicklistForServicePlan = CustomLabels.ISP_PicklistValueForSerivcePlanSection;
+        
+        //Query on Service Plan for the respective Service Plan
+        string queryStr="SELECT";
+        queryStr+=" Id,Supervisor_Signature__c,Completion_Date__c,Terms_And_Conditions__c,Client_Guardian_Phone__c,Status__c,";
+        queryStr+="Supervisor_Signed_Date__c,Supervisor_Signee_Name__c,Client__c";
+        
+        if(objConfig != null ){
+            lstOfServicePlanSection =   Database.Query<Force__Service_Plan_Section__c>()
+                                                .Where(f=>f.Object_Configuration__c==objConfig.Id && 
+                                                 f.SectionType__c == strPicklistForServicePlan)
+                                                .OrderBy(f=>f.Sequence__c)
+                                                .ToList();
+            if(lstOfServicePlanSection.Count > 0){
+                for(int i = 0; i < lstOfServicePlanSection.Count; i++){
+                    queryStr+= ", ";
+                    queryStr+= lstOfServicePlanSection[i].Fields_for_Section__c;
+                }
+            }
+        }
+	    queryStr+=" FROM Force__Service_Plan__c";
+	    queryStr+=" WHERE Id=\""+strServicePlanId+"\"";
+	    queryStr+=" LIMIT 1";
+	    
+	    lstServicePlanSection = (List<Force__Service_Plan__c>)Database.Query(queryStr);
+	    return lstServicePlanSection;
+    }
+    
+    /*
+    * Description: Method to get the Risk Assessment information with sections
+    * Output     : List of service plan with Risk Assessment section
+    */
+    [HttpPost]
+    public List<Force__Risk_Assessment__c> getRiskAssessmentRelatedToServicePlan(){
+        
+        List<Force__Risk_Assessment__c> lstRiskAssessmentRecords= new List<Force__Risk_Assessment__c>();
+        
+        // strPicklistForRiskAssessment : Assigned the Custom label which consist of the Risk Assessment (Picklist Value)
+	    string strPicklistForRiskAssessment = CustomLabels.ISP_PicklistValueForRiskAssessmentSection;
+        
+        //Query on Service Plan for the respective Service Plan
+        string queryStr="SELECT";
+        queryStr+=" Id, Client_ISP__c ";
+        
+        if(objConfig != null ){
+            lstOfRiskAssessmentSection =   Database.Query<Force__Service_Plan_Section__c>()
+                                                .Where(f=>f.Object_Configuration__c==objConfig.Id && 
+                                                 f.SectionType__c == strPicklistForRiskAssessment)
+                                                .OrderBy(f=>f.Sequence__c)
+                                                .ToList();
+            if(lstOfRiskAssessmentSection.Count > 0){
+                for(int i = 0; i < lstOfRiskAssessmentSection.Count; i++){
+                    queryStr+= ", ";
+                    queryStr+= lstOfRiskAssessmentSection[i].Fields_for_Section__c;
+                }
+            }
+        }
+	    queryStr+=" FROM Force__Risk_Assessment__c";
+	    queryStr+=" WHERE Client_ISP__c=\""+strServicePlanId+"\"";
+	    queryStr+=" ORDER BY CreatedOn DESC LIMIT 1";
+	    lstRiskAssessmentRecords = (List<Force__Risk_Assessment__c>)Database.Query(queryStr);
+	    return lstRiskAssessmentRecords;
+    }
+    /*
+    * Description: Method to get the Service Agreement Information with sections
+    * Output     : List of Service Agreement Section With its repsective Sub Sections.
+    */
+    [HttpPost]
+    public List<Force__Service_Plan_Section__c> getServiceAgreementRelatedToServicePlan(){
+        
+        
+        //Store the picklist value of the Service Plan Agreement
+	    string strServicePlanAgreementPicklist                = CustomLabels.ServiceAgreementPlanPicklistForServiceAgreementPlanSetupPage;
+        
+        if(objConfig != null ){
+            lstOfServicePlanAgreementSection =   Database.Query<Force__Service_Plan_Section__c>()
+                                                .Where(f=>f.Object_Configuration__c==objConfig.Id && 
+                                                 f.SectionType__c == strServicePlanAgreementPicklist)
+                                                 .ToList();
+            
+        }
+	    return lstOfServicePlanAgreementSection;
+    }
+    
+    /*
+    * Description: Method to get the section fields for the Serive Plan Setup Object
+    * Output     : Get the Section Fields
+    */
+    [HttpPost]
+    public List<List<string>> getSectionFields(List<Force__Service_Plan_Section__c> lstofSections){
+        
+        //list of fields for each sections
+        List<List<string>> lstSectionsFields=new List<List<string>>(); 
+        
+        List<string> UniqFieldSetServicePlan=new List<string>();
+        
+        if(lstofSections.Count > 0){
+            for(int i = 0; i < lstofSections.Count; i++){
+                
+                List<string> lstTempField = getTheCommaSeperatedValues(lstofSections[i].Fields_for_Section__c);
+                
+                List<string> filteredFieldsSection=new List<string>();
+                
+                for(int j=0; j<lstTempField.Count; j++){
+                   
+                   if(!UniqFieldSetServicePlan.Contains(lstTempField[j]) || (lstTempField[j] == DataBag.BlankSpace) ){
+                            
+                        filteredFieldsSection.Add(lstTempField[j]);
+                        UniqFieldSetServicePlan.Add(lstTempField[j]);
+                   }
+                }
+                
+                lstSectionsFields.Add(filteredFieldsSection);
+                
+            }
+        }
+        return lstSectionsFields;
+    }
+    
+    /*
+    * Description: Method to create a Risk Assessment Object's record associated to the Service Plan Object and display it in the editable format
+    * Input      : ""
+    * Output     : Rerenders the page with input fields for Risk Assesment Section
+    */
+    [HttpPost]
+	public ActionResponse CreateRiskAssesmentRecord(){
+        
+        
+        // strPicklistForRiskAssessment : Assigned the Custom label which consist of the Risk Assessment (Picklist Value)
+	    string strPicklistForRiskAssessment = CustomLabels.ISP_PicklistValueForRiskAssessmentSection;
+	    
+	     
+	        string objConfigId=DataBag.objConfigSetup.Id;
+	        
+            lstOfRiskAssessmentSection =   Database.Query<Force__Service_Plan_Section__c>()
+                                                .Where(f=>f.Object_Configuration__c==objConfigId && 
+                                                 f.SectionType__c == strPicklistForRiskAssessment)
+                                                .OrderBy(f=>f.Sequence__c)
+                                                .ToList();
+	
+        
+        if(lstOfRiskAssessmentSection != null && lstOfRiskAssessmentSection.Count>0){
+            DataBag.isEditableForRiskAssesment=true;
+            DataBag.lstOfRiskAssessmentSection = lstOfRiskAssessmentSection ;
+            DataBag.lstRiskAssessmentObj.Add(new Force__Risk_Assessment__c());
+            
+            //DataBag to store the fields for different section for Risk Assessment
+            DataBag.lstSectionsFieldsDataBagForRiskAssesment = getSectionFields(lstOfRiskAssessmentSection);
+        }
+        
+        return View();
+    }
+    
+    //Wrapper Class
+    public class ServicePlanModel{
+        public Force__Object_Configuration__c objConfigSetup {get;set;}
+       
+        public string strContactID;
+        public List<ServiceModel> lstServiceModel{get; set;}
+        public List<GoalModel> lstGoalModel{get; set;}
+        
+        public ServicePlanModel ()
+        {}
+    }
+    
+    /*
+    * Description: Method to set the scroll position
+    */
+    public void setScrollPosition(string strCurrentURL){
+        //This code snippet will set the value of the Scroll Position on Save Button on all the rows
+        bool bScrollView = strCurrentURL.Contains("scrollToOnLoad=");
+        if(bScrollView == true){
+             //DataBag.IdOfTheButton =  AspxPage.GetParameter("scrollToOnLoad");
+             DataBag.PositionOfTheButton =  AspxPage.GetParameter("scrollToOnLoad");
+        }
+    }
+    
+    /*
+    * Description: Method to get the scroll position
+    * Input      : 
+    * Output     : Stores the scroll value
+    */
+	[HttpPost]
+	public ActionResponse getScrollValue()
+	{   
+	    DataBag.IdOfTheButton = (Request["scrollIdName"]);
+	    DataBag.PositionOfTheButton = (Request["scrollPositionIdName"]);
+	    return View();
+	}
+	
+	/*
+    * Description: Method to save the service plan with the Checkbox value
+    * Input      : lstServicePlanObj : list of Service Plan which have the updated values
+    */
+    [HttpPost]
+	public ActionResponse updateISP(List<Force__Service_Plan__c> lstServicePlanObj){
+	    
+	    foreach (var servicePlanObj in lstServicePlanObj)
+        {
+            if (servicePlanObj.IsUpdateISP__c == false) {
+                servicePlanObj.Set("IsUpdateISP__c", true);
+            }
+            
+        }
+        try {
+            Edit(lstServicePlanObj);
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+        return View();
+	}
+	
+	/*
+    * Description: Method to save the CLIENT INFORMED CONSENT values
+    * Input      : lstServicePlanObj : list of Service Plan which have the updated values
+    */
+    [HttpPost]
+	public ActionResponse saveClientConsentInformation(List<Force__Service_Plan__c> lstServicePlanObj){
+	    
+	    int count = 0;
+	    foreach (var servicePlanClientConsentObj in lstServicePlanObj)
+        {
+            foreach (var clientConsentfield in DataBag.lstServicePlanClientConsentFields){
+                string val = Request["m$" + count.ToString() + "$." +  clientConsentfield];
+                servicePlanClientConsentObj.Set(clientConsentfield, val);    
+            }
+        }
+        try {
+            Edit(lstServicePlanObj);
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+            
+        return View();
+	}
+
+    /*
+     * Description: Method to edit the Service in the editable format
+     * Input      : ServicePlanModel: Model of Service Plan from the page
+     * Output     : Rerenders the page with input fields for Service in Edit mode
+     */
+    [HttpPost]
+	public ActionResponse EditServiceRecordRow(ServicePlanModel Model){
+	    string valForService = Request["ServiceIDforServiceToEdit"];
+	    
+	    //Set the databag with the service id fetched from the hidden field
+	    DataBag.ServiceId = valForService;
+	    
+	    //Iterate on the Service Model to get services to display a service whose Id is obtained in edit mode and rest in non-editable mode
+	    foreach(var serviceModel in Model.lstServiceModel){
+	        
+	        if(valForService == serviceModel.lstService[0].Id){
+	            serviceModel.isEditable = true;
+	        }else{
+	            serviceModel.isEditable = false;
+	        }
+	        
+	    }
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    
+        return View();
+    }
+    /*
+    * Description: Method to Cancel editting for the Service in editable format
+    * Input      : ServicePlanModel: Model of Service Plan from the page
+    * Output     : Rerenders the page and displays Service in non-editable format
+    */
+    [HttpPost]
+	public ActionResponse CancelServiceRecordRow(ServicePlanModel Model){
+	    string valForService = Request["ServiceIDforServiceToEdit"];
+	    
+	    //Clear the databag
+	    DataBag.ServiceId = "";
+	    
+	    //Set the Service row in non-editable format whose Id is fetched from the page
+	    foreach(var serviceModel in Model.lstServiceModel){
+	        
+	        if(valForService == serviceModel.lstService[0].Id){
+	            serviceModel.isEditable = false;
+	        }
+	        
+	    }
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    
+        return View();
+    }
+    
+   /*
+    * Description: Method to save the Service record for a selected row
+    * Input      : ServicePlanModel : Service Plan Model
+    * Output     : Rerenders the page and displays Service row in non-editable format and saves the record
+    */
+    [HttpPost]
+	public ActionResponse SaveServiceRecordRow(ServicePlanModel Model){
+	    
+	    int count = 0;
+	    string valForService = Request["ServiceIDforServiceToEdit"];
+	    
+	   	//Fetch the Service record with the service Id retrived from the page
+	   	Force__Service__c serviceObj = Database.Query<Force__Service__c>()
+                                               .Where(f=>(f.Id == valForService))
+                                               .First();
+	   
+	    //Iterate on the list of Service Model and check for the Id in the model. If Id is present then update the record for that Service
+	    foreach(var serviceModel in Model.lstServiceModel){
+	        
+	        if(valForService == serviceModel.lstService[0].Id){
+	            foreach (var servicefield in DataBag.ServiceFields){
+	                
+	                if(servicefield != "Name"){
+	                    string val = Request["m$" + count.ToString() + "$." +  servicefield];
+                        serviceObj.Set(servicefield, val);   
+                        serviceModel.lstService[0].Set(servicefield, val);
+	                }
+                }
+                //Set the service row on the page in non-editable format
+	            serviceModel.isEditable = false;
+	        }
+	        
+	    }
+        try {
+            Edit(serviceObj);
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+        DataBag.lstFunderId = new List<string>();
+        
+        // Add Funder Ids for the services into list   
+        foreach(var serviceModel in Model.lstServiceModel) {
+            
+            DataBag.lstFunderId.Add(serviceModel.lstService[0].Funder__c);
+        }
+        
+        getListFunderOption(DataBag.lstFunderId);
+        
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+            
+        return View();
+    }
+	
+	/*
+     * Description: Method to edit the Goal in the editable format
+     * Input      : ServicePlanModel: Model of Service Plan from the page
+     * Output     : Rerenders the page with input fields for Goal in Edit mode
+     */
+    [HttpPost]
+	public ActionResponse EditGoalRecordRow(ServicePlanModel Model){
+	    string valForGoal = Request["GoalIDforGoalToEdit"];
+	    
+	    //Set the databag with the service id fetched from the hidden field
+	    DataBag.GoalId = valForGoal;
+	    
+	    //Iterate on the Goal Model to get Goals to display a goal whose Id is obtained in edit mode and rest in non-editable mode
+	    foreach(var GoalModel in Model.lstGoalModel){
+	        
+	        if(valForGoal == GoalModel.lstGoals[0].Id){
+	            GoalModel.isEditable = true;
+	        }else{
+	            GoalModel.isEditable = false;
+	        }
+	    }
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        // Call this method to Reinitialise Goal Section when 'Edit' link is click
+        ReinitialiseNewGoalSection(Model.lstGoalModel);
+	    
+        return View();
+    }
+    
+    /*
+    * Description: Method to Cancel editting for the goal in editable format
+    * Input      : ServicePlanModel: Model of Service Plan from the page
+    * Output     : Rerenders the page and displays Goal in non-editable format
+    */
+    [HttpPost]
+	public ActionResponse CancelGoalRecordRow(ServicePlanModel Model){
+	    string valForGoal = Request["GoalIDforGoalToEdit"];
+	    
+	    //Clear the databag
+	    DataBag.GoalId = "";
+	    
+	    //Set the Service row in non-editable format whose Id is fetched from the page
+	    foreach(var GoalModel in Model.lstGoalModel){
+	        
+	        if(valForGoal == GoalModel.lstGoals[0].Id){
+	            GoalModel.isEditable = false;
+	        }
+	        
+	    }
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+	    
+        return View();
+    }
+    
+   /*
+    * Description: Method to save the Goal record for a selected row
+    * Input      : ServicePlanModel : Service Plan Model
+    * Output     : Rerenders the page and displays goal row in non-editable format and saves the record
+    */
+    [HttpPost]
+	public ActionResponse SaveGoalRecordRow(ServicePlanModel Model){
+	    
+	    int count = 0;
+	    string valForGoal = Request["GoalIDforGoalToEdit"];
+	    
+	   	//Fetch the Goal record with the gaol Id retrived from the page
+	   	Force__Goals__c goalObj = Database.Query<Force__Goals__c>()
+                                               .Where(f=>(f.Id == valForGoal))
+                                               .First();
+	   
+	    //Iterate on the list of goal Model and check for the Id in the model. If Id is present then update the record for that goal
+	    foreach(var GoalModel in Model.lstGoalModel){
+	        
+	        if(valForGoal == GoalModel.lstGoals[0].Id){
+	            foreach (var goalfield in DataBag.GoalFields){
+	                
+                    string val = Request["m$" + count.ToString() + "$." +  goalfield];
+                    goalObj.Set(goalfield, val);
+                    // To show the updated goal record on page
+                    GoalModel.lstGoals[0].Set(goalfield, val);
+                }
+                //Set the goal row on the page in non-editable format
+	            GoalModel.isEditable = false;
+	        }
+	        
+	    }
+        try {
+            Edit(goalObj);
+        } 
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+            
+        return View();
+	}
+	
+	/*
+    * Description: Method to check if the status is Inprogress or not
+    * Input      : lstServicePlanObj: list of Service Plan from the page
+    * Output     : Rerenders the page and displays Goal edit button when status is In Progress
+    */
+	public void CheckStatusInPogress(List<Force__Service_Plan__c> lstServicePlanObj){
+	    foreach (var servicePlanObj in lstServicePlanObj) {
+	        if (servicePlanObj.Status__c == "In Progress") {
+	            DataBag.IsStatusInProgress = true;
+	        }
+        }
+	}
+	
+	/*
+    * Description: Method to redirect to Client record
+    * Input      : lstServicePlanObj : list of Service Plan
+    * Output     : redirect to the Client record
+    */
+    [HttpPost]
+    public ActionResponse redirectToClientRecord(List<Force__Service_Plan__c> lstServicePlanObj)
+    {
+        return Redirect("/"+lstServicePlanObj[0].Client__c) ;
+    }
+	
+	/*
+    * Description: Method to Hide the buttons
+    * Input      : lstServicePlanObj : list of Service Plan
+    * Output     : Hide the buttons on service plan interface
+    */
+    public void checkStatusCompleted(List<Force__Service_Plan__c> lstServicePlanObj)
+    {
+        foreach (var servicePlanHideObj in lstServicePlanObj) {
+            if (servicePlanHideObj.Status__c != null && servicePlanHideObj.Status__c.Equals("Completed", StringComparison.OrdinalIgnoreCase)) {
+                DataBag.IsStatusCompleted = true;
+            }
+        }
+    }
+    
+    /*
+    * Description: Method to get the help text of the not updateable field.
+    * Output     : Get the help text of the not updateable field.
+    */
+    public ActionResponse fetchReadOnlyFieldHelpText()
+    {
+        string strObjectName = "Force__Service_Plan__c";
+        
+        DataBag.lstEntity = Database.Query<Opirus.Area.Setup.Entity>(a => a.Name == strObjectName).Select(f => new { f.Id, f.Name })
+                                                            .ToListAsAdmin();
+        string strEntity = DataBag.lstEntity[0].Id;
+        
+        DataBag.lstReadOnlyField = Database.Query<Opirus.Area.Setup.EntityField>(f=>f.EntityId == strEntity &&  f.IsUpdateable==false)
+                                            .Select(f => new { f.Id, f.Name ,f.HelpText, f.Label, f.IsUpdateable })
+                                            .ToListAsAdmin();
+        
+        foreach (var readOnlyField in DataBag.lstReadOnlyField) {
+            
+            if(readOnlyField.Name != null && readOnlyField.Name != "" && readOnlyField.HelpText!=null && readOnlyField.HelpText!=""){
+              
+               DataBag.ReadOnlyField.Add(readOnlyField.Name);
+               
+               DataBag.HelpText.Add(readOnlyField.HelpText);
+            }
+        }
+        
+        return View();
+    }
+    
+    /*
+     * Description: Method to Reinitialise Goal Section when 'Edit' link is click
+     * Input      : lstGoals : list of Goal
+     * Output     : 
+     */
+	[HttpPost]
+    public void ReinitialiseNewGoalSection(List<GoalModel> lstGoalModel) {
+        
+        DataBag.lstNewGoal = new List<Force__Goals__c>();
+        
+        DataBag.serviceIdForNewGoal= "";
+        
+    }
+    
+    /*
+     * Description: Method to set all records in non-ediatable mode when 'Add Goal' button is clicked
+     * Input      : lstNewGoal : list of new Goal, lstGoalModel : Model of Goal
+     * Output     : Rerenders the page and displays Goal row in non-editable format
+     */
+    [HttpPost]
+    public void SetGoalRecordAsNonEditable(List<Force__Goals__c> lstNewGoal, List<GoalModel> lstGoalModel) {
+        
+        foreach(var goalRecord in lstGoalModel) {
+        
+            goalRecord.isEditable = false;
+        }
+    }
+    
+    /*
+    * Description: Method to save service plan with Staff member Completing ISP
+    * Input      : lstServicePlanObj : list of service plan 
+    * Output     : save the service plan with Staff member Completing ISP
+    */
+    [HttpPost]
+    public ActionResponse AutoPopulateStaffMemberCompletingISP(List<Force__Service_Plan__c> lstServicePlanObj){
+        
+        foreach (var servicePlanStaffMemberObj in lstServicePlanObj)
+        {
+            servicePlanStaffMemberObj.Set("Staff_Member_Completing_ISP__c", DataBag.strStaffCompletingISPContactId);
+        }
+        if(lstServicePlanObj.Count>0){
+            Edit(lstServicePlanObj);
+        }
+        
+        return View();
+    }
+    
+	
+     /*
+    * Description: Method to add single Service
+    * Input      : ServicePlanModel : Service Plan Model of the entire page
+    * Output     : Creates a new service record to display
+    */
+	[HttpPost]
+	public ActionResponse AddService(ServicePlanModel Model)
+	{
+	    //Clear the list of new Services
+	    DataBag.LstNewService.Clear();
+	    
+	    //Add a new service to a temporary list 
+	    List<Force__Service__c> lstService = new List<Force__Service__c>{new Force__Service__c()};
+	    
+	    //Assign the temporary list to the list of databag
+	    DataBag.LstNewService =  lstService;
+	    
+	    //Check if list of Service fields are not empty if true then assign the list to another list of fields and check if the list has the required fields for services
+	    if(DataBag.ServiceFields.Count > 0){
+	        
+	        //Assign the list to another list of fields
+    	    DataBag.ServiceFieldsWhileCreate = DataBag.ServiceFields;
+    	    
+    	    //Check if the list contains 'Name' field, if not then add it to the list
+    	    if(!DataBag.ServiceFields.Contains("Name")){
+    	        DataBag.ServiceFieldsWhileCreate.Add("Name");   
+    	    }
+    	    
+    	    //Check if the list contains 'Service Area' field if not then add it to the list
+    	    if(!DataBag.ServiceFields.Contains("Service_Area__c")){
+    	        DataBag.ServiceFieldsWhileCreate.Add("Service_Area__c");   
+    	    }
+	    }
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return View();
+	}
+	
+	 /*
+    * Description: Method to add single Row for Service
+    * Output     : Add the single row for Service
+    */
+	[HttpPost]
+	public ActionResponse AddMoreServices()
+	{   
+	    //Assign list of new Service from databag to a temporary list 
+	    List<Force__Service__c> lstService = DataBag.LstNewService;
+	    
+	    int count = 0;
+	    
+	    //Assign all the field values from page for each Service
+	    foreach (var service in lstService){
+            foreach (var field in DataBag.ServiceFieldsWhileCreate)
+            {
+                string val = Request["m$" + count.ToString() + "$." +  field];
+                service.Set(field, val);
+            }
+            count++;
+        }
+        
+        //Add new service to the list
+        lstService.Add(new Force__Service__c());
+        
+        //Assign this temporary list to the databag of list of services
+	    DataBag.LstNewService = lstService;
+	   
+		//Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+		return View();
+	}
+	
+	/*
+    * Description: Method to Remove Row for Service
+    * Output     : Remove the rows for Service
+    */
+	[HttpPost]
+	public ActionResponse RemoveService()
+	{   
+	    //Assign list of new Service from databag to a temporary list 
+	    List<Force__Service__c> lstService = DataBag.LstNewService;
+	    
+	    //Check if list of Service is not empty it true then remove the last Service from the list
+	    if(lstService.Count>0){
+	        lstService.RemoveAt(lstService.Count-1);
+	    }
+	    
+	    //Assigned the changed list to the list of Service of databag
+	    DataBag.LstNewService = lstService;
+	    
+	    //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+	    return View();
+	}
+	
+	/*
+    * Description: Method to Save New Services
+    * 
+    */
+    [HttpPost]
+    public ActionResponse SaveNewService() {
+       
+        //Temporary list to be used to create new Services
+        List<Force__Service__c> lstServiceToInsert = new List<Force__Service__c>();
+        
+        
+        int count = 0;
+        
+        //Iterate on the list of new services, get the value from the page and assign it to the temporary list
+        foreach (var service in DataBag.LstNewService){
+            
+            foreach (var field in DataBag.ServiceFieldsWhileCreate)
+                {
+                    string val = Request["m$" + count.ToString() + "$." +  field];
+                    service.Set(field, val);
+                }
+                count++;
+                lstServiceToInsert.Add(service);
+        }
+        
+        //Assign Client id to all the new Services
+        foreach (var serviceObj in lstServiceToInsert) {
+            
+            serviceObj.Client__c = DataBag.strClientId;
+            
+        }
+        
+        try {
+            Insert(lstServiceToInsert);
+            
+            // When new Services are added call the method to check whether new services contains funder Ids or not
+            foreach (var serviceObj in lstServiceToInsert) {
+                
+                if(!DataBag.lstFunderId.Contains(serviceObj.Funder__c)){
+           
+                    DataBag.lstFunderId.Add(serviceObj.Funder__c);
+                    getListFunderOption(DataBag.lstFunderId);
+                }
+            }
+            getListFunderOption(DataBag.lstFunderId);
+        }
+        catch (Exception e) {
+            DataBag.Exception = e.Message;
+            return View();
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId , scrollToOnLoad = DataBag.PositionOfTheButton});
+    }
+    
+    /*
+    * Description: Method to save the updated signature of  family on click of Resign
+    * Output     : save  (update) the family signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveFamilySignatureOnResign(){
+        
+        List<Force__Signatures__c> lstfamilySignatureToUpdate = new List<Force__Signatures__c>();
+       
+
+        //Stored the value of Family signature
+        string FamilySignval                   = Request["updatedSignatureValName"];
+        string recordIdForSignatureToBeUpdated = Request["resignedRecordId"];
+        if(!string.IsNullOrEmpty(FamilySignval) && !string.IsNullOrEmpty(recordIdForSignatureToBeUpdated)){
+            lstfamilySignatureToUpdate = Database.Query<Force__Signatures__c>()
+                                                .Where(f=>f.Id == recordIdForSignatureToBeUpdated)
+                                                .ToList();
+            if(lstfamilySignatureToUpdate.Count > 0){
+                 lstfamilySignatureToUpdate[0].Signature__c =  FamilySignval;
+                 lstfamilySignatureToUpdate[0].Signed_Date__c = DateTime.Today;
+            }
+            
+            if (lstfamilySignatureToUpdate.Count > 0) {
+                try {
+                    Edit(lstfamilySignatureToUpdate);
+                } 
+                catch (Exception e) {
+                    DataBag.Exception = e.Message;
+                    return View();
+                }
+            }
+       
+        }
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId ,scrollToOnLoad = DataBag.PositionOfTheButton});
+    } 
+    
+    /*
+    * Description: Method to save the updated signature of  Staff on click of Resign
+    * Output     : save  (update) the Staff signatures
+    */
+    [HttpPost]
+    public ActionResponse SaveStaffSignatureOnResign(){
+        
+        List<Force__Signatures__c> lstStaffSignatureToUpdate = new List<Force__Signatures__c>();
+       
+
+        //Stored the value of Staff signature
+        string StaffSignval                         = Request["updatedStaffSignatureValName"];
+        string recordIdForStaffSignatureToBeUpdated = Request["resignedStaffRecordId"];
+        if(!string.IsNullOrEmpty(StaffSignval) && !string.IsNullOrEmpty(recordIdForStaffSignatureToBeUpdated)){
+            lstStaffSignatureToUpdate = Database.Query<Force__Signatures__c>()
+                                                .Where(f=>f.Id == recordIdForStaffSignatureToBeUpdated)
+                                                .ToList();
+            if(lstStaffSignatureToUpdate.Count > 0){
+                 lstStaffSignatureToUpdate[0].Signature__c =  StaffSignval;
+                 lstStaffSignatureToUpdate[0].Signed_Date__c = DateTime.Today;
+            }
+            
+            if (lstStaffSignatureToUpdate.Count > 0) {
+                try {
+                    Edit(lstStaffSignatureToUpdate);
+                } 
+                catch (Exception e) {
+                    DataBag.Exception = e.Message;
+                    return View();
+                }
+            }
+       
+        }
+        
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+            
+        return Redirect(ActivePages.ServicePlanInterface, new { id=DataBag.strServicePlanId,scrollToOnLoad = DataBag.PositionOfTheButton });
+    } 
+    
+	//Wrapper Class for Services
+    public class ServiceModel{
+        public bool isEditable {get;set;}
+        public List<Force__Service__c> lstService {get;set;}
+        
+        public ServiceModel(){}
+    }
+    
+    //Wrapper Class for Goals
+    public class GoalModel{
+        public bool isEditable {get;set;}
+        public List<Force__Goals__c> lstGoals {get;set;}
+        
+        public GoalModel(){}
+    }
+    
+    /*
+     * Description: Method to add Funder Ids and Funder Names into List
+     * Input      : lstFunderId: List of Funder Id
+     * Output     : Adds Wrapper Insatnce(Funder Id and Funder Name) into List
+     */
+    public void getListFunderOption(List<string> lstFunderId) {
+     
+        List<Force__Funder__c> lstFunder = new List<Force__Funder__c>();
+        
+        // Query to retrieve all Funder whose Id is available in lstFunderId
+        if(lstFunderId.Count>0){
+            lstFunder = Database.Query<Force__Funder__c>().Where(f=>lstFunderId.Contains(f.Id))
+                                                                               .ToList();
+                                                                              
+        }                                                                               
+     
+        List<FunderOptionWrapper> lstFunderOption = new List<FunderOptionWrapper>();    
+     
+        // Adding default option in picklist as 'All'
+        FunderOptionWrapper defaultOption =  new FunderOptionWrapper();
+            defaultOption.funderValue = "All";
+            defaultOption.funderName  = "All";  
+            lstFunderOption.Add(defaultOption);
+           
+        foreach(var objFunder in lstFunder) {
+            
+            // Adding Other Funder Values in picklist
+            FunderOptionWrapper wrapperInstance =  new FunderOptionWrapper();
+            wrapperInstance.funderValue = objFunder.Id;
+            wrapperInstance.funderName  = objFunder.Name; 
+           
+           lstFunderOption.Add(wrapperInstance);
+        }
+    
+        DataBag.lstFunderOption = lstFunderOption;
+    }
+    
+    
+    /*
+     * Description: Method to get selected picklist value i.e. Funder Name
+     */
+    [HttpPost]
+    public ActionResponse doFilterServices() {
+
+        DataBag.strFunderName = Request["FunderForFilter"];
+       
+        //Method called to set the DataBag with the Scroll Position
+        getScrollValue();
+        
+        return View();
+    }
+    
+    // Wrapper Class for Funder to store Funder Name and Funder Value
+    public class FunderOptionWrapper {
+        public string funderName {get; set;} // Stores Funder Name as Label
+        public string funderValue{get; set;} // Stores Funder Id as Value
+        
+        public FunderOptionWrapper(){}
+    }
+    
+}

@@ -1,0 +1,31 @@
+<aspx:AspxPage runat="server" Id="EventEditRecordError" title="Event Edit Record Error">
+<header>
+    <script>
+            hideHeader();
+            //To Hide the header of the page
+            $(document).ready(function() {
+                hideHeader();
+            });
+            function hideHeader() {
+                $('.siteHeaderWrapper').css({"display": "none"});
+                $('.mag-site-main-menu').css({"display": "none"});
+                $('.siteFooter').css({"display": "none"});
+            }
+          
+    </script>
+</header>
+<body >
+<aspx:ViewMessages runat='server' inline='false'/>
+<!-- using the visible property you can show/hide the message -->
+ <div id="messageId">
+ <center>
+<!-- using the visible property you can show/hide the message -->
+<aspx:InlineMessage runat='server' type='Message' title='Details' visible='<%#Model.showDiv%>'>
+  <h4>Please click on the link to view the Details</h4>
+  <a href="/<%=DataBag.strEventId%>?m=p" >Click Here</a>
+</aspx:InlineMessage>
+
+</center>
+</div>
+</body>
+</aspx:AspxPage>

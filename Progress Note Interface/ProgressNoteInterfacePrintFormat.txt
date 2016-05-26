@@ -1,0 +1,1041 @@
+<!-------------------------------------------------------------------------------------------------------- 
+    Page: ProgressNoteInterface Page 
+    Description: This page is used to show Goals, Goal Data, Time Entries related to Progress Note
+----------------------------------------------------------------------------------------------------------> 
+<aspx:AspxPage runat="server" Id="ProgressNoteInterfaceId" title="ProgressNoteInterface">
+<header>
+    <aspx:IncludeStyleSheet runat="server" url='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css'/> 
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignaturemin.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignature.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/excanvas.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.ToAbsoluteUrl(Url.Asset("Css/signature.css"))%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/UtilityFunctions.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/ProgressNoteInterface.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.Asset("Css/StyleForProgressNoteInterface.css")%>'/>
+    
+    <style>
+        @page {
+            size: A4;
+            margin: 0mm;
+        }
+        @media print {
+             html, body {
+                position: relative;
+                width:100%;
+                height: 297mm;
+            }
+            table { page-break-inside:auto }
+            tr    { page-break-inside:avoid; page-break-after:auto }
+            thead { display:table-header-group;}
+            tfoot { display:table-footer-group }
+            
+            .panel-heading {
+                color: #fff;
+                background-color: #0086c5 !important;
+                border-color: #0086c5 !important;
+                -webkit-print-color-adjust: exact; 
+            }
+            .kbw-signature { width: 400px; height: 200px; }
+            .noteClass {
+                color: #656565 !important;
+                font-size: 11px;
+                display: block;
+                float: none;
+            }
+            .backgroundForButton {
+                color: #fff;
+                background-color: #ff7900;
+            }
+            .scrollBarCssForGoal {
+                overflow:auto; 
+                width:100%;
+            }
+            .scrollBarCssForObjective {
+                overflow:auto; 
+                width:100%; 
+                margin-left:0%;
+            }
+            .scrollBarCssForGoalData {
+                overflow:auto;
+                width:92%; 
+                margin-left:8%;
+            }
+            .scrollBarCssForTimeEntries {
+                overflow:auto; 
+                width:100%;
+            }
+            .cssForGoalData {
+                background-color: #e9e7e6 !important;
+            }
+            .top-links{
+                    margin-bottom: -10%;
+            }
+            .borderofPanel {
+                border-color: #0086c5 !important;
+            }
+            
+            .backgroundForMainButton {
+                color: #fff;
+                background-color: #0086c5;
+            }
+            .backgroundForGoal {
+                background-color: #77b800 !important;
+                color: white !important
+            }
+            .backgroundForGoalData {
+                background-color: #ff7900 !important;
+                -webkit-print-color-adjust: exact; 
+            }
+            .panel-headingInline {
+                color: #fff !important;
+                background-color: #77b800 !important;
+                border-color: #77b800 !important;
+                border-bottom: 1px solid transparent;
+                border-top-left-radius: 3px; 
+                border-top-right-radius: 3px;
+                -webkit-print-color-adjust: exact; 
+            }
+            .signatureClass{
+                    zoom: 75%;
+            }
+        }
+        
+    </style>
+    
+    <script>
+        //To Hide the header of the page
+        $(document).ready(function() {
+            $('.siteHeaderWrapper').css({"display": "none"});
+            $('.mag-site-main-menu').css({"display": "none"});
+            $('.siteFooter').css({"display": "none"});
+            var collapseOut = $('.Out');
+            for(var i = 0; i < collapseOut.length; i++) { 
+                $(collapseOut[i]).addClass('in');
+            }
+        });
+        function doit(){
+            
+            for(var i=0;i<document.getElementsByTagName("button").length;i++){
+               document.getElementsByTagName("button")[i].style.display="none";
+            }
+            
+            for(var i=0;i<document.getElementsByTagName("a").length;i++){
+               document.getElementsByTagName("a")[i].removeAttribute("href");
+            }
+            for(var i=0;i<document.getElementsByTagName("input").length;i++){
+               if(document.getElementsByTagName("input")[i].type == "button"){
+                   document.getElementsByTagName("input")[i].style.display="none";
+               }
+            }
+            //document.getElementById("printbtnID").style.display="none";
+            window.print();
+        } 
+        document.addEventListener("visibilitychange", function() {
+            window.close();
+        });
+        
+    </script>
+</header>
+<body >
+
+   <!--Display the error messages if any issue on the Page-->
+    <%if(DataBag.DisplayPNI==false){%>
+        <div class="tabMessages container-fluid">
+            <div class="messageContainer row Message">
+                 <table class="messageTable">
+                      <tbody>
+                           <tr style="vertical-align:top;">
+                                <td align="center" valign="top">
+                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Message" title="Message">
+                                 </td>
+                                 <td class="singleMsg messageCell">
+                                        <div class="messageText"><h4>Information</h4>
+                                             <span><%=DataBag.errorMessage%></span>
+                                        </div>
+                                 </td>
+                            </tr>
+                        </tbody>
+                 </table>
+            </div>
+        </div>
+    <%}%>
+    
+    <!-- Display the DML Exception Errors Ex: Lookup Filters Error -->
+    <%if(DataBag.Exception!="") { %>
+        <div class="tabMessages container-fluid">
+            <div class="messageContainer row Error">
+                 <table class="messageTable">
+                      <tbody>
+                           <tr style="vertical-align:top;">
+                                <td align="center" valign="top">
+                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Error" title="Error">
+                                 </td>
+                                 <td class="messageCell">
+                                        <div class="messageText"><h4>Error: </h4>
+                                             <span><%=DataBag.Exception%></span>
+                                        </div>
+                                 </td>
+                            </tr>
+                        </tbody>
+                 </table>
+            </div>
+        </div>
+    <%}%>
+    
+    <!-- This section is set true when all the param passed in the URL are valid and verified-->
+    <%if(DataBag.DisplayPNI==true){%>
+    
+    <div class="container">
+    
+       <!-- Show the title of the page with Service name --->
+        <h3>Progress Note
+            <% if (DataBag.strProgressNoteServiceName !="") {%>
+                for <b><%=DataBag.strProgressNoteServiceName%></b>
+            <%}%>
+        </h3><br/>
+     
+      <div class="panel-group">
+            <div class="panel borderofPanel" style="page-break-after:always;">
+              <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-th-large"></span>&nbsp;Progress Note</div>
+              <div class="panel-body">
+              
+                  <!-- Start of Edit Or Detail View -->
+                  <% if (DataBag.strProgressNoteTypeView == "edit" || DataBag.strProgressNoteTypeView == "detail" ) {%>
+                   
+                       <% Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                            <div  class="form-horizontal">
+                                <% int rowIndex=0; %>
+								<%foreach(var field in DataBag.lstProgressNoteFields) { %>
+								   
+								        <!-- Display first 6 fields in 2 columns  -->
+                                    <%if(rowIndex%2==0 && rowIndex<=7){%>
+    									<div class="col-md-12 col-sm-12 col-xs-12">
+                                        <div class="form-group form-group-0" >
+    								<%}%>
+    								  
+    								<!-- Display fields in 1 columns after 6th field -->
+    								<%if(rowIndex>7) {%>
+    								    <div class="col-md-12 col-sm-12 col-xs-12">
+                                        <div class="form-group form-group-0" >
+    								<%}%>	
+                                         
+                                    <label class="col-md-3 col-sm-3 col-xs-3 control-label">
+                    				   <%=progressNoteObj.LabelFor(field)%>
+                    				</label>
+                    				
+                    				<%if(rowIndex>7) {%>
+                    				        <!-- Display fields in 1 columns -->
+                    				        <div class="col-md-9 col-sm-9 col-xs-9">
+                    				<%}else{%>
+                    				        <!-- Display fields in 2 columns -->
+                            				<div class="col-md-3 col-sm-3 col-xs-3">
+                            	        <%}%>	
+                            				     <!-- Edit View Field Display -->
+                                                 <%if (DataBag.strProgressNoteTypeView == "edit") {%>
+                                                     
+                                                     <!-- To make these fields as Read only in edit mode-->
+                                                     <%if(field=="Staff_Name__c" || field=="Units_of_service__c" || field=="Completion_Date__c" ) {%>  
+                                                        <%=progressNoteObj.DisplayTextFor(field)%>
+                                                     <%}else{%>
+                                        				<%=progressNoteObj.DisplayEditorFor(field)%>
+                                        	         <%}%>	
+                                                     
+                                                     <!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                     <%if(field=="Time_In__c") {
+                                                     string timeIn=progressNoteObj.DisplayTextFor(field);%>
+                                                     <input id="timeInValueID" type="hidden" value="<%=timeIn%>"/>
+                                                     <%}%>
+                                                     
+                                                     <!-- Hidden Field is used to get the values of the Date/Time record and assigned it through javascript--> 
+                                                     <%if(field=="Time_Out__c") {
+                                                      string timeOut=progressNoteObj.DisplayTextFor(field);%>
+                                                      <input id="timeOutValueID" type="hidden" value="<%=timeOut%>"/>
+                                                     <%}%>
+                                                     
+                                                     <!-- Hidden Field is used to get the values of the RichTextArea(HTML Text Area) record and assigned it through javascript-->
+                                                     <%if(field=="Progress_Note_Narrative__c") {
+                                                      string ProgressNoteNarrative=progressNoteObj.DisplayTextFor(field);%>
+                                                      <input id="ProgressNoteNarrativeValueID" type="hidden" value="<%=ProgressNoteNarrative%>"/>
+                                                     <%}%>  
+                                                    
+                                                 <%}
+                                                  else%>
+                                                  
+                                                    <!-- Detail View Field Display -->
+                                                    <%if (DataBag.strProgressNoteTypeView == "detail") {%>
+                                                       <%=progressNoteObj.DisplayTextFor(field)%>
+                                                    <%}%>
+                                            </div>
+                                                 
+                                        <!-- Close div if field count is < 5 -->  
+                                         <%if(rowIndex%2!=0 && rowIndex<=7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									    
+									    <!-- Close div if field count is > 5 --> 
+									    <%if(rowIndex>7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									
+									<% rowIndex=rowIndex+1; %>
+								    
+                                <%}%>
+										
+                           </div>
+                       <% }); %>
+                       
+                  <%}%>
+                  <!-- End of Edit Or Detail View -->
+                  
+                  <!-- Start of New Section -->
+                  <% if (DataBag.strProgressNoteTypeView == "new") {%>
+                        <% Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                            
+                            <div  class="form-horizontal">
+                                <% int rowIndex=0; %>
+								<%foreach(var field in DataBag.lstProgressNoteFields) { %>
+								     
+								     <!-- Display first 6 fields in 2 columns  -->
+                                      <%if(rowIndex%2==0 && rowIndex<=7){%>
+    									  <div class="col-md-12 col-sm-12 col-xs-12">
+                                          <div class="form-group form-group-0" >
+    								  <%}%>
+    								  
+    								  <!-- Display fields in 1 columns after 6th field -->
+    								  <%if(rowIndex>5) {%>
+    								     <div class="col-md-12 col-sm-12 col-xs-12">
+                                         <div class="form-group form-group-0" >
+    								  	 <%}%>	
+                                         
+                                            <label class="col-md-3 col-sm-3 control-label">
+                            				   <%=progressNoteObj.LabelFor(field)%>
+                            				</label>
+                            				
+                            				<%if(rowIndex>7) {%>
+                            				        <!-- Display fields in 1 columns -->
+                            				        <div class="col-md-9 col-sm-9">
+                            				<%}else{%>
+                            				        <!-- Display fields in 2 columns -->
+                                    				<div class="col-md-3 col-sm-3">
+                                    	        <%}%>
+                                    	        
+                                    	        
+                                    	        <%if(field=="Staff_Name__c" || field=="Units_of_service__c" || field=="Completion_Date__c") {%>  
+                                                <%=progressNoteObj.DisplayTextFor(field)%>
+                                             <%}else{%>
+                                				<%=progressNoteObj.DisplayEditorFor(field)%>
+                                	         <%}%>
+                                    	     
+                                                    </div>
+                                                 
+                                        <!-- Close div if field count is < 5 -->  
+                                         <%if(rowIndex%2!=0 && rowIndex<=7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									    
+									    <!-- Close div if field count is > 5 --> 
+									    <%if(rowIndex>7){%>
+										    </div>
+                                            </div>
+									    <%}%>
+									
+									<% rowIndex=rowIndex+1; %>
+                                <%}%>
+										
+                           </div>
+                            
+                       <% }); %>
+                 <%}%>
+                 <!-- End of New Section -->
+                 
+              </div>
+            </div><br/>
+            
+            <% if (DataBag.strProgressNoteTypeView == "edit" || DataBag.strProgressNoteTypeView == "detail") {%>
+                
+                <!------------------------Start of Time Entries Sections ------------------------------------------------------------------------------------>
+                <div class="panel borderofPanel" style="page-break-after:always;">
+                  <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Time Entries</div>
+                  <div class="panel-body">
+                    
+                    <!-- Show the msg when records are not available-->
+                    <% if(DataBag.IsActiveButton == false && DataBag.lstTimeEntriesObj.Count == 0){%>
+                        <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                    <%}%>
+                        
+                    <!--Start This table is to show Time Entries record row -->
+    				<div>
+    					<table class="table table-bordered" style="width:100%">
+    						<tbody class="text-center">   
+    							 <% int headerTimeEntries = 0; %>
+    							 <% Html.Repeat(DataBag.lstTimeEntriesObj as IList, htmlTimeEntries => { %>
+    								 <!-- Start of Time Entries Table Header -->
+    								 
+    								<!--Set one variable to display header of Time Entries only once -->
+    								<%if(headerTimeEntries==0){%>
+    								<thead class="text-center backgroundForGoal">
+    									<tr>
+    										
+    										<!-- Print all fields(header) of Time Entries for available fields-->
+    										<%foreach(var fieldTimeEntries in  DataBag.lstTimeEntriesFields) { %>   
+    											<th nowrap style="color: #fff !important; background-color: #77b800 !important; -webkit-print-color-adjust: exact; ">          
+    												<%=htmlTimeEntries.LabelFor(fieldTimeEntries)%>
+    											</th>                        
+    										<%}%>
+    										
+    									</tr>
+    								</thead>
+    								<!-- End of Time Entries Table Header -->
+    								<%  
+    									headerTimeEntries=1;
+    								}%> 
+    								 <!--Start of Time Entries records -->                                        
+    									<tr>
+    										<%foreach(var field in DataBag.lstTimeEntriesFields) { %>
+    										   <%if(field == "Description__c"){%>
+    										    <!-------To wrap the txt of the description--------------------->
+    											<td class="CssForWordwrap">
+        											<div class="CssForWordwrap" style="word-break: keep-all !IMPORTANT;width: 200px;">
+        												<%=htmlTimeEntries.DisplayTextFor(field)%>
+        											</div>
+    											</td>   
+    										    <%}else{%>
+    										        <td nowrap class="CssForWordwrap">
+        												<%=htmlTimeEntries.DisplayTextFor(field)%>
+        											</td>   
+    										    <%}%>
+    										<%}%>
+    									</tr>
+    							 <% }); %> 
+    							 
+    							 <% if(DataBag.IsActiveButton == true && DataBag.lstTimeEntriesObj.Count >0) { %>
+                				    <% int RowCount=0; %>
+                                    <% Html.Repeat(DataBag.lstNewTimeEntries as IList, htmlNewTimeEntries => { %>
+                                    	 <!--Start of Time Entries records -->                                        
+                                    		<tr>
+                                    			<%foreach(var field in DataBag.lstTimeEntriesFields) { %>
+                                    				<td>
+                                    					<%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                                    					<!--<span class="field-validation-error errorMsg checkErrorPreventClass" data-valmsg-for="<%="m$"+RowCount+"$."+field%>" data-valmsg-replace="true">--> 
+                                    				</td>               
+                                    			<%}%>
+                                    			<% RowCount=RowCount+1; %>
+                                    		</tr>
+                                    <% }); %> 
+                                 <%}%>
+    					   </tbody> 
+    				   </table>
+    				   <!--End This table is to show Time Entries record row -->
+    				</div>
+    				
+                    <!--start of Add more Time Entries sections-->
+                    <% if(DataBag.IsActiveButton == true && DataBag.lstTimeEntriesObj.Count==0) { %>
+                    
+                        <!--Start This table is to show new Time Entries record row -->
+                        <div class="scrollBarCssForTimeEntries">
+                        	<table class="table table-bordered" >
+                        		<tbody class="text-center">   
+                        			 <% int RowCount=0; 
+                        			 int headerNewTimeEntries = 0; %>
+                        			 <% Html.Repeat(DataBag.lstNewTimeEntries as IList, htmlNewTimeEntries => { %>
+                        				 <!-- Start of Time Entries Table Header -->
+                        				 
+                        				<!--Set one variable to display header of Time Entries only once -->
+                        				<%if(headerNewTimeEntries==0){%>
+                        				<thead class="text-center backgroundForGoal">
+                        					<tr>
+                        						
+                        						<!-- Print all fields(header) of Time Entries for available fields-->
+                        						<%foreach(var fieldTimeEntries in  DataBag.lstTimeEntriesFields) { %>   
+                        							<th nowrap style="color: #fff !important; background-color: #77b800 !important; -webkit-print-color-adjust: exact; ">          
+                        								<%=htmlNewTimeEntries.LabelFor(fieldTimeEntries)%>
+                        							</th>                        
+                        						<%}%>
+                        						
+                        					</tr>
+                        				</thead>
+                        				<!-- End of Time Entries Table Header -->
+                        				<%  
+                        					headerNewTimeEntries=1;
+                        				}%> 
+                        				 <!--Start of Time Entries records -->                                        
+                        					<tr>
+                        						<%foreach(var field in DataBag.lstTimeEntriesFields) { %>
+                        							<td>
+                        								<%=htmlNewTimeEntries.DisplayEditorFor(field)%>
+                        								<!--<span class="field-validation-error errorMsg checkErrorPreventClass" data-valmsg-for="<%="m$"+RowCount+"$."+field%>" data-valmsg-replace="true">-->
+                        							</td>               
+                        						<%}%>
+                        						<% RowCount=RowCount+1; %>
+                        					</tr>
+                        			 <% }); %> 
+                        	   </tbody> 
+                           </table>
+                           <!--End This table is to show new Time Entries record row -->
+                        </div>
+                    <%}%>       
+            	   
+                  </div>
+            </div><br/>
+            <!------------------------End of Time Entries Sections ------------------------------------------------------------------------------------>
+            
+            <!--------------------------------------Start Of Outcomes and Goaals------------------------------------------------------------------------>
+            <div class="panel borderofPanel" style="page-break-after:always;">
+              <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Outcomes and Goals</div>
+              <div class="panel-body">
+                    
+                <!-- Show the msg when records are not available-->
+                <% if(DataBag.lstGoalObj.Count == 0){%>
+                    <span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+                <%}%>
+            
+                 <!--Start This table is to show Goal related to service -->
+                 <%Html.Repeat(DataBag.lstGoalObj as IList, htmlGoals => { %>
+                    
+                    <div style="width:100%;">
+                    
+                        <table class="table table-bordered" >
+                            
+                            <!--Start of Goal Table Header (Fields of Goal-->
+                            <thead class="text-center backgroundForGoal">
+                                <tr>
+                                    
+                                    <!-- Print all fields(header) of Goal for available fields ----->
+                                    <%foreach(var field in  DataBag.lstGoalFields) { %>   
+                                        <th nowrap style="color: #fff !important; background-color: #77b800 !important; -webkit-print-color-adjust: exact; ">          
+                                            <%=htmlGoals.LabelFor(field)%>
+                                        </th>
+                                    <%}%>
+                                    
+                                </tr>
+                            </thead>
+                            <!--End of Goal Table Header -->
+                             
+                            <!--Start of Goal records -->
+                            <tbody class="text-center">
+                                <tr>
+                                
+                                    <!-- Print all Records of Goals related to current Progress Note-->
+                                    <%foreach(var field in  DataBag.lstGoalFields) { %>   
+                                        <td class="CssForWordwrap">          
+                                            <%=htmlGoals.DisplayTextFor(field)%>
+                                        </td>
+                                    <%}%>
+                                    
+                                </tr>      
+                            </tbody> 
+                            <!--End of Goal records -->
+                            
+                        </table>
+                    </div>
+                    
+                    <!-- int i to compare Id(Lookup) of each Goal Data with Goal's Id -->
+                    <%  int i = 0; 
+                    Boolean checkExistingGoalDataPerGoal = false;%>
+                    							
+                    <%Html.Repeat(DataBag.lstGoalDataObj as IList, htmlGoalData => { %>
+                    
+                    <!-- Check and  display one Goal Data per Goal will is recently created and
+                    checkExistingGoalDataPerGoal: To check if the goal data exist to related Goal or not incase true the goal data already exist for the Goal data -->
+                   
+                   
+                    <% if(DataBag.lstGoalDataObj[i].Goal__c==htmlGoals.DisplayTextFor("Id") && checkExistingGoalDataPerGoal != true) { %>
+                    
+                        	<%checkExistingGoalDataPerGoal = true;%>
+                        
+                        	<!-- If Goal data is related to Goal then display it with header -->
+                        	<div>
+                        		<table class="table table-bordered" >    
+                        			
+                        			<!-- Start of Goal data Table Header -->
+                        			<thead class="text-center backgroundForButton">
+                        				<tr>
+                        					
+                        					<!-- Print all fields(header) of Goal data for available fields-->
+                        					<%foreach(var fieldGoalData in  DataBag.lstGoalDataFields) { %>   
+                        						<th nowrap style="color: #fff !important;background-color: #ff7900 !important; -webkit-print-color-adjust: exact; ">          
+                        							<%=htmlGoalData.LabelFor(fieldGoalData)%>
+                        						</th>                        
+                        					<%}%>
+                        					
+                        				</tr>
+                        			</thead>
+                        			<!-- End of Goal data Table Header -->
+                        
+                        			<!--Start of Goal data records -->
+                        			<tbody class="text-center">   
+                        				<tr>
+                        					
+                        					<!-- Print all Records of Goal data related to current Goal -->
+                        					<%foreach(var fieldGoalData in  DataBag.lstGoalDataFields) { %>   
+                        						<td nowrap class="CssForWordwrap">          
+                        							<%=htmlGoalData.DisplayTextFor(fieldGoalData)%>
+                        						</td>
+                        					<%}%>
+                        					
+                        				</tr>
+                        			</tbody> 
+                        			<!--End of Goal data records -->
+                        		    </table>
+                                    </div>	
+                        		
+                        	<%}%>    
+                        	<!-- End of If of GoalData--> 
+                    	   <% i=i+1; %>
+                    	<% }); %>
+                            
+                            
+                    <!--start of Add more Goal Data sections-->
+                    <% if(htmlGoals.DisplayTextFor("Id") == DataBag.goalIdForNewGoalData && checkExistingGoalDataPerGoal == false) { %>
+                    
+                    <!--Start This table is to show new Goal Data record row -->
+                    <div class="scrollBarCssForGoalData">
+                    	<table class="table table-bordered" >
+                    		<tbody class="text-center">   
+                    			 <% int RowCount=0; 
+                    			 int headerNewGoalData = 0; %>
+                    			 <% Html.Repeat(DataBag.lstNewGoalData as IList, htmlNewGoalData => { %>
+                    				 <!-- Start of Goal Data Table Header -->
+                    				 
+                    				<!--Set one variable to display header of Goal Data only once -->
+                    				<%if(headerNewGoalData==0){%>
+                    				<thead class="text-center backgroundForGoalData">
+                    					<tr>
+                    						
+                    						<!-- Print all fields(header) of Goal Data for available fields-->
+                    						<%foreach(var fieldGoalData in  DataBag.lstGoalDataFields) { %>   
+                    							<th nowrap style="background-color: #ff7900 !important;-webkit-print-color-adjust: exact; ">          
+                    								<%=htmlNewGoalData.LabelFor(fieldGoalData)%>
+                    							</th>                        
+                    						<%}%>
+                    						
+                    					</tr>
+                    				</thead>
+                    				<!-- End of Goal Data Table Header -->
+                    				<%  
+                    					headerNewGoalData=1;
+                    				}%> 
+                    				 <!--Start of Goal Data records -->                                        
+                    					<tr>
+                    						<%foreach(var field in DataBag.lstGoalDataFields) { %>
+                    							<td>
+                    								<%=htmlNewGoalData.DisplayEditorFor(field)%>
+                    							</td>               
+                    						<%}%>
+                    						<% RowCount=RowCount+1; %>
+                    					</tr>
+                    			 <% }); %> 
+                    	   </tbody> 
+                       </table>
+                       <!--End This table is to show new Goal Data record row -->
+                    </div>
+                    
+                <%}%>    
+                <!-- End of If of Goals-->
+                
+    	    <% }); %>
+                
+            </div>
+        </div><br/>
+         <!--------------------------------------End Of Outcomes and Goaals------------------------------------------------------------------------>
+        
+         <%
+          Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+            <!-- Below hidden field contains the value of Family Signture to save Family Signture/Progress Note-->
+            <input type='hidden' id="SaveFamilySignId" name="FamilySignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("Family_Signature__c")%>">
+            <!-- Below hidden field contains the value of Staff signture to save Staff Signture/Progress Note-->
+            <input type='hidden' id="SaveStaffSignId" name="StaffSignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("Staff_Signature__c")%>"> 
+            <!-- Below hidden field contains the value of Supervisor signture to save Supervisor Signture/Progress Note-->
+            <input type='hidden' id="SaveSupervisorSignId" name="SupervisorSignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("Supervisor_Signature__c")%>">
+            <!-- Below hidden field contains the value of External signture to save External Signture/Progress Note-->
+            <input type='hidden' id="SaveExternalSignId" name="ExternalSignToUpdateProgressNote" value="<%=progressNoteObj.DisplayTextFor("External_Signature__c")%>">
+                             
+        <% }); %> 
+         
+        <!------------------------Start of Client signature Sections ------------------------------------------------------------------------------------>
+        <div class="panel borderofPanel" style="page-break-after:always;">
+            <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Client / Family Signature</div>
+            <div class="panel-body">
+                
+                <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                        || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                        || DataBag.IsStatusCompleted == true) {%>
+                    <div class="signatureClass"  id="familySig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                    
+                    <%
+                       Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                        <div class="row">
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Signee_Name__c")%></b>
+                            </div> 
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Role_Name__c")%></b>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Relationship_Type_Family__c")%></b>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Signed_Date__c")%></b>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Family_Signee_Name__c")%>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Family_Role_Name__c")%>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Relationship_Type_Family__c")%>
+                            </div>
+                            <div class="col-xs-2 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Family_Signed_Date__c")%>
+                            </div>
+                        </div>
+                    <% }); %> 
+                    
+                <%}else{%>
+                    <div class="signatureClass"  id="familySig"></div>
+                    <!-- <p style="clear: both;"><input type="button" id="clearFamily" value="Clear"/>
+                    <p class="noteClass">Use your mouse or finger to draw your signature above</p> -->
+
+                    <%
+                      Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                         <div class="row">
+                            <div class="col-xs-3 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Family_Signee_Name__c")%></b>
+                            </div> 
+                            <% if (progressNoteObj.DisplayTextFor("Family_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Family_Role_Name__c") != null) {%> 
+                                <div class="col-xs-3 col-md-3">
+                                    <b><%=progressNoteObj.LabelFor("Family_Role_Name__c")%></b>
+                                </div>
+                            <%}%>
+                             <div class="col-xs-3 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("Relationship_Type_Family__c")%></b>
+                            </div>
+                            <div class="col-xs-3 col-md-3">
+                                <% if (progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != null) {%> 
+                                    <b><%=progressNoteObj.LabelFor("Family_Signed_Date__c")%></b>
+                                <%}%>
+                            </div>
+                        </div>
+                         <div class="row">
+                            <div class="col-xs-3 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Family_Signee_Name__c")%>
+                            </div>
+                            <% if (progressNoteObj.DisplayTextFor("Family_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Family_Role_Name__c") != null) {%> 
+                                <div class="col-xs-3 col-md-3">
+                                   <%=progressNoteObj.DisplayTextFor("Family_Role_Name__c")%>
+                                </div>
+                            <%}%>
+                            <div class="col-xs-3 col-md-3">
+                               <%=progressNoteObj.DisplayTextFor("Relationship_Type_Family__c")%>
+                            </div>
+                            <div class="col-xs-3 col-md-3">
+                               <% if (progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Family_Signed_Date__c") != null) {%> 
+                                   <%=progressNoteObj.DisplayTextFor("Family_Signed_Date__c")%>
+                               <%}%>
+                            </div>
+                        </div>
+                    <% }); %> 
+                    
+                <%}%>
+        	   
+              </div>
+        </div><br/>
+        <!------------------------End of Client signature Sections ------------------------------------------------------------------------------------>
+        
+        <!------------------------------ Start of Display Signature Sections of the Progress Note Record ------------------------------------------------->
+        <div class="panel borderofPanel">
+          <div class="panel-heading" style="color: #fff !important;"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+          <div class="panel-body" >
+             <p><b class="cssForSignatureTitle">Staff Signature</b></p>
+               <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                    || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                    || DataBag.IsStatusCompleted == true) {%>
+                 <div class="signatureClass" id="staffSig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                 
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row"> 
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Staff_Signee_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-4 col-md-4">
+                            <b><%=progressNoteObj.LabelFor("Staff_Role_Name__c")%></b>
+                        </div>
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Staff_Signed_Date__c")%></b>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Staff_Signee_Name__c")%>
+                        </div>
+                        <div class="col-xs-4 col-md-4">
+                           <%=progressNoteObj.DisplayTextFor("Staff_Role_Name__c")%>
+                        </div>
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Staff_Signed_Date__c")%>
+                        </div>
+                    </div>
+                <% }); %> 
+                
+             <%}else{%>
+                 <div class="signatureClass" id="staffSig"></div>
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row">
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Staff_Signee_Name__c")%></b>
+                        </div> 
+                        <% if (progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != null) {%> 
+                            <div class="col-xs-4 col-md-4">
+                                <b><%=progressNoteObj.LabelFor("Staff_Role_Name__c")%></b>
+                            </div>
+                        <%}%>
+                        <div class="col-xs-3 col-md-3">
+                            <% if (progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                                <b><%=progressNoteObj.LabelFor("Staff_Signed_Date__c")%></b>
+                            <%}%>
+                        </div>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Staff_Signee_Name__c")%>
+                        </div>
+                        <% if (progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Staff_Role_Name__c") != null) {%> 
+                            <div class="col-xs-4 col-md-4">
+                                <%=progressNoteObj.DisplayTextFor("Staff_Role_Name__c")%>
+                            </div>
+                        <%}%>
+                        <div class="col-xs-3 col-md-3">
+                           <% if (progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                               <%=progressNoteObj.DisplayTextFor("Staff_Signed_Date__c")%>
+                           <%}%>
+                        </div>
+                    </div>
+                <% }); %> 
+                
+             <%}%>
+             
+             <p style="margin-top:3%"><b class="cssForSignatureTitle">Supervisor Signature</b></p>
+             <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                    || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                    || DataBag.IsStatusCompleted == true) {%>
+                 <div  class="signatureClass" id="SupervisorSig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                 
+                <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row">  
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Role_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                        </div>
+                    </div>
+                    <div class="row">  
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Supervisor_Signee_Name__c")%>
+                        </div>
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c")%>
+                        </div>
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                        </div>
+                    </div>
+                <% }); %> 
+                    
+             <%}else{%>
+                 <div class="signatureClass" id="SupervisorSig"></div>
+                 
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row">  
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                        </div> 
+                        <% if (progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != null) {%> 
+                            <div class="col-xs-4 col-md-4">
+                                <b><%=progressNoteObj.LabelFor("Supervisor_Role_Name__c")%></b>
+                            </div>
+                        <%}%>
+                        <div class="col-xs-3 col-md-3">
+                            <% if (progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                                <b><%=progressNoteObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                            <%}%>
+                        </div>
+                    </div>
+                    <div class="row">  
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("Supervisor_Signee_Name__c")%>
+                        </div>
+                        <% if (progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c") != null) {%> 
+                            <div class="col-xs-4 col-md-4">
+                                <%=progressNoteObj.DisplayTextFor("Supervisor_Role_Name__c")%>
+                            </div>
+                        <%}%>
+                        <div class="col-xs-3 col-md-3">
+                           <% if (progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                               <%=progressNoteObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                           <%}%>
+                        </div>
+                    </div>
+                <% }); %> 
+                
+             <%}%>
+             
+             <p style="margin-top:3%"><b class="cssForSignatureTitle">External Signatures</b></p>
+             
+             <% if ((DataBag.IsProgressNoteRecordLocked == true && CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name))
+                    || (DataBag.IsProgressNoteRecordLockedForSupervisor == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name))
+                    || DataBag.IsStatusCompleted == true) {%>
+                 <div id="ExternalSig" style="pointer-events: none;background-color: #EFEFEF;"></div>
+                 
+                <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row">  
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Signee_Name__c")%></b>
+                        </div> 
+                        <div class="col-xs-4 col-md-4">
+                            <b><%=progressNoteObj.LabelFor("External_Role_Name__c")%></b>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Relationship__c")%></b>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Signed_Date__c")%></b>
+                        </div>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("External_Signee_Name__c")%>
+                        </div>
+                        <div class="col-xs-4 col-md-4">
+                           <%=progressNoteObj.DisplayTextFor("External_Role_Name__c")%>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("External_Relationship__c")%>
+                        </div>
+                        <div class="col-xs-2 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("External_Signed_Date__c")%>
+                        </div>
+                    </div>
+                <% }); %> 
+                    
+             <%}else{%>
+                 <div class="signatureClass" id="ExternalSig"></div>
+                 <%
+                   Html.Repeat(DataBag.lstProgressNoteObj as IList, progressNoteObj => { %>
+                    <div class="row">  
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Signee_Name__c")%></b>
+                        </div> 
+                        <% if (progressNoteObj.DisplayTextFor("External_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("External_Role_Name__c") != null) {%> 
+                            <div class="col-xs-3 col-md-3">
+                                <b><%=progressNoteObj.LabelFor("External_Role_Name__c")%></b>
+                            </div>
+                        <%}%>
+                        <div class="col-xs-3 col-md-3">
+                            <b><%=progressNoteObj.LabelFor("External_Relationship__c")%></b>
+                        </div> 
+                        <div class="col-xs-2 col-md-3">
+                            <% if (progressNoteObj.DisplayTextFor("External_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("External_Signed_Date__c") != null) {%> 
+                                <b><%=progressNoteObj.LabelFor("External_Signed_Date__c")%></b>
+                            <%}%>
+                        </div>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("External_Signee_Name__c")%>
+                        </div>
+                        <% if (progressNoteObj.DisplayTextFor("External_Role_Name__c") != "" && progressNoteObj.DisplayTextFor("External_Role_Name__c") != null) {%> 
+                            <div class="col-xs-3 col-md-3">
+                                <%=progressNoteObj.DisplayTextFor("External_Role_Name__c")%>
+                            </div>
+                        <%}%>
+                        <div class="col-xs-3 col-md-3">
+                           <%=progressNoteObj.DisplayTextFor("External_Relationship__c")%>
+                        </div>
+                        <div class="col-xs-3 col-md-3">
+                           <% if (progressNoteObj.DisplayTextFor("External_Signed_Date__c") != "" && progressNoteObj.DisplayTextFor("External_Signed_Date__c") != null) {%> 
+                               <%=progressNoteObj.DisplayTextFor("External_Signed_Date__c")%>
+                           <%}%>
+                        </div>
+                    </div>
+                <% }); %> 
+                
+             <%}%>
+             
+         </div>
+         <!------------------------------ End of Display Signature Sections of the Progress Note Record ------------------------------------------------->
+         
+        </div>
+       
+        <%}%>
+        
+       
+        <!-- Below hidden field contains the value of Objective for saving the GoalData-->
+        <input type='hidden' id="GoalIdForSave" name="GoalIDforListofGoalDataToInsert" value="">
+        
+        <!-- Below hidden to store the id of the button on click -->
+        <input type='hidden' class="scrollBarClass" id="scrollBarId" name="scrollIdName" value="<%=DataBag.IdOfTheButton%>" />
+        
+        <!-- Below hidden to store the databag value when progress note get completed -->
+        <input type='hidden' id="successPNId" name="successPNIdName" value="<%=DataBag.IsSuccessProgressNote%>" />
+        
+    <%}%>
+    
+    <script>
+        //Variable to set the position of the scroll bar
+        var scroll = 0;
+        //Assign the values of Date Time Values after loading the page
+        $('#m_0__Time_In__c').val($('#timeInValueID').val());
+        $('#m_0__Time_Out__c').val($('#timeOutValueID').val());
+  
+        //Show the details of the Rich Text Area after complete load of the page
+        $( window ).load(function() {
+            // Run code
+            var htmlData=$('#ProgressNoteNarrativeValueID').val();
+            CKEDITOR.instances.m_0__Progress_Note_Narrative__c.setData(htmlData);
+        }); 
+        
+         //Fetch the data of the Rich Text Area (HTML Data) and assign it to the dynamic generated rich text area(hidden).
+        function set_ProgressNoteNarrativeValue(){
+          var PNN_Value=CKEDITOR.instances.m_0__Progress_Note_Narrative__c.getData();
+          $('#m_0__Progress_Note_Narrative__c').html(PNN_Value);
+        }
+        
+        //To hide empty Goal Data tables that lead to extra spacing on the page
+        $(".scrollBarCssForGoalData table:empty").each(function(){ console.log($(this).html());$(this).parent().hide() });
+        
+        //Function to get the location of the scroll bar on click of the button
+        function getTheLocationOftheButton(currentElem){
+           scroll = $(window).scrollTop();
+           $('#scrollBarId').val(scroll);
+        }
+         //Function to call the functiona on load and set the scroll bar position
+        scrollBarLocation();
+        
+        //Function to set scroll bar position on load
+        function scrollBarLocation (){
+            var scrollVal= $('#scrollBarId').val();
+            window.scrollTo(0,scrollVal);  
+        }
+        
+       /* $( "#m_0__Progress_Funder__c_tb" ).select(function() {
+            __doPostBack('UpdateLookUpFilter');
+        });*/
+        doit();
+    </script>
+</body>
+</aspx:AspxPage>

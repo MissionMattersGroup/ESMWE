@@ -1,0 +1,1110 @@
+<!-------------------------------------------------------------------------------------------------------- 
+    Page: ExpenseReportInterface Page 
+    Description: This page is used to show Expense and Mileage related to Expense Report
+----------------------------------------------------------------------------------------------------------> 
+<aspx:AspxPage runat="server" Id="ExpenseReportInterfaceId" title="ExpenseReportInterface">
+<header>
+    <aspx:ActiveTemplate runat="server" Name="Expense_TemplateForLabelConstant"/>
+    <aspx:IncludeStyleSheet runat="server" url='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css'/>
+    <!-- JS which contains functions:
+         1. to get the value from the parameter
+         2. to redirect to the main page in edit mode
+         3. to redirect to the main page(detail mode)
+    -->
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignaturemin.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/JquerySignature.js")%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/excanvas.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.ToAbsoluteUrl(Url.Asset("Css/signature.css"))%>'/>
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/UtilityFunctions.js")%>'/>
+    
+    <aspx:IncludeScript runat="server" url='<%# Url.Asset("Javascript/ExpenseReportInterface.js")%>'/>
+    <aspx:IncludeStyleSheet runat="server" url='<%# Url.Asset("Css/StyleForExpenseReportInterface.css")%>'/>
+</header>
+<body>
+
+    <!------ Start Validation Error Popup ------>
+    <div id="errorModal" class="modal fade" role="dialog" data-backdrop="static">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Error</h4>
+                </div>
+                <div class="modal-body">
+                    
+                    <aspx:ViewMessages runat='server' inline='false'/>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+    
+        </div>
+    </div>
+    <!------ End Validation Error Popup -------->
+    
+    <!--------Start Validation Custom Error Popup ---->
+    <div id="errorCustomModal" class="modal fade" role="dialog" data-backdrop="static">
+        <div class="modal-dialog">
+    
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Error</h4>
+                </div>
+                <div class="modal-body">
+                    
+                    <!-- Display the DML Exception Errors Ex: Lookup Filters Error -->
+                    <%if(DataBag.Exception!="") { %>
+                        <div class="tabMessages container-fluid ServerExceptionCustomClass">
+                            <div class="messageContainer row Error">
+                                 <table class="messageTable">
+                                      <tbody>
+                                           <tr style="vertical-align:top;">
+                                                <td align="center" valign="top">
+                                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Error" title="Error">
+                                                 </td>
+                                                 <td class="messageCell">
+                                                        <div class="messageText"><h4>Error: </h4>
+                                                             <span><%=DataBag.Exception%></span>
+                                                        </div>
+                                                 </td>
+                                            </tr>
+                                        </tbody>
+                                 </table>
+                            </div>
+                        </div>
+                    <%}%>
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+    
+        </div>
+    </div>
+    <!---- End Validation Custom Error Popup ------->
+    
+    <!--Display the error messages if any issue on the Page-->
+    <%if(DataBag.DisplayERI==false){%>
+        <div class="tabMessages container-fluid">
+            <div class="messageContainer row Message">
+                 <table class="messageTable">
+                      <tbody>
+                           <tr style="vertical-align:top;">
+                                <td align="center" valign="top">
+                                      <img src="/_assets/images/s.gif" class="msgIcon" alt="Message" title="Message">
+                                 </td>
+                                 <td class="singleMsg messageCell">
+                                        <div class="messageText"><h4>Information</h4>
+                                             <span><%=DataBag.errorMessage%></span>
+                                        </div>
+                                 </td>
+                            </tr>
+                        </tbody>
+                 </table>
+            </div>
+        </div>
+    <%}%>
+    
+    <!-- This section is set true when all the param passed in the URL are valid and verified-->
+    <%if(DataBag.DisplayERI==true){%>
+        <div class="container">
+            <h3>Expense Report
+                <% if (DataBag.strStaffMemberEmployeeContactName !="") {%>
+                    for <b><%=DataBag.strStaffMemberEmployeeContactName%></b>
+                <%}%>
+            </h3><br/>  
+			
+			<%if(DataBag.IsStatusSubmitted == false) { %>
+    			<center>
+                    <button type="button" id="saveAllERInfoId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);__doPostBack('SaveERWithExpensesAndMileages');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save</button>
+                    <button type="button" id="saveCompleteERId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);__doPostBack('SaveERCompleteWithExpensesAndMileages');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save and Complete</button>
+                </center><br/>
+			<%}%>
+			
+			<div class="panel borderofPanel">
+				<div class="panel-heading"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Expense Reports</div>
+                
+				<div class="panel-body">
+                    <div class="col-md-12">
+						<!-- Start of Edit Or Detail View -->  
+						<%if(DataBag.IsStatusSubmitted == false) { %>
+                            <center>
+                                <% if (DataBag.strExpenseReportTypeView == "detail"){%>
+                                    <button type="button" class="btn backgroundForButton"  data-dismiss="modal" onclick="doRedirectEditMode();">
+                                        <span class="glyphicon glyphicon-pencil">&nbsp;Edit
+                                    </button>
+                                <%}
+                                else{%>
+                                    <div class="col-md-6" style="text-align: right;">
+                                        <button type="button" class="btn backgroundForButton"  data-dismiss="modal" onclick="__doPostBack('SaveExpenseReport');showCustomValidationErrorPopup();showValidationErrorPopup();">
+                                            <span class="glyphicon glyphicon-save">&nbsp;Submit
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="col-md-6" style="text-align: left;">
+        								<button type="button" class="btn backgroundForButton"  data-dismiss="modal" onclick="doRedirect();">
+                                            <span class="glyphicon glyphicon-remove">&nbsp;Cancel
+                                        </button>
+                                    </div>
+                                <%}%>
+                            </center> 
+                        <%}%>
+                    </div>
+                    
+                    <div class="row">
+                    
+                        <% if (DataBag.strExpenseReportTypeView == "edit" || DataBag.strExpenseReportTypeView == "detail") {%>
+                        
+                            <% Html.Repeat(DataBag.lstExpenseReportObj as IList, expenseReportObj => { %>
+                                <div  class="form-horizontal" style="margin-left:20%" id="ExpenseReportObjectSectionID">
+                                    <%foreach(var field in DataBag.lstExpenseReportFields) { %>
+                                        <%if(field == "Staff_Member_Employee__c") {%>
+                                            <div class="col-xs-12 col-md-12" style="padding-left: 0px;">
+                                                <div class="form-group-0 col-xs-6 col-md-6">
+                                                    <label for="name" class="control-label">
+                                                        <%=expenseReportObj.LabelFor(field)%>
+                                                    </label>
+                                                    <br/> 
+                         
+													<!-- Edit View Field Display -->
+                                                    <%if (DataBag.strExpenseReportTypeView == "edit") {%>
+                                                        <%=expenseReportObj.DisplayEditorFor(field)%>
+                                                    <%}
+                                                    else%>
+														<!-- Detail View Field Display -->
+                                                       <%if (DataBag.strExpenseReportTypeView == "detail") {%>
+                                                            <!-- If the field is not null or blank display text-->
+                                                             <%if(expenseReportObj.DisplayTextFor(field)!=""){%>
+                                                                <%=expenseReportObj.DisplayTextFor(field)%>
+                                                             <%}
+                                                             else{%>
+                                                                <br/>
+                                                             <%}%>
+                                                        <%}%>
+                                                </div> <!-- End of form control group div -->
+                                            </div>  
+                                        <%}
+                                        else{%> <!-- Display fields except staff member -->
+                                            <div class="form-group-0 col-xs-6 col-md-6">
+                                                <br/>
+                                                    <label for="name" class="control-label">
+                                                        <%=expenseReportObj.LabelFor(field)%>
+                                                    </label>
+                                                    <br/> 
+                                                
+                                                    <!-- Edit View Field Display -->                
+                                                    <%if (DataBag.strExpenseReportTypeView == "edit") {%>
+                                                        <%=expenseReportObj.DisplayEditorFor(field)%>
+                                                    <%}
+                                                    else%>
+                                                        <!-- Detail View Field Display -->
+                                                    <%if (DataBag.strExpenseReportTypeView == "detail") {%>
+                                                        <%if(expenseReportObj.DisplayTextFor(field)!=""){%>
+                                                            <%=expenseReportObj.DisplayTextFor(field)%>
+                                                        <%}
+                                                        else{%>
+                                                            <br/>
+                                                        <%}%>
+                                                    <%}%>
+                                                </div>
+                                        <%}%> <!-- end of Display fields except staff member else -->
+                                            
+                                    <%}%> <!-- End of ForEach --> 
+                               </div> <!-- End of horizontal div -->
+                            <% }); %> <!-- End of Repeat -->
+                           
+                        <%}%> <!-- End of root if -->
+                    </div><br/><br/><br/> <!-- End of class row div -->
+                    <!-- End of Edit Or Detail View -->
+            
+		<!-- *********************************************************Section of Expense(Expense Tab)********************************************************************** --> 
+            <!-- Start of view panel table -->
+					<aspx:ViewTabPanel runat="server">
+						<aspx:ViewTab Id="expenseTab" runat="server" title="Expenses">
+							<body>
+								<div class="panel-body" id="Expense__c" >
+									<% if (DataBag.strExpenseReportTypeView == "edit" || DataBag.strExpenseReportTypeView == "detail") {%>
+                                    <!----------- Start This table is to show Expense Report record row ----------->
+                                    
+                                    <!--------- Check the Records of Expense is present related to the expense report --------------->
+										<% if(DataBag.IsActiveButtonOfExpense == false && DataBag.lstExistingExpense.Count == 0){%>
+											<span><%:CustomLabels.CustomInterface_RecordNotFound%></span><br/>     
+										<%}%>
+									    
+										<%else{%>
+											<div class="scrollBarCssForExpenses">
+											    
+											    <%if(DataBag.IsStatusSubmitted == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) { %>
+    											    <button type="button" id="approveExpenseId" class="btn backgroundForCheckboxesButton" onclick="showValidationErrorPopup();CheckSelectedCheckboxesForExpense('Approved');"><span class="glyphicon glyphicon-ok"></span>&nbsp;Approve Expenses</button>
+    											    <button type="button" id="rejectExpenseId" class="btn backgroundForCheckboxesButton" onclick="showValidationErrorPopup();CheckSelectedCheckboxesForExpense('Rejected');"><span class="glyphicon glyphicon-remove"></span>&nbsp;Reject Expenses</button>
+												<%}%>
+												
+												<table class="table table-bordered" style="margin-top: 1%;">
+													<tbody class="text-center">  
+    						                        <!---------- Set one variable to display header of Expense only once ------------->
+    							                    <% int showHeaderExpense = 0; %>
+    							                    <% int RowIndexForExpense = 0; %>
+    							                    <%foreach(var WrapperExistingExpense in  DataBag.lstExistingExpense) { %>
+        							                  
+        							                    <% Html.Repeat(WrapperExistingExpense.lstExpenseInWrapper as IList, htmlExpense => { %>
+            
+        													<!----------------- Start of Expense Table Header --------------->
+        								                    <%if(showHeaderExpense == 0){%>
+        								                        <thead class="text-center backgroundForExpenses">
+        									                        <tr>
+        									                            <%if(DataBag.IsStatusSubmitted == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) { %>
+            									                            <th nowrap> 
+                                                                                <input type="checkbox" name="ExpenseCheckbox" 
+                                                                                        onchange="ListSelectUnSelectAction(this);"/>
+                                                                            </th>
+                                                                        <%}%>
+        									                            <%if(DataBag.IsStatusInProgress == true) { %>
+            									                            <th nowrap> 
+                                                                                Action
+                                                                            </th>
+                                                                        <%}%>
+        										                        <!-- Print all fields(header) of Expense for available fields-->
+        										                        <%foreach(var fieldExpense in  DataBag.lstExpenseFields) { %>  
+        											                        <th nowrap>          
+        												                        <%=htmlExpense.LabelFor(fieldExpense)%>
+        											                        </th>                        
+        										                        <%}%>
+        									                        </tr>
+        								                        </thead>
+        								                        <!------------------- End of Expense Table Header --------------->
+        								                        <%  
+        									                        showHeaderExpense = 1;
+        								                    }%> 
+        								    
+        								                    <!---------------- Start of Expense records ----------------------->   
+        									                 <tr>
+        									                    <%if(DataBag.IsStatusSubmitted == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) { %>
+    									                            <td nowrap>
+                                                                        <input class="ExpenseCheckClass" type="checkbox" name="ExpenseCheckbox<%=RowIndexForExpense%>" 
+                                                                                        <%if(WrapperExistingExpense.isSelected){%>
+                                                                                            checked
+                                                                                        <%}else{%>
+                                                                                            unchecked
+                                                                                        <%}%>
+                                                                        />
+                                                                    </td>
+                                                                <%}%>
+        									                    <%if(DataBag.IsStatusInProgress == true) { %>
+        									                        <td nowrap>
+                                                                        <!--Buttons to be displayed before edit and after edit-->
+                                                                        <%if(WrapperExistingExpense.isEditable==false ) { %>
+                                                                            <a href="javascript:void(0)" name="<%=htmlExpense.DisplayTextFor("Id")%>" onclick="getTheLocationOftheButton(this);setRowNumberValueForEdit(this);__doPostBack('EditExpenseRecordRow');" ><span class="glyphicon glyphicon-pencil">&nbsp;Edit</a>
+                                                                        <%}else{%>
+                                                                            <a href="javascript:void(0)" name="<%=htmlExpense.DisplayTextFor("Id")%>" onclick="getTheLocationOftheButton(this);setRowNumberValueForEdit(this);__doPostBack('SaveExistingExpenseAfterEditRow');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save">&nbsp;Save</a>
+                                                                            |
+                                                                            <a href="javascript:void(0)" name="<%=htmlExpense.DisplayTextFor("Id")%>" onclick="__doPostBack('CancelExistingExpenseAfterEditRow');"><span class="glyphicon glyphicon-remove">&nbsp;Cancel</a>
+                                                                        <%}%>
+                                                                    </td>
+                                                                <%}%>
+                                                                
+        										                <%foreach(var field in DataBag.lstExpenseFields) { %>
+        															<td>
+        												                <%if(WrapperExistingExpense.isEditable) { %>
+        												                    <%=htmlExpense.DisplayEditorFor(field)%>
+        												                <%}else{%>
+        												                    <%=htmlExpense.DisplayTextFor(field)%>
+        												                <%}%>
+        											                </td>               
+        										                <%}%>
+        									                </tr>
+        									                <% RowIndexForExpense = RowIndexForExpense+1; %>
+        							                    <% }); %> 
+    							                    <%} %>    
+    							                    <% if(DataBag.IsActiveButtonOfExpense == true && DataBag.lstExistingExpense.Count >0) { %>
+                				                        <% int RowCount=0; %>
+                                                        <% Html.Repeat(DataBag.lstExpense as IList, htmlNewExpense => { %>
+                                    	                    <!--Start of Expense Report records -->                                        
+                                    		                <tr>
+                                    		                    <%if(DataBag.IsStatusInProgress == true) { %>
+                                    		                        <td nowrap></td>
+                                    		                    <%}%>
+                                    			                <%foreach(var field in DataBag.lstExpenseFields) { %>
+                                    				                <td>
+    																	<%=htmlNewExpense.DisplayEditorFor(field)%>
+                                    				                </td>               
+                                    			                <%}%>
+                                    			                <% RowCount=RowCount+1; %>
+                                    		                </tr>
+                                                        <% }); %> 
+                                                    <%}%>
+													</tbody> 
+												</table>
+												<!--------------------- End This table is to show Expense record row ------------------>
+											</div> 
+										<%}%> <!----------------- End of Else ------------------>
+                   
+										<% if(DataBag.IsActiveButtonOfExpense == false && DataBag.IsStatusSubmitted == false ) { %>
+                	            
+											<button type="button" class="btn backgroundForButton" onclick="setRowNumberValueForEdit(this);getTheLocationOftheButton(this);__doPostBack('addExpense',{ validate:false});">
+												<span class="glyphicon glyphicon-plus-sign"></span>Add Expense
+											</button>
+                		            
+										<%}%>
+                                        
+										<!-------------------------- start of Add more Expense sections -------------------------------->
+										<% if(DataBag.IsActiveButtonOfExpense == true && DataBag.lstExistingExpense.Count == 0 ) { %>
+                            
+											<!--------------Start This table is to show new Expense record row ---------------->
+											<div class="scrollBarCssForExpenses">
+												<table class="table table-bordered">
+													<tbody class="text-center">   
+														<% int RowCount=0; 
+														   int showHeaderNewExpense = 0; %>
+                            			        
+														<% Html.Repeat(DataBag.lstExpense as IList, htmlNewExpense => { %>
+                            				            
+															<!----------------- Start of Expense Table Header --------------->
+															<%if(showHeaderNewExpense == 0){%>
+																<thead class="text-center backgroundForExpenses">
+																	<tr>
+																		<%foreach(var fieldExpese in DataBag.lstExpenseFields) { %>   
+																			<th nowrap>          
+																				<%=htmlNewExpense.LabelFor(fieldExpese)%>
+																			</th>                        
+																		<%}%>
+																	</tr>
+																</thead>
+																<!-------------------- End of Expense Table Header ---------------->
+																<%showHeaderNewExpense = 1;
+															}%> 
+                            				        
+															<!--------------- Start of Expense records --------------------->  
+															<tr>
+																<%foreach(var field in DataBag.lstExpenseFields) { %>
+																	<td>
+																		<%=htmlNewExpense.DisplayEditorFor(field)%>
+																	</td>               
+																<%}%>
+																<% RowCount = RowCount+1; %>
+															</tr>
+															<!--------------- End of Expense records ---------------------> 
+														<% }); %> 
+													</tbody> 
+												</table>
+												<!-------------------- End This table is to show new Expense record row --------------->
+											</div>
+										<%}%><br/> 
+										
+										<input type='hidden' id="numberOfRow" name="rowNumberOfCurrentRecord" value="<%=DataBag.ExpenseIdForEdit%>">
+                                        
+                                        <input type='hidden' id="numberOfRowMileage" name="rowNumberOfCurrentMileageRecord" value="<%=DataBag.MileageIdForEdit%>">
+                                
+                                
+										<!------------- start of Add more Expense Report sections ------------->
+										<% if(DataBag.IsActiveButtonOfExpense == true && DataBag.IsStatusSubmitted == false) { %>
+											<div>
+												<button id="AddMoreExpenseReportbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('AddMoreExpense',{ validate:false});">
+													<span class="glyphicon glyphicon-plus-sign"></span>Add More
+												</button>
+						
+												<button id="RemoveMoreExpenseReportbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('RemoveExpense',{ validate:false});">
+													<span class="glyphicon glyphicon-remove-sign"></span>Remove
+												</button>  
+												
+												<button id="SaveExpenseReportbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('SaveNewExpense');showCustomValidationErrorPopup();showValidationErrorPopup();">
+												    <span class="glyphicon glyphicon-save"></span>Save
+											    </button>
+											    
+											    <button id="CancelExpenseReportbtn" type="button" class="btn backgroundForButton" onclick="doRedirect();">
+											        <span class="glyphicon glyphicon-remove"></span>Cancel
+										        </button>
+											</div><br/>
+										<%}%>
+    								    <!------------- End of Add more Expense Report sections ------------->
+								
+									<%}%> <!----------------- End of main If ------------------>
+								</div> <!----------------- End of panel body div ------------------>
+							
+							</body>
+						</aspx:ViewTab> 
+                
+        <!-- *********************************************************Section of Mileage(Mileage Tab)********************************************************************** --> 
+						<aspx:ViewTab Id="mileageTab" runat="server" title="Mileages" >
+							<body >
+								<div class="panel-body" id="Mileage__c">
+								<!----------  Start Of Sub Section of Expense Report i.e. Mileage ------------>
+									<% if (DataBag.strExpenseReportTypeView == "edit" || DataBag.strExpenseReportTypeView == "detail") {%>
+						 
+										<!--------- Check the Records of Mileage is present related to the expense report --------------->
+										<% if(DataBag.IsActiveButtonOfMileage == false && DataBag.lstExistingMileage.Count == 0){%>
+											<span><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+										<%}%>
+						 
+										<%else{%>
+											<div class="scrollBarCssForExpenses">
+											    
+											    <%if(DataBag.IsStatusSubmitted == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) { %>
+    											    <button type="button" id="approveMileageId" class="btn backgroundForCheckboxesButton" onclick="showValidationErrorPopup();CheckSelectedCheckboxes('Approved');"><span class="glyphicon glyphicon-ok"></span>&nbsp;Approve Mileage</button>
+    											    <button type="button" id="rejectMileageId" class="btn backgroundForCheckboxesButton" onclick="showValidationErrorPopup();CheckSelectedCheckboxes('Rejected');"><span class="glyphicon glyphicon-remove"></span>&nbsp;Reject Mileage</button>
+												<%}%>
+												
+												<table class="table table-bordered" style="margin-top: 1%;">
+													<tbody class="text-center">
+														<% int showHeaderMileage = 0; %>
+														<% int RowIndexForMileage = 0; %>
+														<%foreach(var WrapperExistingMileage in  DataBag.lstExistingMileage) { %>
+														
+														<% Html.Repeat(WrapperExistingMileage.lstMileageInWrapper as IList, htmlMileage => { %>
+									
+															<!--------- Start of Mileage Table Header ------------->
+															<!---------- Set one variable to display header of Mileage only once ------->
+															<%if(showHeaderMileage==0){%>
+																<thead class="text-center backgroundForMileages">
+																	<tr>
+																	    <%if(DataBag.IsStatusSubmitted == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) { %>
+            									                            <th nowrap> 
+                                                                                <input type="checkbox" name="MileageCheckbox" 
+                                                                                        onchange="ListSelectUnSelectActionForMileage(this);"/>
+                                                                            </th>
+                                                                        <%}%>
+																	    <%if(DataBag.IsStatusInProgress == true) { %>
+    																	    <th nowrap> 
+                                                                                Action
+                                                                            </th>
+                                                                        <%}%>
+																		<!-- Print all fields(header) of Mileage for available fields-->
+																		<%foreach(var fieldMileage in  DataBag.lstMileageFields) { %>  
+																			<th nowrap>          
+																			<%=htmlMileage.LabelFor(fieldMileage)%>
+																			</th>                        
+																		<%}%>
+																	</tr>
+																</thead>
+																<!---------- End of Mileage  Table Header ------------>
+									
+																<%  
+																	showHeaderMileage=1;
+															}%> 
+									
+															<!------------Start of Mileage records ------------->   
+															<tr>
+															    <%if(DataBag.IsStatusSubmitted == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) { %>
+    									                            <td nowrap>
+                                                                        <input class="MileageCheckClass" type="checkbox" name="MileageCheckbox<%=RowIndexForMileage%>" 
+                                                                                        <%if(WrapperExistingMileage.isSelected){%>
+                                                                                            checked
+                                                                                        <%}else{%>
+                                                                                            unchecked
+                                                                                        <%}%>
+                                                                        />
+                                                                    </td>
+                                                                <%}%>
+																<%if(DataBag.IsStatusInProgress == true) { %>
+        									                        <td nowrap>
+                                                                        <!--Buttons to be displayed before edit and after edit-->
+                                                                        <%if(WrapperExistingMileage.isEditable==false) { %>
+                                                                            <a href="javascript:void(0)" name="<%=htmlMileage.DisplayTextFor("Id")%>" onclick="getTheLocationOftheButton(this);setRowNumberValueForEditMileage(this);__doPostBack('EditMileageRecordRow');" ><span class="glyphicon glyphicon-pencil">&nbsp;Edit</a>
+                                                                        <%}else{%>
+                                                                            <a href="javascript:void(0)" name="<%=htmlMileage.DisplayTextFor("Id")%>" onclick="getTheLocationOftheButton(this);setRowNumberValueForEditMileage(this);__doPostBack('SaveExistingMileageAfterEditRow');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save">&nbsp;Save</a>
+                                                                            |
+                                                                            <a href="javascript:void(0)" name="<%=htmlMileage.DisplayTextFor("Id")%>" onclick="__doPostBack('CancelExistingMileageAfterEditRow');"><span class="glyphicon glyphicon-remove">&nbsp;Cancel</a>
+                                                                        <%}%>
+                                                                    </td>
+                                                                <%}%>
+                                                                
+                                                                <%foreach(var field in DataBag.lstMileageFields) { %>
+																	<td>
+        												                <%if(WrapperExistingMileage.isEditable) { %>
+        												                    <%=htmlMileage.DisplayEditorFor(field)%>
+        												                <%}else{%>
+        												                    <%=htmlMileage.DisplayTextFor(field)%>
+        												                <%}%>
+        											                </td>                
+																<%}%>
+																
+															</tr>
+															<!------------End  of Mileage records ---------------->  
+															<% RowIndexForMileage = RowIndexForMileage+1; %>
+														<% }); %> 
+														
+														<%} %> 
+								 
+														<!------------- Display the section of new row without header if the record already exist ----------->
+														<% if(DataBag.IsActiveButtonOfMileage == true && DataBag.lstExistingMileage.Count >0) { %>
+															<% int RowCount=0; %>
+															<% Html.Repeat(DataBag.lstMileage as IList, htmlNewMileage => { %>
+										 
+																<!------------ Start of Mileage records -------------> 
+																<tr>
+																    <%if(DataBag.IsStatusInProgress == true) { %>
+                                        		                        <td nowrap></td>
+                                        		                    <%}%>
+																	<%foreach(var field in DataBag.lstMileageFields) { %>
+																		<td>
+																			<%=htmlNewMileage.DisplayEditorFor(field)%>
+																		</td>
+																	<%}%>
+																	<% RowCount=RowCount+1; %>
+																</tr>
+																<!-------------- End of Mileage records ------------------> 
+										
+															<% }); %> 
+														<%}%>
+													</tbody> 
+												</table>
+											</div>
+										<%}%> <!------------End of Else ---------------->
+					 
+										<!-------- Display the Add Mileage Button on Load ---------------->
+										<% if(DataBag.IsActiveButtonOfMileage == false && DataBag.IsStatusSubmitted == false) { %>
+											<div class="row">
+												<div class="col-md-3" id="AddNewMileageID">
+													<button id="AddNewMileagebtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('addMileage',{ validate:false});">
+														<span class="glyphicon glyphicon-plus-sign"></span>Add Mileage
+													</button>
+												</div>
+											</div>
+										<%}%>
+					
+										<!------------- Start of Add more Mileage sections ---------------->
+										<% if(DataBag.IsActiveButtonOfMileage == true && DataBag.lstExistingMileage.Count==0) { %>
+					
+											<!------------ Start This table is to show new Mileage record row ------>
+											<div class="scrollBarCssForExpenses">
+												<table class="table table-bordered" >
+													<tbody class="text-center">   
+														<% int RowCount=0; 
+														   int showHeaderNewMileage = 0; %>
+														<% Html.Repeat(DataBag.lstMileage as IList, htmlNewMileage => { %>
+															
+															<!------------- Start of Mileage Table Header ----------->
+															<!------------ Set one variable to display header of Mileage only once -------->
+															<%if(showHeaderNewMileage==0){%>
+																<thead class="text-center backgroundForMileages">
+																	<tr>
+																		<!-- Print all fields(header) of Mileage for available fields-->
+																		<%foreach(var fieldMileage in  DataBag.lstMileageFields) { %>   
+																		<th nowrap>          
+																			<%=htmlNewMileage.LabelFor(fieldMileage)%>
+																		</th>                        
+																		<%}%>
+																	</tr>
+																</thead>
+																<!------------ End of Mileage Table Header ----------->
+																<%  
+																	showHeaderNewMileage=1;
+															}%> 
+										
+															<!--------------- Start of Mileage records -------------->                                       
+															<tr>
+																<%foreach(var field in DataBag.lstMileageFields) { %>
+																	<td>
+																		<%=htmlNewMileage.DisplayEditorFor(field)%>
+																	</td>
+																<%}%>
+																<% RowCount=RowCount+1; %>
+															</tr>
+															<!---------------- End  of Mileage records --------------->
+										
+														<% }); %> 
+													</tbody> 
+												</table>
+												<!------------- End This table is to show new Mileage record row ------------>
+											</div>
+										<%}%><br/>                
+				   
+										<!-------------- Start of  Buttons to Add more Mileage sections ---------------->
+										<% if(DataBag.IsActiveButtonOfMileage == true && DataBag.IsStatusSubmitted == false) { %>
+											<div>
+												<button id="AddMoreMileagebtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('AddMoreMileage',{ validate:false});">
+												    <span class="glyphicon glyphicon-plus-sign"></span>Add More
+											    </button>
+											    
+											    <button id="RemoveMoreExpenseReportbtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('RemoveMileage',{ validate:false});">
+													    <span class="glyphicon glyphicon-remove-sign"></span>Remove
+												</button>
+												
+												<button id="SaveMileagebtn" type="button" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);__doPostBack('SaveNewMileage');showCustomValidationErrorPopup();showValidationErrorPopup();">
+												    <span class="glyphicon glyphicon-save"></span>Save
+											    </button> 
+                		
+	    										<button id="CancelMileagebtn" type="button" class="btn backgroundForButton" onclick="doRedirect();">
+	    										    <span class="glyphicon glyphicon-remove"></span>Cancel
+    										    </button>
+											</div><br/>
+										<%}%>
+										<!-------------- End of  Buttons to Add more Mileage sections ---------------->
+					
+									<%}%> <!-------------- End of main If ---------------->
+								</div>
+							</body>
+						</aspx:ViewTab>
+           
+					</aspx:ViewTabPanel>               
+				
+    <!-- **************************************************End of Section of Expense(Expense Tab)********************************************************************** --> 
+                <%if(DataBag.IsStatusSubmitted == true && CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name)) { %>
+                    <center>
+                        <button type="button" id="saveAndApproveId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);ValidateNullCheckSupervisorSignature(this);showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save and Approve</button>
+				    </center>
+				<%}%>
+				</div>
+			</div>
+			
+			<div class="panel borderofPanel">
+    			<div class="panel-heading"><span class="glyphicon glyphicon-th-list"></span>&nbsp;Upload Receipt Section</div><br/>
+            	    
+                     <!--Start of section to show new input upload -->
+                     <div style="margin-top: 1%;">
+                		 <% Html.Repeat(DataBag.lstNewUploadReceipt as IList, htmlNewFileUpload => { %>
+            			    <div id="fileUpload" class="col-sm-12">
+                                <div class="col-sm-2"><b>Receipt Upload:</b>
+                                    <span><a data-toggle="tooltip" data-placement="top" 
+                                    title="<%:CustomLabels.ShowHelpTextForMultipleReceipts%>" 
+                                    class="red-tooltip"><span class="fieldHelp glyphicon glyphicon-question-sign"/></a></span>
+                                </div>
+                                <div class="col-sm-3">
+                                    <aspx:FieldFileUpload id="attchId" runat='server' AllowMultiple="true"/>
+                                    <div>
+                                        <span style="display:none;" class="field-validation-error errorMsg checkErrorPreventClass"  data-valmsg-replace="true"><b>Error: You must choose file(s) to upload.</b></span>
+                                    </div><br/>
+                                </div>
+                                <div class="col-sm-3">
+                                    <button type="button" id="saveReceiptId" class="btn backgroundForButton" onclick="getTheLocationOftheButton(this);validateNullFields();"><span class="glyphicon glyphicon-upload"></span>&nbsp;Upload</button>
+                                </div>
+                            </div>
+                		 <% }); %>
+                     </div>
+                     <!--End of section to show new input upload -->
+                     
+                     <hr class="hrCustomClass"></hr>
+                     
+            		<div class="panel-body">
+            		    <div class="col-sm-12" style="margin-bottom: 1%;">
+                            <b>Existing Receipts</b>
+                        </div><br/>
+            		    <!----------  Start Of Sub Section of Attachment ------------>
+            			<% if (DataBag.strExpenseReportTypeView == "edit" || DataBag.strExpenseReportTypeView == "detail") {%>
+             
+            				<!--------- Check the Records of Attachment is present related to the expense report --------------->
+            				<% if(DataBag.lstAttachmentObj.Count == 0){%>
+            					<span style="margin-left: 1.5%;"><%:CustomLabels.CustomInterface_RecordNotFound%></span>
+            				<%}%>
+             
+            				<%else{%>
+            					<div class="scrollBarCssForReceipt">
+            						<table class="table table-bordered">
+            							<tbody class="text-center">
+            								<% int showHeaderAttachment = 0; %>
+            								
+            								<% Html.Repeat(DataBag.lstAttachmentObj as IList, htmlAttachment => { %>
+            			
+            									<!--------- Start of Attachment Table Header ------------->
+            									<!---------- Set one variable to display header of Attachment only once ------->
+            									<%if(showHeaderAttachment==0){%>
+            										<thead class="text-center backgroundForMileages">
+            											<tr>
+                                                            <th nowrap> 
+                                                                Action
+                                                            </th>
+            												<!-- Print all fields(header) of Attachment for available fields-->
+            												<%foreach(var fieldAttachment in  DataBag.lstAttachmentFields) { %>  
+            													<th nowrap>          
+            													    <%=htmlAttachment.LabelFor(fieldAttachment)%>
+            													</th> 
+            													<th nowrap>   
+            													    Download
+            													</th> 
+            												<%}%>
+            											</tr>
+            										</thead>
+            										<!---------- End of Attachment  Table Header ------------>
+            			
+            										<%  
+            											showHeaderAttachment=1;
+            									}%> 
+            			
+            									<!------------Start of Attachment records ------------->   
+            									<tr>
+                                                    <td nowrap>
+                                                        <!--Buttons to be displayed before edit and after edit-->
+                                                        <a href="javascript:void(0)" name="<%=htmlAttachment.DisplayTextFor("Id")%>" 
+                                                            onclick="getTheLocationOftheButton(this);setAttachmentIDValueForRemove(this);__doPostBack('DeleteSelectedUploadedReceipts');showCustomValidationErrorPopup();showValidationErrorPopup();">
+                                                            <span class="glyphicon glyphicon-trash"> Delete</a>
+                                                    </td>
+                                                    <%foreach(var field in DataBag.lstAttachmentFields) { %>
+            											<td>
+        								                    <%=htmlAttachment.DisplayTextFor(field)%>
+            							                </td>
+            							                <td>
+            							                    <a class="__web-inspector-hide-shortcut__" href="/Force/Force__Attachment/Download/<%=htmlAttachment.DisplayTextFor("Id")%>" target="_blank">View Receipts</a>
+            							                </td>
+            										<%}%>
+            									</tr>
+            									<!------------End  of Attachment records ---------------->     
+            								<% }); %> 
+            		 
+            							</tbody> 
+            						</table>
+            					</div>
+            				<%}%> <!------------End of Else ---------------->
+            
+            			<%}%> <!-------------- End of main If ---------------->
+            		</div>
+            	<div class="panel-body">
+    			</div>
+    		</div>
+    		
+			<!-----------------------------------------START OF DIRECTOR SIGNATURE SECTION ----------------------------------------->
+			<!-- To Display Signature Sections of the Expense Record -->
+			<%if(CustomLabels.ISP_RoleForDirectorSignatures.Equals(UserInfo.Role.Name)){ %>
+                <div class="panel borderofPanel">
+                    <div class="panel-heading"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+                    <div class="panel-body" >
+                        <b><p>Staff Signature</p></b>
+                        <div id="staffSig"></div>
+                        <p style="clear: both;"><input type="button" id="clearStaff" value="Clear"/>
+                        <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                        
+                        <%
+                           Html.Repeat(DataBag.lstExpenseReportObj as IList, expenseReportObj => { %>
+                            <div class="col-md-10" style="padding-left: 0px;">  
+                                <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Staff_Signee_Name__c")%></b>
+                                    <%}%>
+                                </div> 
+                                <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Staff_Signed_Date__c")%></b>
+                                    <%}%>
+                                </div>
+                            </div>
+                            <div class="col-md-10" style="padding-left: 0px;"> 
+                               <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != null) {%> 
+                                        <%=expenseReportObj.DisplayTextFor("Staff_Signee_Name__c")%>
+                                    <%}%>
+                               </div>
+                               <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                   <% if (expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                                       <%=expenseReportObj.DisplayTextFor("Staff_Signed_Date__c")%>
+                                   <%}%>
+                               </div>
+                            </div>
+                        
+                            <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "") {%> 
+                                <b><p style="margin-top: 6%;">Supervisor Signature</p></b>
+                            <%}else{%>
+                                <b><p style="margin-right: 10%;">Supervisor Signature</p></b>
+                            <%}%>
+                            
+                            <div id="SupervisorSig"></div>
+                            <p style="clear: both;"><input type="button" id="clearSupervisor" value="Clear"/>
+                            <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                            
+                            <div class="col-md-10" style="padding-left: 0px;">  
+                                <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                                    <%}%>
+                                </div> 
+                                <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                    <% if (expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                                    <%}%>
+                                </div>
+                            </div>
+                            <div class="col-md-10" style="padding-left: 0px;"> 
+                               <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != null) {%> 
+                                        <%=expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c")%>
+                                    <%}%>
+                               </div>
+                               <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                   <% if (expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                                       <%=expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                                   <%}%>
+                               </div>
+                            </div>
+                            
+                            <% if (expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != "") {%> 
+                                <b><p style="margin-top: 6%;">Director Signature</p></b>
+                            <%}else{%>
+                                <b><p style="margin-right: 12%;">Director Signature</p></b>
+                            <%}%>
+                            
+                            <div id="DirectorSig"></div>
+                            <p style="clear: both;"><input type="button" id="clearDirector" value="Clear"/>
+                            <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                            
+                            <div class="col-md-10" style="padding-left: 0px;">  
+                                <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Director_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Director_Signee_Name__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Director_Signee_Name__c")%></b>
+                                    <%}%>
+                                </div> 
+                                <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                    <% if (expenseReportObj.DisplayTextFor("Director_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Director_Signed_Date__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Director_Signed_Date__c")%></b>
+                                    <%}%>
+                                </div>
+                            </div>
+                            <div class="col-md-10" style="padding-left: 0px;"> 
+                               <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Director_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Director_Signee_Name__c") != null) {%> 
+                                        <%=expenseReportObj.DisplayTextFor("Director_Signee_Name__c")%>
+                                    <%}%>
+                               </div>
+                               <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                   <% if (expenseReportObj.DisplayTextFor("Director_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Director_Signed_Date__c") != null) {%> 
+                                       <%=expenseReportObj.DisplayTextFor("Director_Signed_Date__c")%>
+                                   <%}%>
+                               </div>
+                            </div>
+                        <% }); %>
+                        
+                        <div class="row">
+                            <div class="col-md-12" id="saveSignDiv" style="margin-left: 41.5%;margin-top: 2%;">
+                        		<button id="saveSignId" type="button" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);__doPostBack('SaveSignatureSectionByDirector');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save Signatures</button>
+                        	</div>
+                	    </div>
+                	
+                    </div>
+                </div>
+            <%}%>
+            <!-----------------------------------------End OF DIRECTOR SIGNATURE SECTION ----------------------------------------->
+            
+            <!-----------------------------------------START OF STAFF SIGNATURE SECTION ----------------------------------------->
+            <%if(CustomLabels.ISP_RoleForStaffSignatures.Equals(UserInfo.Role.Name) ){ %>
+                <div class="panel borderofPanel">
+                    <div class="panel-heading"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+                    <div class="panel-body" >
+                        <p>Staff Signature</p>
+                        <div id="staffSig"></div>
+                        <p style="clear: both;"><input type="button" id="clearStaff" value="Clear"/>
+                        <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                        
+                        <%
+                           Html.Repeat(DataBag.lstExpenseReportObj as IList, expenseReportObj => { %>
+                            <div class="col-md-10" style="padding-left: 0px;">  
+                                <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Staff_Signee_Name__c")%></b>
+                                    <%}%>
+                                </div> 
+                                <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Staff_Signed_Date__c")%></b>
+                                    <%}%>
+                                </div>
+                            </div>
+                            <div class="col-md-10" style="padding-left: 0px;"> 
+                               <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != null) {%> 
+                                        <%=expenseReportObj.DisplayTextFor("Staff_Signee_Name__c")%>
+                                    <%}%>
+                               </div>
+                               <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                   <% if (expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                                       <%=expenseReportObj.DisplayTextFor("Staff_Signed_Date__c")%>
+                                   <%}%>
+                               </div>
+                            </div>
+                        <% }); %> 
+                        
+                        <div class="row">
+                            <div class="col-md-12" id="saveSignDiv" style="margin-left: 41.5%;margin-top: 2%;">
+                        		<button id="saveSignId" type="button" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);__doPostBack('SaveStaffSignature');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save Signatures</button>
+                        	</div>
+                	    </div>
+                    </div>
+                </div>
+            <%}%>
+            <!-----------------------------------------End OF STAFF SIGNATURE SECTION ----------------------------------------->
+            
+            <!-----------------------------------------START OF SUPERVISOR SIGNATURE SECTION ----------------------------------------->
+            <%if(CustomLabels.ISP_RoleForSupervisorSignatures.Equals(UserInfo.Role.Name) ){ %>
+                <div class="panel borderofPanel">
+                    <div class="panel-heading"><span class="glyphicon glyphicon-pencil"></span>&nbsp;Signature</div>
+                    <div class="panel-body" >
+                        <b><p>Staff Signature</p></b>
+                        <div id="staffSig"></div>
+                        <p style="clear: both;"><input type="button" id="clearStaff" value="Clear"/>
+                        <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                        
+                        <%
+                           Html.Repeat(DataBag.lstExpenseReportObj as IList, expenseReportObj => { %>
+                            <div class="col-md-10" style="padding-left: 0px;">  
+                                <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Staff_Signee_Name__c")%></b>
+                                    <%}%>
+                                </div> 
+                                <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Staff_Signed_Date__c")%></b>
+                                    <%}%>
+                                </div>
+                            </div>
+                            <div class="col-md-10" style="padding-left: 0px;"> 
+                               <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != null) {%> 
+                                        <%=expenseReportObj.DisplayTextFor("Staff_Signee_Name__c")%>
+                                    <%}%>
+                               </div>
+                               <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                   <% if (expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != null) {%> 
+                                       <%=expenseReportObj.DisplayTextFor("Staff_Signed_Date__c")%>
+                                   <%}%>
+                               </div>
+                            </div>
+                       
+                            <% if (expenseReportObj.DisplayTextFor("Staff_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Staff_Signed_Date__c") != "") {%> 
+                                <b><p style="margin-top: 6%;">Supervisor Signature</p></b>
+                            <%}else{%>
+                                <b><p style="margin-right: 10%;">Supervisor Signature</p></b>
+                            <%}%>
+                            
+                            <div id="SupervisorSig"></div>
+                            <p style="clear: both;"><input type="button" id="clearSupervisor" value="Clear"/>
+                            <p class="noteClass">Use your mouse or finger to draw your signature above</p>
+                            
+                            <div class="col-md-10" style="padding-left: 0px;">  
+                                <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Supervisor_Signee_Name__c")%></b>
+                                    <%}%>
+                                </div> 
+                                <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                    <% if (expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                                        <b><%=expenseReportObj.LabelFor("Supervisor_Signed_Date__c")%></b>
+                                    <%}%>
+                                </div>
+                            </div>
+                            <div class="col-md-10" style="padding-left: 0px;"> 
+                               <div class="col-md-4" style="padding-left: 0px;">
+                                    <% if (expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c") != null) {%> 
+                                        <%=expenseReportObj.DisplayTextFor("Supervisor_Signee_Name__c")%>
+                                    <%}%>
+                               </div>
+                               <div class="col-md-4" style="padding-left: 0px;margin-left: 3.5%;">
+                                   <% if (expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != "" && expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c") != null) {%> 
+                                       <%=expenseReportObj.DisplayTextFor("Supervisor_Signed_Date__c")%>
+                                   <%}%>
+                               </div>
+                            </div>
+                        <% }); %> 
+                        
+                        <div class="row">
+                            <div class="col-md-12" id="saveSignDiv" style="margin-left: 41.5%;margin-top: 2%;">
+                        		<button id="saveSignId" type="button" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);__doPostBack('SaveSignatureSectionBySupervisor');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save Signatures</button>
+                        	</div>
+                	    </div>
+                        
+                    </div>
+                </div>
+            <%}%>
+            <!-----------------------------------------End OF SUPERVISOR SIGNATURE SECTION ----------------------------------------->
+            
+    		<!-- Start of success message popup-->
+            <div id="successMessgeForMultipleReceiptUpload" class="modal fade" role="dialog" data-backdrop="static">
+              <div class="modal-dialog">
+            
+                <!-- Modal content-->
+                <div class="modal-content">
+                      <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                         <center>
+                             <p><span><%:CustomLabels.ShowSuccessMessageForMultipleReceiptUpload%></span></p><br/>
+                             <button type="button" class="btn backgroundForButton" onclick="__doPostBack('RedirectToExpenseReport');"><span class="glyphicon glyphicon glyphicon-ok">&nbsp;Ok</button>
+                         </center>
+                      </div>
+                </div>
+            
+              </div>
+            </div>
+            <!-- End of success message popup-->
+        
+			<%if(DataBag.IsStatusSubmitted == false) { %>
+    			<center>
+                    <button type="button" id="saveAllERInfoId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);__doPostBack('SaveERWithExpensesAndMileages');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save</button>
+                    <button type="button" id="saveCompleteERId" class="btn backgroundForMainButton" onclick="setValueToSignTextField(this);__doPostBack('SaveERCompleteWithExpensesAndMileages');showCustomValidationErrorPopup();showValidationErrorPopup();"><span class="glyphicon glyphicon-save"></span>&nbsp;Save and Complete</button>
+                </center>
+			<%}%>
+            
+            <!-- Below hidden to store the id of the button on click -->
+            <input type='hidden' class="scrollBarClass" id="scrollBarId" name="scrollIdName" value="<%=DataBag.IdOfTheButton%>" />
+            
+            <!-- Below hidden to store the databag value when progress note get completed -->
+            <input type='hidden' id="successMRUId" name="successMRUName" value="<%=DataBag.IsSuccessMultipleReceiptUpload%>" />
+            
+            <!-- Below hidden field contains the value of Service for Editing/Saving the Service record-->
+            <input type='hidden' id="AttachmentIdForRemove" name="AttachmentIDforAttachToRemove" value="<%=DataBag.AttachmentId%>">
+        
+            <%
+              Html.Repeat(DataBag.lstExpenseReportObj as IList, expenseReportObj => { %>
+                <!-- Below hidden field contains the value of Director signture to save Expense Report-->
+                <input type='hidden' id="SaveDirectorSignId" name="DirectorSignToUpdateExpenseReport" value="<%=expenseReportObj.DisplayTextFor("Director_Signature__c")%>">
+                <!-- Below hidden field contains the value of Staff signture to save Expense Report-->
+                <input type='hidden' id="SaveStaffSignId" name="StaffSignToUpdateExpenseReport" value="<%=expenseReportObj.DisplayTextFor("Staff_Signature__c")%>"> 
+                <!-- Below hidden field contains the value of Supervisor signture to save Expense Report-->
+                <input type='hidden' id="SaveSupervisorSignId" name="SupervisorSignToUpdateExpenseReport" value="<%=expenseReportObj.DisplayTextFor("Supervisor_Signature__c")%>">
+                                 
+            <% }); %> 
+            
+            <!-- Start of Error message for checkbox on popup-->
+            <div id="ErrorMessgeForCheckbox" class="modal fade" role="dialog" data-backdrop="static">
+              <div class="modal-dialog">
+            
+                <!-- Modal content-->
+                <div class="modal-content">
+                      <div class="modal-body" style="margin-top: 4%;margin-bottom: 4%;">
+                         <center>
+                             <p><span id="SelectItemFromListErrorId"></span></p><br/>
+                             <button type="button" class="btn backgroundForButton" data-dismiss="modal"><span class="glyphicon glyphicon-remove">&nbsp;Close</button>
+                         </center>
+                      </div>
+                </div>
+            
+              </div>
+            </div>
+            <!-- End of Error message for checkbox on popup-->
+            
+		<%}%>
+        
+    <!-- ***************************** Start of Java script to get Location of button, scroll and hide error pop-up ******************************************* -->
+    <script>
+		
+        //Function to called on load to set the scroll bar position
+        scrollBarLocation();
+        
+        // Method used to append object's API name to input fields name attribute for respective objects
+        AddObjApiToInputAttrName();
+        
+        // Method to remove popup when saving if there is no error on page
+        $('#errorModal').on('hidden.bs.modal', function () {
+           if($("#errorModal .validation-summary-errors ul li").size()>0 ){
+                $("#errorModal .validation-summary-errors ul li").remove();
+                
+            }
+        });
+        
+        // Method to remove custom popup when saving if there is no error while performing DML operation
+        $('#errorCustomModal').on('hidden.bs.modal', function () {
+           if($("#errorCustomModal .ServerExceptionCustomClass").size()>0 ){
+                $("#errorCustomModal .ServerExceptionCustomClass").remove();
+                
+            }
+        });
+        
+        //Change width and apply class to the picklist field of expense report
+        $('#ExpenseReportObjectSectionID select').css('width','43%');
+        $('#ExpenseReportObjectSectionID select').addClass('form-control');
+        
+    </script>
+    <!-- ************************ End of Java script to get Location of button, scroll and hide error pop-up *************************************************** -->
+    
+</body>
+</aspx:AspxPage>

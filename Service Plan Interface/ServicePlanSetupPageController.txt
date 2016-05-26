@@ -1,0 +1,116 @@
+public class ServicePlanSetupForSectionsController : AspxController
+{
+    /*
+     * Description : This controller is used to add section for the Service Plan Object to display on Service Plan Interface Page
+     * Version               Author            Date (DD-MM-YYYY)             Change Log
+     * 1.1                  Twinkle P          3/1/2016                     Initial Draft
+     * 1.2                  Twinkle P          11/1/2016                    Add functionality to display the section on load which were added previously
+     */
+	public override ActionResponse Index()
+	{
+        return View();
+	}
+	/*
+	 * This method is used to fetch Object Config details and show on load
+	 * @param : None
+	 * @ActionResponse - It returns the boolean true if the details are store 
+	*/
+	public ActionResponse showTheFieldsOnLoad(){
+	    // strPicklistForServicePlan : Assigned the Custom label which consist of the Service Plan (Picklist Value)
+	    string strPicklistForServicePlan = CustomLabels.ISP_PicklistValueForSerivcePlanSection;
+	    Force__Object_Configuration__c objConfig = Database.Query<Force__Object_Configuration__c>()
+	                                                        .OrderByDescending(f=>f.CreatedOn)
+	                                                        .First();
+	    List<Force__Service_Plan_Section__c> lstOfServicePlan = Database.Query<Force__Service_Plan_Section__c>()
+	                                                                    .Where(f=>f.Object_Configuration__c==objConfig.Id &&
+	                                                                              f.SectionType__c == strPicklistForServicePlan )
+	                                                                    .OrderBy(f=>f.Sequence__c)
+	                                                                    //.Limit(5)
+	                                                                    .ToList();
+	    if(lstOfServicePlan != null && lstOfServicePlan.Count>0){
+	        return Json(lstOfServicePlan,true);
+	    }
+	    return Json(false,false);
+	}
+	/*
+	 * This method is used to save or update the Service Plan Section related to Object Configuration
+	 * @param : servicePlanSectionModel : Model which has binded values all the sections related to Service Plan Section
+	 * @ActionResponse - It returns the boolean true if the details are store 
+	*/
+	[HttpPost]
+    [HandleExceptionsForJson]
+    public ActionResponse updateServicePlanSectionInfo(List<Force__Service_Plan_Section__c>  servicePlanSectionModel){
+            Force__Object_Configuration__c objConfig = Database.Query<Force__Object_Configuration__c>()
+                                                                .OrderByDescending(f=>f.CreatedOn)
+                                                                .First();
+            if(objConfig == null){
+                Insert(objConfig);
+            }
+            if(servicePlanSectionModel != null){
+                ServicePlanModel     model                          = new ServicePlanModel ();
+                Force__Service_Plan_Section__c objServicePlan;
+                foreach(var e in servicePlanSectionModel)
+                {
+                    model.data.Add(e);
+                }
+                for (int i=0; i<model.data.Count; i++ )
+                {
+                    objServicePlan               = new Force__Service_Plan_Section__c();
+                    if(model.data[i].Id.ToString() != ""){
+                        objServicePlan  =  Database.Query<Force__Service_Plan_Section__c>().Where(f=>f.Id==model.data[i].Id.ToString()).First();
+                        if(objServicePlan!=null){
+                            objServicePlan.Title_Of_Section__c     = model.data[i].Title_Of_Section__c;
+                            objServicePlan.Sequence__c             = model.data[i].Sequence__c;
+                            objServicePlan.Fields_for_Section__c   = model.data[i].Fields_for_Section__c;
+                            objServicePlan.No_Of_Columns__c        = model.data[i].No_Of_Columns__c;
+                            objServicePlan.Collapse_Section__c     = model.data[i].Collapse_Section__c;
+                            objServicePlan.SectionType__c          = CustomLabels.ISP_PicklistValueForSerivcePlanSection;      
+                            objServicePlan.Object_Configuration__c = objConfig.Id;
+                            Edit(objServicePlan);
+                        }
+                    }
+                    else{
+                            objServicePlan.Title_Of_Section__c     = model.data[i].Title_Of_Section__c;
+                            objServicePlan.Sequence__c             = model.data[i].Sequence__c;
+                            objServicePlan.Fields_for_Section__c   = model.data[i].Fields_for_Section__c;
+                            objServicePlan.No_Of_Columns__c        = model.data[i].No_Of_Columns__c;
+                            objServicePlan.Collapse_Section__c     = model.data[i].Collapse_Section__c;
+                            objServicePlan.SectionType__c          = CustomLabels.ISP_PicklistValueForSerivcePlanSection;   
+                            objServicePlan.Object_Configuration__c = objConfig.Id;
+                            Insert(objServicePlan);
+                    }
+                }
+            }
+            return Json(true);
+    }
+    /*
+	 * This method is used to remove the section for the database if it exist on click of Remove button
+	 * @param : strSectionId: The id of the Section that has to be deleted
+	 * @ActionResponse - It returns the section as per condition
+	*/
+	[HttpPost]
+    [HandleExceptionsForJson]
+	public ActionResponse deletePrevRecords(string strSectionId) 
+	{ 
+        Force__Service_Plan_Section__c objServicePlan =  Database.Query<Force__Service_Plan_Section__c>()
+                                                                  .Where(f=>f.Id==strSectionId)
+                                                                  .First();
+        Delete(objServicePlan);
+        return Json(true,true);
+	}
+     /*
+	 * This class to get the data from the model
+	 * @param : None
+	 * @ActionResponse - It returns the section as per condition
+	*/
+    public class ServicePlanModel:Force__Service_Plan_Section__c
+    {
+        public  List<Force__Service_Plan_Section__c> data  {get;set;}
+        
+        public ServicePlanModel()
+        {
+            data         = new List<Force__Service_Plan_Section__c>();
+        }
+        
+    }
+}

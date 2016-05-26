@@ -1,0 +1,41 @@
+    .spaceClass {
+        padding-bottom: 1%;
+    }
+    .backgroundClass{
+        background: white;
+    }
+    .btn{
+        margin-left: 1%;
+    }
+    fieldset {
+        font-family: Verdana, Arial, sans-serif;
+        font-size: small;
+        font-weight: normal;
+        border: 1px solid #999999;
+        padding: 4px;
+        margin: 5px;
+    }
+    .table-striped>tbody>tr:nth-child(odd)>td,
+    .table-striped>tbody>tr:nth-child(odd)>th {
+    	background-color: #ddd;
+    }
+    .SearchIcon
+    {
+        color:#fff;
+       
+    }
+    .SearchButton
+    {
+        background-color:#ED1C24;
+        border-radius:1px;
+    }
+    .SearchButton:hover{
+        background-color:#C4161C;
+    }
+    
+    .searchText{
+        margin-top: 10%;
+    }
+    .panelBodyClass{
+        height: 600px;
+    }
